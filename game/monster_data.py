@@ -1,4 +1,4 @@
-from .enums import Attribute
+from .enums import Attribute, SkillType
 
 MONSTER_DATA = {
     "drake_igneous": {
@@ -11,6 +11,10 @@ MONSTER_DATA = {
         "attack": 35,
         "defense": 20,
         "speed": 105,
+
+        "skills": [
+            "drake_claw"
+        ]
     },
     "drake_abyssal": {
         "name": "Vharak",
@@ -24,21 +28,8 @@ MONSTER_DATA = {
         "speed": 105,
 
         "skills": [
-            {
-                "name": "Drake Claw",
-                "power": 25,
-                "cooldown": 0
-            },
-            {
-                "name": "Abyssal Surge",
-                "power": 45,
-                "cooldown": 3
-            },
-            {
-                "name": "Crushing Depths",
-                "power": 60,
-                "cooldown": 5
-            }
+            "fake_out",
+            "drake_claw"
         ]
     },
     "goblin_igneous": {
@@ -62,5 +53,23 @@ MONSTER_DATA = {
         "attack": 5,
         "defense": 38,
         "speed": 45,
+
+        "skills": [
+            {
+                "skill_id": "heavy_slam",
+                "name": "Heavy Slam",
+                "type": SkillType.DAMAGE,
+                "power": 20,
+                "cooldown": 0
+            },
+            {
+                "skill_id": "earths_echo",
+                "name": "Earth's Echo",
+                "type": SkillType.HEALING,
+                "scaling_stat": "defense",
+                "base_scaling_ratio": 0.35,
+                "cooldown": 3
+            }
+        ]
     }
 }

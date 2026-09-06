@@ -3,7 +3,7 @@ from .monster_data import MONSTER_DATA
 from .sealstone_data import SEALSTONE_DATA
 from .factories import create_monster
 
-def summon(collection, sealstone_type):
+def summon(player, sealstone_type):
     monster_ids = []
 
     while not monster_ids:
@@ -18,7 +18,8 @@ def summon(collection, sealstone_type):
     monster_id = random.choice(monster_ids)
     monster = create_monster(monster_id)
 
-    collection.append(monster)
+    player.collection.append(monster)
+    player.inventory.remove_item(sealstone_type)
 
     print(f"{monster.display_name} successfully summoned.")
     return monster

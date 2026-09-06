@@ -8,6 +8,12 @@ class Attribute(Enum):
     VOID = "Void"
 
 
+class SkillType(Enum):
+    DAMAGE = "Damage"
+    HEALING = "Healing"
+    PASSIVE = "Passive"
+
+
 class SealstoneType(Enum):
     FADED = "Faded"
     RUNIC = "Runic"
@@ -21,3 +27,9 @@ class EssenceType(Enum):
     RADIANT = "Radiant"
     TWILIGHT = "Twilight"
     ECLIPSE = "Eclipse"
+
+
+class EffectType(Enum):
+    BUFF = "Buff"
+    DEBUFF = "Debuff"
+    STATUS = "Status"

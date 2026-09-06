@@ -1,5 +1,8 @@
-from .entities import Monster, Skill
+from .monster import Monster
+from .skills import DamageSkill, HealingSkill
 from .monster_data import MONSTER_DATA
+from .skill_data import SKILL_DATA
+from .enums import SkillType
 
 
 def create_monster(monster_id):
@@ -22,14 +25,33 @@ def create_monster(monster_id):
 
     skills = []
 
-    for skill in data.get("skills", []):
-        skills.append(
-            Skill(
-                skill["name"], 
-                skill["power"], 
-                skill["cooldown"]
+    for skill_id in data.get("skills", []):
+        skill = SKILL_DATA[skill_id]
+
+        if skill["type"] == SkillType.DAMAGE:
+            skills.append(
+                DamageSkill(
+                    skill_id,
+                    skill["name"], 
+                    skill["power"], 
+                    skill.get("effects", []),
+                    skill["cooldown"]
+                )
             )
-        )
+
+        elif skill["type"] == SkillType.HEALING:
+            skills.append(
+                HealingSkill(
+                    skill_id,
+                    skill["name"],
+                    skill["scaling_stat"],
+                    skill["base_scaling_ratio"],
+                    cooldown=skill["cooldown"]
+                )
+            )
+
+        elif skill["type"] == SkillType.PASSIVE:
+            pass
 
     new = Monster(
         monster_id=monster_id,

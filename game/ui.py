@@ -47,9 +47,81 @@ def inventory_menu():
 
     return input("> ")
 
-    
+
+def show_battle_state(ally, enemy):
+    print("\n==============================")
+    print("            BATTLE")
+    print("==============================")
+
+    print("\nALLY")
+    show_combat(ally)
+    show_status_effects(ally)
+
+    print("\nENEMY")
+    show_combat(enemy)
+    show_status_effects(enemy)
+
+    print("------------------------------")
 
 
+def show_combat(monster):
+    print(
+        f"{monster.display_name} | "
+        f"Lvl {monster.level} | "
+        f"HP: {monster.health}/{monster.max_health}"
+    )
+
+    print(f"[{draw_hp_bar(monster.health, monster.max_health)}]")
+
+    skill_texts = []
+
+    for i, skill in enumerate(monster.skills, start=1):
+        skill_texts.append(f"[{i}] {skill.name} CD:{skill.current_cooldown}")
+
+    print("Skills:", " | ".join(skill_texts))
+
+
+def show_status_effects(monster):
+    if monster.buffs:
+        buffs = []
+
+        for buff in monster.buffs:
+            text = buff.name
+
+            if buff.max_stacks > 1:
+                text += f" x{buff.stacks}"
+
+            text += f" ({buff.remaining_turns})"
+            buffs.append(text)
+
+        print("Buffs:", ", ".join(buffs))
+
+    else:
+        print("Buffs: -")
+
+    if monster.debuffs:
+        debuffs = []
+
+        for debuff in monster.debuffs:
+            text = debuff.name
+
+            if debuff.max_stacks > 1:
+                text += f" x{debuff.stacks}"
+
+            text += f" ({debuff.remaining_turns})"
+            debuffs.append(text)
+
+        print("Debuffs:", ", ".join(debuffs))
+
+    else:
+        print("Debuffs: -")
+
+
+def draw_hp_bar(health, max_health):
+    filled = int((health / max_health) * 20)
+    empty = 20 - filled
+
+    return (filled * "█") + (empty * "-")
 
 
 def select_skill(monster):
@@ -63,6 +135,10 @@ def select_skill(monster):
             chosen_skill = monster.get_skill(number)
             if chosen_skill is None: 
                 print("El número seleccionado no existe.")
+                continue
+
+            if monster.is_silenced and number != 1:
+                print("Silence prevents using this skill.")
                 continue
             
             return chosen_skill

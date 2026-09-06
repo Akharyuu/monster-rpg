@@ -1,92 +1,170 @@
-from .ui import select_skill
+from .ui import select_skill, show_battle_state
 import random
+from .skills import SkillType
 
-def battle(player, enemy):
+def battle(ally, enemy):
 
-    while player.is_alive and enemy.is_alive:
+    while ally.is_alive and enemy.is_alive:
+
+        ally_speed = ally.get_effective_stat("speed")
+        enemy_speed = enemy.get_effective_stat("speed")
 
         #Orden de turno
-        if player.speed > enemy.speed:
-            first = player
+        if ally_speed > enemy_speed:
+            first = ally
             second = enemy
 
-        elif player.speed < enemy.speed:
+        elif ally_speed < enemy_speed:
             first = enemy
-            second = player
+            second = ally
 
         else:
-            first = random.choice([player, enemy])
-            if first == player:
+            first = random.choice([ally, enemy])
+            if first == ally:
                 second = enemy
             else:
-                second = player
+                second = ally
 
         #Primero
-        if first == player:
-            outcome = player_turn(player, enemy)
+        if first == ally:
+            outcome = player_turn(ally, enemy)
         else: 
-            outcome = enemy_turn(enemy, player)
+            outcome = enemy_turn(enemy, ally)
 
         if outcome is not None:
             return outcome
 
         #Segundo
-        if second == player:
-            outcome = player_turn(player, enemy)
+        if second == ally:
+            outcome = player_turn(ally, enemy)
         else: 
-            outcome = enemy_turn(enemy, player)
+            outcome = enemy_turn(enemy, ally)
 
         if outcome is not None:
             return outcome
 
-        print("Ally:")
-        player.show()
-
-        print("Enemy")
-        enemy.show()
 
 
-def player_turn(player, enemy):
+def player_turn(ally, enemy):
+
+    ally.reduce_skill_cooldowns()
+
+    ally.apply_damage_over_time()
+
+    if not ally.is_alive:
+        print(f"Ally {ally.display_name} was defeated by damage over time.")
+        return "defeat"
+
+    show_battle_state(ally, enemy)
+
+    if ally.cannot_act:
+        if ally.is_stunned:
+            print(f"{ally.display_name} is stunned and loses the turn.")
+    
+        elif ally.is_frozen:
+            print(f"{ally.display_name} is frozen and loses the turn.")
+                
+        ally.reduce_remaining_turns()
+        return None
 
     while True:
 
-        decision = input("¿Qué quieres hacer? (Atacar: 'a' / Salir: 's')\n> ")
+        decision = input("What to do? (Use skill: 's' / Run: 'r')\n> ")
+        turn_finished = False
+        outcome = None
 
-        #Ataque
-        if decision == "a":
-            skill = select_skill(player)
-            damage, critical = player.use_skill(enemy, skill)
-            if critical: 
-                print(f"CRÍTICO! El {enemy.name} enemigo ha recibido {damage} puntos de daño.")
-            else: 
-                print(f"El {enemy.name} enemigo ha recibido {damage} puntos de daño.")
-            if not enemy.is_alive:
-                print(f"El {enemy.name} enemigo ha sido derrotado.")
-                return "victoria"
-            return None
+        #Use Skill
+        if decision == "s":
+            skill = select_skill(ally)
 
-        #Salir
-        elif decision == "s":
-            return "huida"
+            match skill.skill_type:
+                case SkillType.DAMAGE:
+                    skill_result = ally.use_skill(enemy, skill)
+                    if skill_result.success:
+                        if skill_result.critical: 
+                            print(f"CRITICAL! Enemy {enemy.display_name} received {skill_result.value} damage.")
+                        else: 
+                            print(f"Enemy {enemy.display_name} received {skill_result.value} damage.")
+
+                        if not enemy.is_alive:
+                            print(f"Enemy {enemy.display_name} defeated.")
+                            outcome = "victory"
+
+                        turn_finished = True
+
+                    else:
+                        continue
+
+                case SkillType.HEALING:
+                    skill_result = ally.use_skill(ally, skill)
+                    if skill_result.success:
+                        print(f"Ally {ally.display_name} recovered {skill_result.value} HP.")
+
+                        turn_finished = True
+
+                    else:
+                        continue
+
+            if turn_finished:
+                ally.reduce_remaining_turns()
+                return outcome
+
+        #Run
+        elif decision == "r":
+            return "run"
 
         else:
-            print("Opción inválida.")
+            print("Invalid option.")
             continue
 
 
-def enemy_turn(enemy, player):
-    enemy_skill = enemy.get_skill(1)
+def enemy_turn(enemy, ally):
+
+    enemy.reduce_skill_cooldowns()
+
+    enemy.apply_damage_over_time()
+
+    if not enemy.is_alive:
+        print(f"Enemy {enemy.display_name} was defeated by damage over time.")
+        return "victory"
+
+    if enemy.cannot_act:
+        if enemy.is_stunned:
+            print(f"{enemy.display_name} is stunned and loses the turn.")
+
+        elif enemy.is_frozen:
+            print(f"{enemy.display_name} is frozen and loses the turn.")
+
+        enemy.reduce_remaining_turns()
+        return None
+
+    if enemy.is_silenced:
+        enemy_skill = enemy.get_skill(1) #TODO: Replace with Enemy AI Skill Selection.
+    else:
+        enemy_skill = enemy.get_skill(1)
+
+    outcome = None
 
     if enemy_skill is not None:
-        damage, critical = enemy.use_skill(player, enemy_skill)
-        if critical:
-            print(f"CRÍTICO! El {player.name} aliado ha recibido {damage} puntos de daño.")
-        else:
-            print(f"El {player.name} aliado ha recibido {damage} puntos de daño.")
+        match enemy_skill.skill_type:
+            case SkillType.DAMAGE:
+                skill_result = enemy.use_skill(ally, enemy_skill)
+                if skill_result.success:
+                    if skill_result.critical:
+                        print(f"CRITICAL! Ally {ally.display_name} received {skill_result.value} damage.")
+                    else:
+                        print(f"Ally {ally.display_name} received {skill_result.value} damage.")
 
-        if not player.is_alive:
-            print(f"El {player.name} ha sido derrotado.")
-            return "derrota"
+                    if not ally.is_alive:
+                        print(f"Ally {ally.display_name} was defeated.")
+                        outcome = "defeat"
+            
+            case SkillType.HEALING:
+                skill_result = enemy.use_skill(enemy, enemy_skill)
+                if skill_result.success:
+                    print(f"Enemy {enemy.display_name} recovered {skill_result.value} HP.")
 
-    return None
+    enemy.reduce_remaining_turns()
+
+    return outcome
                

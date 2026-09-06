@@ -2,21 +2,18 @@ from game.ui import main_menu, collection_menu, summon_menu, inventory_menu, sho
 from game.factories import create_monster
 from game.summoning import summon
 from game.enums import SealstoneType, EssenceType
-from game.collection import dismantle_monster, resonate_monster, get_compatible_dupes
-from game.inventory import Inventory
-
-collection = []
-inventory = Inventory()
-
-monster = create_monster("drake_abyssal")
-collection.append(monster)
-inventory.add_item(SealstoneType.ARCANE, 10)
+from game.collection import get_compatible_dupes
+from game.player import Player
+from game.combat import battle
 
 def show_collection(collection):
     for i, monster in enumerate(collection, start=1):
         print(f"{i}. {monster.display_name} | Lvl {monster.level} | {'★' * monster.rarity} | R{monster.resonance}")
 
 
+player = Player("Ryuu")
+player.collection.append(create_monster("drake_abyssal"))
+result = battle(player.collection[0], create_monster("drake_igneous"))
 
 
 #Menú Loop
@@ -31,31 +28,31 @@ while True:
 
                 match collection_choice:
                     case "1":
-                        show_collection(collection)
+                        show_collection(player.collection)
                         print("\n")
 
                     case "2": 
-                        show_collection(collection)
+                        show_collection(player.collection)
 
                         try:
                             choice = int(input("\n> ")) - 1
-                            collection[choice].show()
+                            player.collection[choice].show()
                             input("\nPress any key to go back...\n")
 
                         except ValueError: 
                             print("Invalid option.")
 
                     case "3":
-                        show_collection(collection)
+                        show_collection(player.collection)
 
                         try:
                             choice = int(input("\n> ")) - 1
-                            if choice < 0 or choice >= len(collection):
+                            if choice < 0 or choice >= len(player.collection):
                                 raise IndexError
 
-                            target = collection[choice]
+                            target = player.collection[choice]
 
-                            dupe_list = get_compatible_dupes(target, collection)
+                            dupe_list = get_compatible_dupes(target, player.collection)
 
                             if dupe_list:
                                 show_collection(dupe_list)
@@ -66,7 +63,7 @@ while True:
                                 
                                 confirm = input(f"Use {dupe_list[material_monster].display_name} as material for Resonance? (y/n)\n> ")
                                 if confirm == "y":
-                                    if resonate_monster(target, dupe_list[material_monster], collection):
+                                    if player.resonate_monster(target, dupe_list[material_monster]):
                                         print(f"{target.display_name} resonance is now Lvl {target.resonance}")
 
                             else:
@@ -76,16 +73,16 @@ while True:
                             print("Invalid option.")
 
                     case "4":
-                        show_collection(collection)
+                        show_collection(player.collection)
 
                         try:
                             choice = int(input("\n> ")) - 1
-                            if choice < 0 or choice >= len(collection):
+                            if choice < 0 or choice >= len(player.collection):
                                 raise IndexError
                             
-                            confirm = input(f"\nDismantle {collection[choice].display_name} into Essence? (y/n)\n> ")
+                            confirm = input(f"\nDismantle {player.collection[choice].display_name} into Essence? (y/n)\n> ")
                             if confirm == "y":
-                                essence = dismantle_monster(collection[choice], collection, inventory)
+                                essence = player.dismantle_monster(player.collection[choice])
                                 if essence is not None: 
                                     print(f"{essence.value} Essence added to your inventory.\n")
                                 else: 
@@ -101,7 +98,7 @@ while True:
                         print("Invalid option.")
 
         case "2":
-                show_sealstones(inventory)
+                show_sealstones(player.inventory)
                 sealstones = list(SealstoneType)
 
                 while True:
@@ -110,14 +107,13 @@ while True:
 
                         if sealstone_choice == len(sealstones):
                             break
-                        
+
                         if sealstone_choice < 0 or sealstone_choice >= len(sealstones):
                             raise IndexError
                         
                         sealstone = sealstones[sealstone_choice]
-                        if inventory.has_item(sealstone):
-                            inventory.remove_item(sealstone)
-                            summon(collection, sealstone)
+                        if player.inventory.has_item(sealstone):
+                            summon(player, sealstone)
                             break
 
                         else:
@@ -138,10 +134,10 @@ while True:
 
                 match inventory_choice:
                     case "1":
-                        show_sealstones(inventory)
+                        show_sealstones(player.inventory)
 
                     case "2":
-                        show_essences(inventory)
+                        show_essences(player.inventory)
 
                     case "3":
                         break
