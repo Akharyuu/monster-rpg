@@ -1,7 +1,7 @@
 from game.ui import main_menu, collection_menu, summon_menu, inventory_menu, show_essences, show_sealstones
 from game.factories import create_monster
 from game.summoning import summon
-from game.enums import SealstoneType, EssenceType
+from game.enums import SealstoneType
 from game.collection import get_compatible_dupes
 from game.player import Player
 from game.combat import battle
@@ -13,7 +13,17 @@ def show_collection(collection):
 
 player = Player("Ryuu")
 player.collection.append(create_monster("drake_abyssal"))
-result = battle(player.collection[0], create_monster("drake_igneous"))
+player.collection.append(create_monster("drake_abyssal"))
+allies = [
+    player.collection[0],
+    player.collection[1]
+]
+enemies = [
+    create_monster("piñata")
+]
+
+battle(allies, enemies)
+player.inventory.add_item(SealstoneType.ARCANE, 20)
 
 
 #Menú Loop

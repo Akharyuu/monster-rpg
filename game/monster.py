@@ -1,8 +1,11 @@
 from .enums import Attribute, EffectType
 from .skills import SkillResult
+from .passive_triggers import trigger_passives
+from .passive_data import PASSIVE_DATA
 
 class Monster:
-    def __init__(self, monster_id, name, family, attribute, rarity, health, max_health, attack, defense, speed, skills=None, level=1, ascended=False):
+    def __init__(self, monster_id, name, family, attribute, rarity, health, max_health, attack, defense, speed, 
+                 skills=None, passives=None, level=1, ascended=False, combat_resources=None):
 
         #Atributos
         self.monster_id = monster_id
@@ -12,6 +15,12 @@ class Monster:
         self.rarity = rarity
         self.level = level
         self.ascended = ascended
+        self.action_gauge = 0
+
+        if combat_resources is None:
+            self.combat_resources = {}
+        else:
+            self.combat_resources = combat_resources
 
         #Estadísticas
         self.max_health = max_health
@@ -19,6 +28,10 @@ class Monster:
         self.attack = attack
         self.defense = defense
         self.speed = speed
+
+        self.accuracy = 25
+        self.resistance = 25
+        
         self.crit_rate = 15
         self.crit_damage = 50
 
@@ -27,6 +40,11 @@ class Monster:
             self.skills = []
         else:
             self.skills = skills
+
+        if passives is None:
+            self.passives = []
+        else:
+            self.passives = passives
 
         self.glyphs = []
         self.resonance = 0
@@ -106,7 +124,38 @@ class Monster:
         return False
 
 
-    def use_skill(self, defender, skill):
+    def has_passive_trait(self, trait):
+        for passive in self.passives:
+            data = PASSIVE_DATA[passive.skill_id]
+
+            if trait in data.get("traits", []):
+                return True
+
+        return False
+
+
+#Action Gauge methods
+    def increase_action_gauge(self, amount):
+        self.action_gauge += amount
+
+        if self.action_gauge > 1:
+            self.action_gauge = 1
+
+
+    def reduce_action_gauge(self, amount):
+        self.action_gauge -= amount
+
+        if self.action_gauge < 0:
+            self.action_gauge = 0
+
+
+    def reset_action_gauge(self):
+        self.action_gauge = 0
+
+
+#Skill methods
+    def use_skill(self, targets, skill):
+
         if skill not in self.skills:
             print(f"{self.name} no conoce la habilidad {skill.name}.")
             return SkillResult(False, None)
@@ -115,8 +164,35 @@ class Monster:
             print(f"The skill is currently on cooldown. {skill.current_cooldown} turns left.")
             return SkillResult(False, None)
         
-        skill_result = skill.execute(self, defender)
+        # Shared context for this specific skill execution.
+        context = {
+            "skill": skill,
+            "targets": targets
+        }
+
+        # Passives that activate before the skill.
+        trigger_passives(
+            "before_skill",
+            self,
+            context
+        )
+
+        skill_result = skill.execute(
+            self,
+            targets
+        )
+
+        # Add the result so after_skill passives can inspect what happened.
+        context["skill_result"] = skill_result
+
         skill.trigger_cooldown()
+
+        # Passives that activate after the skill.
+        trigger_passives(
+            "after_skill",
+            self,
+            context
+        )
 
         return skill_result
 
@@ -128,16 +204,29 @@ class Monster:
         return self.skills[index -1]
 
 
-    def receive_damage(self, damage):
+    def receive_damage(self, damage, source=None):
         self.health -= damage
 
-        #If enemy receives damage while Frozen, freeze status is removed.
+        broken_effects = []
+
+        preserve_freeze = (
+            source is not None
+            and source.has_passive_trait("preserve_freeze_on_hit")
+        )
+
         new_debuffs = []
+
         for debuff in self.debuffs:
-            if debuff.effect_id != "freeze":
-                new_debuffs.append(debuff)
+
+            if debuff.effect_id == "freeze" and not preserve_freeze:
+                broken_effects.append(debuff)
+                continue
+
+            new_debuffs.append(debuff)
 
         self.debuffs = new_debuffs
+
+        return broken_effects
 
 
     def get_attribute_modifier(self, defender):
@@ -166,11 +255,13 @@ class Monster:
             skill.reduce_cooldown()
 
 
-    def reduce_remaining_turns(self):
+#Buff/Debuff methods
+    def reduce_remaining_turns(self, effects_at_turn_start):
 
         #Buffs
         for buff in self.buffs:
-            buff.reduce_remaining_turns()
+            if id(buff) in effects_at_turn_start:
+                buff.reduce_remaining_turns()
 
         active_buffs = []
 
@@ -182,7 +273,8 @@ class Monster:
 
         #Debuffs
         for debuff in self.debuffs:
-            debuff.reduce_remaining_turns()
+            if id(debuff) in effects_at_turn_start:
+                debuff.reduce_remaining_turns()
 
         active_debuffs = []
 
@@ -195,46 +287,40 @@ class Monster:
 
     def apply_status_effect(self, effect):
 
-        #Buffs:
         if effect.effect_type == EffectType.BUFF:
-            for buff in self.buffs:
-                if buff.effect_id == effect.effect_id:
-                    if effect.duration > buff.remaining_turns:
-                        buff.remaining_turns = effect.duration
-                    return True
-                
-            if len(self.buffs) < 5:   
-                self.buffs.append(effect)
-                return True
+            effects_list = self.buffs
 
-        #Debuffs:
         elif effect.effect_type == EffectType.DEBUFF:
-
-            #Checks for Immunity:
             if self.has_immunity:
-                return False
-                
-            for debuff in self.debuffs:
-                if debuff.effect_id == effect.effect_id:
+                return None
 
-                    #If effect is stackable, adds stacks.
-                    if debuff.effect_id == "burn" or debuff.effect_id == "poison":
-                        debuff.stacks += effect.stacks
+            effects_list = self.debuffs
 
-                        if debuff.stacks > debuff.max_stacks:
-                            debuff.stacks = debuff.max_stacks
+        else:
+            return None
 
-                    #If effect previously existed, refreshes duration with new duration.
-                    if effect.duration > debuff.remaining_turns:
-                        debuff.remaining_turns = effect.duration
+        for active_effect in effects_list:
+            if active_effect.effect_id == effect.effect_id:
 
-                    return True
+                if active_effect.effect_id in ("burn", "poison"):
+                    active_effect.stacks += effect.stacks
 
-            if len(self.debuffs) < 5:
-                self.debuffs.append(effect)
-                return True
-            
-        return False
+                    if active_effect.stacks > active_effect.max_stacks:
+                        active_effect.stacks = active_effect.max_stacks
+
+                if effect.duration > active_effect.remaining_turns:
+                    active_effect.remaining_turns = effect.duration
+
+                # Update who applied/refreshed the effect.
+                active_effect.source = effect.source
+
+                return active_effect
+
+        if len(effects_list) < 5:
+            effects_list.append(effect)
+            return effect
+
+        return None
 
 
     def apply_damage_over_time(self):
@@ -259,25 +345,71 @@ class Monster:
         if total_damage > 0:
             self.health -= int(total_damage)
             print(f"{self.display_name} takes {int(total_damage)} damage from DoT.")
+            print()
 
                 
     def get_effective_stat(self, stat):
-        buff_modifier = 1
-        debuff_modifier = 1
+
+        multiplicative_modifier = 1
+        additive_modifier = 0
 
         for buff in self.buffs:
             if stat == buff.stat:
-                buff_modifier = buff.modifier
+
+                if buff.modifier_mode == "additive":
+                    additive_modifier += buff.modifier
+
+                else:
+                    multiplicative_modifier *= buff.modifier
 
         for debuff in self.debuffs:
             if stat == debuff.stat:
-                debuff_modifier = debuff.modifier
+
+                if debuff.modifier_mode == "additive":
+                    additive_modifier += debuff.modifier
+
+                else:
+                    multiplicative_modifier *= debuff.modifier
 
         base = getattr(self, stat)
 
-        return base * buff_modifier * debuff_modifier
+        return (
+            base * multiplicative_modifier
+            + additive_modifier
+        )
 
 
+#Combat resources methods (passive stuff/charges...)
+    def add_combat_resource(self, name, value, max_value):
+        if name in self.combat_resources:
+            self.combat_resources[name] += value
+        else:
+            self.combat_resources[name] = value
+
+        if self.combat_resources[name] > max_value:
+            self.combat_resources[name] = max_value
+
+
+    def get_combat_resource(self, name):
+        if name in self.combat_resources:
+            return self.combat_resources[name]
+
+        return 0
+
+
+    def consume_combat_resource(self, name, value):
+        if name in self.combat_resources and self.combat_resources[name] >= value:
+            self.combat_resources[name] -= value
+            return True
+        
+        return False
+
+
+    def reset_combat_resources(self):
+        self.combat_resources = {}
+
+
+#Other methods
     def show(self):
         print(f"{self.display_name}   Lvl {self.level}   {'★' * self.rarity}\n\n"
               f"HP: {self.health} / {self.max_health}\n"
@@ -290,6 +422,13 @@ class Monster:
               "Skills:")
         for i, skill in enumerate(self.skills, start=1):
             print(f"    {i}. {skill.name}")
+
+        print("\nPassives:")
+        if self.passives:
+            for passive in self.passives:
+                print(f"    - {passive.name}")
+        else:
+            print("    - None")
 
         print(f"Glyphs:")
         for i, glyph in enumerate(self.glyphs, start=1):

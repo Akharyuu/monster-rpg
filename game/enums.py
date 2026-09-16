@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, auto
 
 class Attribute(Enum):
     IGNEOUS = "Igneous"
@@ -33,3 +33,13 @@ class EffectType(Enum):
     BUFF = "Buff"
     DEBUFF = "Debuff"
     STATUS = "Status"
+
+
+class TargetType(Enum):
+    SINGLE_ENEMY = auto()
+    ALL_ENEMIES = auto()
+    RANDOM_ENEMIES = auto()
+    SELF = auto()
+    SINGLE_ALLY = auto()
+    ALL_ALLIES = auto()
+

@@ -69,6 +69,14 @@ STATUS_EFFECT_DATA =  {
         "effect_type": EffectType.BUFF,
         "modifier": 1.3
     },
+    "crit_rate_up": {
+        "name": "Crit Rate Up",
+        "effect_type": EffectType.BUFF,
+        "stat": "crit_rate",
+        "modifier": 30,
+        "modifier_mode": "additive",
+        "max_stacks": 1
+    },
     "immunity": {
         "name": "Immunity",
         "stat": None,

@@ -1,5 +1,6 @@
 from .inventory import Inventory
 from .collection import get_essence_type
+from .resonance import update_resonance_kit
 
 class Player():
     def __init__(self, name):
@@ -11,6 +12,7 @@ class Player():
     def resonate_monster(self, target, dupe):
         if target.can_resonate_with(dupe):
             target.increase_resonance()
+            update_resonance_kit(target)
             self.collection.remove(dupe)
             return True
         

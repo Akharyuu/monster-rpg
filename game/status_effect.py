@@ -1,5 +1,5 @@
 class StatusEffect():
-    def __init__(self, effect_id, name, stat, effect_type, modifier, duration, stacks=1, max_stacks=1):
+    def __init__(self, effect_id, name, stat, effect_type, modifier, duration, stacks=1, max_stacks=1, source=None, modifier_mode="multiplicative"):
         self.effect_id = effect_id
         self.name = name
         self.stat = stat
@@ -9,6 +9,8 @@ class StatusEffect():
         self.remaining_turns = duration
         self.stacks = stacks
         self.max_stacks = max_stacks
+        self.source = source
+        self.modifier_mode = modifier_mode
 
 
     @property

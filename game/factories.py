@@ -1,8 +1,9 @@
 from .monster import Monster
-from .skills import DamageSkill, HealingSkill
+from .skills import DamageSkill, HealingSkill, PassiveSkill
 from .monster_data import MONSTER_DATA
 from .skill_data import SKILL_DATA
 from .enums import SkillType
+from .passive_data import PASSIVE_DATA
 
 
 def create_monster(monster_id):
@@ -18,40 +19,19 @@ def create_monster(monster_id):
     rarity = data["rarity"]
 
     max_health = data["max_health"]
-    health = data["max_health"]
+    health = max_health
     attack = data["attack"]
     defense = data["defense"]
     speed = data["speed"]
 
     skills = []
+    passives = []
 
     for skill_id in data.get("skills", []):
-        skill = SKILL_DATA[skill_id]
+        skills.append(create_skill(skill_id))
 
-        if skill["type"] == SkillType.DAMAGE:
-            skills.append(
-                DamageSkill(
-                    skill_id,
-                    skill["name"], 
-                    skill["power"], 
-                    skill.get("effects", []),
-                    skill["cooldown"]
-                )
-            )
-
-        elif skill["type"] == SkillType.HEALING:
-            skills.append(
-                HealingSkill(
-                    skill_id,
-                    skill["name"],
-                    skill["scaling_stat"],
-                    skill["base_scaling_ratio"],
-                    cooldown=skill["cooldown"]
-                )
-            )
-
-        elif skill["type"] == SkillType.PASSIVE:
-            pass
+    for passive_id in data.get("passives", []):
+        passives.append(create_passive(passive_id))
 
     new = Monster(
         monster_id=monster_id,
@@ -64,7 +44,55 @@ def create_monster(monster_id):
         attack=attack, 
         defense=defense, 
         speed=speed,
-        skills=skills
+        skills=skills,
+        passives=passives
+    )
+
+    return new
+
+
+def create_skill(skill_id):
+    skill = SKILL_DATA[skill_id]
+    new = None
+
+    if skill["type"] == SkillType.DAMAGE:
+        new = DamageSkill(
+            skill_id,
+            skill["name"], 
+            skill["multiplier"], 
+            skill.get("hits", 1),
+            skill.get("hit_multipliers", []),
+            skill["target_type"],
+            skill.get("scaling_stat", "attack"),
+            skill["cooldown"],
+            skill.get("damage_handler", None),
+            skill.get("damage_handler_data", None),
+            skill.get("on_hit_handlers", None),
+            skill.get("after_skill_handlers", None),
+            skill.get("effects", [])
+        )
+  
+    elif skill["type"] == SkillType.HEALING:
+        new = HealingSkill(
+            skill_id,
+            skill["name"],
+            skill["scaling_stat"],
+            skill["base_scaling_ratio"],
+            skill["target_type"],
+            cooldown=skill["cooldown"]
+        )
+
+    return new
+
+
+def create_passive(passive_id):
+    passive = PASSIVE_DATA[passive_id]
+
+    new = PassiveSkill(
+        skill_id=passive_id,
+        name=passive["name"],
+        trigger=passive.get("trigger"),
+        handler=passive.get("handler")
     )
 
     return new
