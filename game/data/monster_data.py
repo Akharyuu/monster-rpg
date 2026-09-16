@@ -1,4 +1,4 @@
-from .enums import Attribute, SkillType
+from ..models.enums import Attribute, SkillType
 
 MONSTER_DATA = {
     "drake_igneous": {

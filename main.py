@@ -1,10 +1,10 @@
 from game.ui import main_menu, collection_menu, summon_menu, inventory_menu, show_essences, show_sealstones
 from game.factories import create_monster
-from game.summoning import summon
-from game.enums import SealstoneType
-from game.collection import get_compatible_dupes
-from game.player import Player
-from game.combat import battle
+from game.systems.summoning import summon
+from game.models.enums import SealstoneType
+from game.systems.collection import get_compatible_dupes
+from game.systems.player import Player
+from game.combat.combat import battle
 
 def show_collection(collection):
     for i, monster in enumerate(collection, start=1):
@@ -12,14 +12,15 @@ def show_collection(collection):
 
 
 player = Player("Ryuu")
-player.collection.append(create_monster("drake_abyssal"))
+player.collection.append(create_monster("drake_igneous"))
 player.collection.append(create_monster("drake_abyssal"))
 allies = [
     player.collection[0],
     player.collection[1]
 ]
 enemies = [
-    create_monster("piñata")
+    create_monster("piñata"),
+    create_monster("drake_storm")
 ]
 
 battle(allies, enemies)

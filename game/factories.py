@@ -1,9 +1,9 @@
-from .monster import Monster
-from .skills import DamageSkill, HealingSkill, PassiveSkill
-from .monster_data import MONSTER_DATA
-from .skill_data import SKILL_DATA
-from .enums import SkillType
-from .passive_data import PASSIVE_DATA
+from .models.monster import Monster
+from .models.skills import DamageSkill, HealingSkill, PassiveSkill
+from .data.monster_data import MONSTER_DATA
+from .data.skill_data import SKILL_DATA
+from .models.enums import SkillType
+from .data.passive_data import PASSIVE_DATA
 
 
 def create_monster(monster_id):

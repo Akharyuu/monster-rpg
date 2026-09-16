@@ -1,4 +1,4 @@
-from .enums import EffectType
+from ..models.enums import EffectType
 
 STATUS_EFFECT_DATA =  {
     "attack_break": {

@@ -1,4 +1,4 @@
-from .enums import SealstoneType, EssenceType
+from .models.enums import SealstoneType, EssenceType
 
 #MAIN MENU:
 def main_menu():

@@ -1,6 +1,7 @@
-from .enums import SkillType, TargetType
+from ..models.enums import SkillType, TargetType
 
 SKILL_DATA = {
+
     "drake_claw": {
         "name": "Drake Claw",
         "type": SkillType.DAMAGE,
@@ -17,6 +18,7 @@ SKILL_DATA = {
             }
         ]
     },
+
     "scorching_breath": {
         "name": "Scorching Breath",
         "type": SkillType.DAMAGE,
@@ -27,11 +29,15 @@ SKILL_DATA = {
 
         "damage_handler": "damage_for_burn_stacks",
         "damage_handler_data": {
-            1: 1.08,
-            2: 1.16,
-            3: 1.24
+            "multipliers_by_stacks": {
+                1: 1.08,
+                2: 1.16,
+                3: 1.24
+            }
+
         }
     },
+
     "scorching_breath_afterburn": {
         "name": "Scorching Breath: Afterburn",
         "type": SkillType.DAMAGE,
@@ -47,11 +53,14 @@ SKILL_DATA = {
 
         "damage_handler": "damage_for_burn_stacks",
         "damage_handler_data": {
-            1: 1.08,
-            2: 1.16,
-            3: 1.24
+            "multipliers_by_stacks": {
+                1: 1.08,
+                2: 1.16,
+                3: 1.24
+            }
         }
     },
+
     "flame_devourer": {
         "name": "Flame Devourer",
         "type": SkillType.DAMAGE,
@@ -62,11 +71,12 @@ SKILL_DATA = {
 
         "damage_handler": "damage_for_burn_stacks",
         "damage_handler_data": {
-            1: 1.15,
-            2: 1.30,
-            3: 1.45
+            "multipliers_by_stacks": {
+                1: 1.15,
+                2: 1.30,
+                3: 1.45
+            }
         },
-
         "after_skill_handlers": [
             {
                 "handler": "consume_burn_and_heal",
@@ -80,6 +90,7 @@ SKILL_DATA = {
             }
         ]
     },
+
     "flame_devourer_rekindled": {
         "name": "Flame Devourer: Rekindled",
         "type": SkillType.DAMAGE,
@@ -90,11 +101,12 @@ SKILL_DATA = {
 
         "damage_handler": "damage_for_burn_stacks",
         "damage_handler_data": {
-            1: 1.15,
-            2: 1.30,
-            3: 1.45
+            "multipliers_by_stacks": {
+                1: 1.15,
+                2: 1.30,
+                3: 1.45
+            }
         },
-
         "after_skill_handlers": [
             {
                 "handler": "consume_burn_and_heal",
@@ -115,6 +127,7 @@ SKILL_DATA = {
             }
         ]
     },
+
     "flame_devourer_incineration": {
         "name": "Flame Devourer: Incineration",
         "type": SkillType.DAMAGE,
@@ -153,6 +166,7 @@ SKILL_DATA = {
             }
         ]
     },
+
     "rime_breath": {
         "name": "Rime Breath",
         "type": SkillType.DAMAGE,
@@ -170,6 +184,7 @@ SKILL_DATA = {
             }
         ]
     },
+
     "rime_breath_frigid": {
         "name": "Rime Breath: Frigid",
         "type": SkillType.DAMAGE,
@@ -187,6 +202,7 @@ SKILL_DATA = {
             }
         ]
     },
+
     "glacial_collapse": {
         "name": "Glacial Collapse",
         "type": SkillType.DAMAGE,
@@ -217,6 +233,7 @@ SKILL_DATA = {
             }
         ]
     },
+
     "glacial_collapse_absolute_zero": {
         "name": "Glacial Collapse: Absolute Zero",
         "type": SkillType.DAMAGE,

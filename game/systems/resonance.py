@@ -1,6 +1,6 @@
-from .factories import create_skill, create_passive
-from .resonance_data import RESONANCE_DATA
-from .monster_data import MONSTER_DATA
+from ..factories import create_skill, create_passive
+from ..data.resonance_data import RESONANCE_DATA
+from ..data.monster_data import MONSTER_DATA
 
 def replace_skill(monster, slot, new_skill_id):
     new_skill = create_skill(new_skill_id)

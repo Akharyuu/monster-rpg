@@ -1,4 +1,4 @@
-from .enums import Attribute, SealstoneType
+from ..models.enums import Attribute, SealstoneType
 
 SEALSTONE_DATA = {
     SealstoneType.FADED: {

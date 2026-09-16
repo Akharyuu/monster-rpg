@@ -1,4 +1,4 @@
-from .enums import EssenceType
+from ..models.enums import EssenceType
 
 class Inventory: 
     def __init__(self):

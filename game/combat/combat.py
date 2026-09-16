@@ -1,6 +1,6 @@
-from .ui import select_skill, show_battle_state, show_damage_skill_result, select_enemy, select_ally
-from .skills import SkillType
-from .enums import TargetType
+from ..ui import select_skill, show_battle_state, show_damage_skill_result, select_enemy, select_ally
+from ..models.skills import SkillType
+from ..models.enums import TargetType
 import random
 
 def battle(allies, enemies):
@@ -69,15 +69,9 @@ def battle(allies, enemies):
 
 def player_turn(active_ally, allies, enemies):
 
-    effects_at_turn_start = {
-        id(effect)
-        for effect in active_ally.buffs + active_ally.debuffs
-    }
+    turn_context = begin_turn(active_ally)
 
-    active_ally.reduce_skill_cooldowns()
-    active_ally.apply_damage_over_time()
-
-    # DoT only causes defeat if the entire ally team is dead.
+    # DoT may defeat the active monster before it can act.
     if not active_ally.is_alive:
         print(
             f"Ally {active_ally.display_name} "
@@ -89,24 +83,21 @@ def player_turn(active_ally, allies, enemies):
 
         return None
 
-    print(f"\n--- YOUR TURN: {active_ally.display_name} ---")
-    show_battle_state(allies, enemies, active_ally)
+    print(
+        f"\n--- YOUR TURN: "
+        f"{active_ally.display_name} ---"
+    )
 
-    # Stun/Freeze consume the turn.
-    if active_ally.cannot_act:
-        if active_ally.is_stunned:
-            print(
-                f"{active_ally.display_name} "
-                f"is stunned and loses the turn."
-            )
+    show_battle_state(
+        allies,
+        enemies,
+        active_ally
+    )
 
-        elif active_ally.is_frozen:
-            print(
-                f"{active_ally.display_name} "
-                f"is frozen and loses the turn."
-            )
-
-        active_ally.reduce_remaining_turns(effects_at_turn_start)
+    if handle_incapacitated_turn(
+        active_ally,
+        turn_context
+    ):
         return None
 
     while True:
@@ -193,7 +184,11 @@ def player_turn(active_ally, allies, enemies):
                         continue
 
             if turn_finished:
-                active_ally.reduce_remaining_turns(effects_at_turn_start)
+                end_turn(
+                    active_ally,
+                    turn_context
+                )
+
                 return outcome
 
         elif decision == "r":
@@ -206,15 +201,9 @@ def player_turn(active_ally, allies, enemies):
 
 def enemy_turn(active_enemy, enemies, allies):
 
-    effects_at_turn_start = {
-        id(effect)
-        for effect in active_enemy.buffs + active_enemy.debuffs
-    }
+    turn_context = begin_turn(active_enemy)
 
-    active_enemy.reduce_skill_cooldowns()
-    active_enemy.apply_damage_over_time()
-
-    # If DoT kills this enemy, only return victory if the whole enemy team is dead.
+    # DoT may defeat the enemy before it can act.
     if not active_enemy.is_alive:
         print(
             f"Enemy {active_enemy.display_name} "
@@ -226,23 +215,15 @@ def enemy_turn(active_enemy, enemies, allies):
 
         return None
 
-    print(f"\n--- ENEMY TURN: {active_enemy.display_name} ---")
+    print(
+        f"\n--- ENEMY TURN: "
+        f"{active_enemy.display_name} ---"
+    )
 
-    # Stun/Freeze consume the turn.
-    if active_enemy.cannot_act:
-        if active_enemy.is_stunned:
-            print(
-                f"{active_enemy.display_name} "
-                f"is stunned and loses the turn."
-            )
-
-        elif active_enemy.is_frozen:
-            print(
-                f"{active_enemy.display_name} "
-                f"is frozen and loses the turn."
-            )
-
-        active_enemy.reduce_remaining_turns(effects_at_turn_start)
+    if handle_incapacitated_turn(
+        active_enemy,
+        turn_context
+    ):
         return None
 
     # TODO: Replace with real enemy AI.
@@ -330,9 +311,71 @@ def enemy_turn(active_enemy, enemies, allies):
                             f"recovered {heal_value} HP."
                         )
 
-    active_enemy.reduce_remaining_turns(effects_at_turn_start)
+    end_turn(
+        active_enemy,
+        turn_context
+    )
 
     return outcome
+
+
+def begin_turn(monster):
+
+    # Prepares a monster's turn and returns temporary turn data.
+
+    # Effects present at the start of the turn are remembered so effects
+    # applied during this same turn do not immediately lose duration.
+
+    effects_at_turn_start = {
+        id(effect)
+        for effect in monster.buffs + monster.debuffs
+    }
+
+    # Cooldowns and damage-over-time are processed
+    # before the monster can take its action.
+    monster.reduce_skill_cooldowns()
+    monster.apply_damage_over_time()
+
+    return {
+        "effects_at_turn_start": effects_at_turn_start
+    }
+
+
+def end_turn(monster, turn_context):
+
+    # Resolves mechanics that happen when the monster's turn ends.
+
+    monster.reduce_remaining_turns(
+        turn_context["effects_at_turn_start"]
+    )
+
+
+def handle_incapacitated_turn(monster, turn_context):
+
+    # Ends the turn immediately if the monster cannot act.
+    # Returns True when the turn was consumed.
+
+    if not monster.cannot_act:
+        return False
+
+    if monster.is_stunned:
+        print(
+            f"{monster.display_name} "
+            f"is stunned and loses the turn."
+        )
+
+    elif monster.is_frozen:
+        print(
+            f"{monster.display_name} "
+            f"is frozen and loses the turn."
+        )
+
+    end_turn(
+        monster,
+        turn_context
+    )
+
+    return True
 
 
 #Action Gauges

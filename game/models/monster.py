@@ -1,7 +1,7 @@
 from .enums import Attribute, EffectType
 from .skills import SkillResult
-from .passive_triggers import trigger_passives
-from .passive_data import PASSIVE_DATA
+from ..combat.passive_triggers import trigger_passives
+from ..data.passive_data import PASSIVE_DATA
 
 class Monster:
     def __init__(self, monster_id, name, family, attribute, rarity, health, max_health, attack, defense, speed, 

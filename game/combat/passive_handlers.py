@@ -1,6 +1,5 @@
-from .status_effect_data import STATUS_EFFECT_DATA
-from .status_effect import StatusEffect
-from .passive_data import PASSIVE_DATA
+from ..data.passive_data import PASSIVE_DATA
+from ..status_effect_factory import create_status_effect
 import random
 
 def apply_burn(owner, context, passive):
@@ -11,17 +10,12 @@ def apply_burn(owner, context, passive):
     data = PASSIVE_DATA[passive.skill_id]
 
     if chance <= data["chance"]:
-        burn_data = STATUS_EFFECT_DATA["burn"]
 
-        burn = StatusEffect(
+        burn = create_status_effect(
             effect_id="burn",
-            name=burn_data["name"],
-            stat=burn_data["stat"],
-            effect_type=burn_data["effect_type"],
-            modifier=burn_data["modifier"],
             duration=data["turns"],
-            stacks=data["stacks"],
-            max_stacks=burn_data["max_stacks"]
+            stacks=data.get("stacks", 1),
+            source=owner
         )
 
         applied_effect = target.apply_status_effect(burn)
@@ -67,17 +61,11 @@ def frozen_scales(owner, context, passive):
             for buff_config in data["buffs"]:
 
                 effect_id = buff_config["effect_id"]
-                effect_data = STATUS_EFFECT_DATA[effect_id]
 
-                status_effect = StatusEffect(
+                status_effect = create_status_effect(
                     effect_id=effect_id,
-                    name=effect_data["name"],
-                    stat=effect_data["stat"],
-                    effect_type=effect_data["effect_type"],
-                    modifier=effect_data["modifier"],
                     duration=buff_config["turns"],
-                    stacks=1,
-                    max_stacks=effect_data.get("max_stacks", 1)
+                    source=owner
                 )
 
                 owner.apply_status_effect(status_effect)
@@ -153,19 +141,11 @@ def shattered_fury(owner, context, passive):
     for buff_config in data["buffs"]:
 
         effect_id = buff_config["effect_id"]
-        effect_data = STATUS_EFFECT_DATA[effect_id]
 
-        buff = StatusEffect(
+        buff = create_status_effect(
             effect_id=effect_id,
-            name=effect_data["name"],
-            stat=effect_data["stat"],
-            effect_type=effect_data["effect_type"],
-            modifier=effect_data["modifier"],
             duration=buff_config["turns"],
-            stacks=1,
-            max_stacks=effect_data.get("max_stacks", 1),
-            source=owner,
-            modifier_mode=effect_data.get("modifier_mode", "multiplicative")
+            source=owner
         )
 
         attacker.apply_status_effect(buff)

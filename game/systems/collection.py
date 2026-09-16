@@ -1,4 +1,4 @@
-from .enums import Attribute, EssenceType
+from ..models.enums import Attribute, EssenceType
 
 def get_essence_type(monster):
     if monster.attribute in (
