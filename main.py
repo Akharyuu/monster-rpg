@@ -1,15 +1,145 @@
 from game.ui import main_menu, collection_menu, summon_menu, inventory_menu, show_essences, show_sealstones
-from game.factories import create_monster
+from game.monster_factory import create_monster
 from game.systems.summoning import summon
 from game.models.enums import SealstoneType
 from game.systems.collection import get_compatible_dupes
 from game.systems.player import Player
 from game.combat.combat import battle
 
+
 def show_collection(collection):
     for i, monster in enumerate(collection, start=1):
         print(f"{i}. {monster.display_name} | Lvl {monster.level} | {'★' * monster.rarity} | R{monster.resonance}")
 
+
+from game.models.glyphs import Glyph
+
+def test_glyph_sets(monster):
+
+    def clear_glyphs():
+        for slot in range(1, 6):
+            monster.unequip_glyph(slot)
+
+    def make_glyph(slot, set_id, main_stat):
+        return Glyph(
+            slot_id=slot,
+            set_id=set_id,
+            main_stat=main_stat,
+            sub_stats=[],
+            rarity="legendary",
+            level=0
+        )
+
+    print("\n==============================")
+    print("TEST 1: 2 FURY")
+    print("==============================")
+
+    clear_glyphs()
+
+    # Usamos mains que NO modifican ATK,
+    # para aislar exclusivamente el bonus de Fury.
+    monster.equip_glyph(
+        make_glyph(1, "fury", "HP")
+    )
+
+    monster.equip_glyph(
+        make_glyph(2, "fury", "DEF%")
+    )
+
+    print("Active sets:", monster.get_active_sets())
+
+    expected_attack = monster.attack * 1.15
+    actual_attack = monster.get_equipped_stat("attack")
+
+    print("Base ATK:", monster.attack)
+    print(f"Expected ATK: {expected_attack:.2f}")
+    print(f"Actual ATK:   {actual_attack:.2f}")
+
+
+    print("\n==============================")
+    print("TEST 2: 4 FURY")
+    print("==============================")
+
+    clear_glyphs()
+
+    monster.equip_glyph(
+        make_glyph(1, "fury", "HP")
+    )
+
+    monster.equip_glyph(
+        make_glyph(2, "fury", "DEF%")
+    )
+
+    monster.equip_glyph(
+        make_glyph(3, "fury", "DEF")
+    )
+
+    monster.equip_glyph(
+        make_glyph(4, "fury", "CR")
+    )
+
+    print("Active sets:", monster.get_active_sets())
+
+    # 4 Fury = 2 activaciones
+    # 15% + 15% = 30%
+    expected_attack = monster.attack * 1.30
+    actual_attack = monster.get_equipped_stat("attack")
+
+    print("Base ATK:", monster.attack)
+    print(f"Expected ATK: {expected_attack:.2f}")
+    print(f"Actual ATK:   {actual_attack:.2f}")
+
+
+    print("\n==================================")
+    print("TEST 3: FORTITUDE + VELOCITY")
+    print("==================================")
+
+    clear_glyphs()
+
+    # También usamos mains que no alteran
+    # HP, DEF ni SPD.
+    monster.equip_glyph(
+        make_glyph(1, "fortitude", "ATK")
+    )
+
+    monster.equip_glyph(
+        make_glyph(2, "fortitude", "ATK%")
+    )
+
+    monster.equip_glyph(
+        make_glyph(3, "velocity", "ATK")
+    )
+
+    monster.equip_glyph(
+        make_glyph(4, "velocity", "CR")
+    )
+
+    print("Active sets:", monster.get_active_sets())
+
+    expected_hp = monster.health * 1.08
+    expected_def = monster.defense * 1.05
+    expected_speed = monster.speed + 10
+
+    actual_hp = monster.get_equipped_stat("health")
+    actual_def = monster.get_equipped_stat("defense")
+    actual_speed = monster.get_equipped_stat("speed")
+
+    print("\nHP")
+    print("Base:", monster.health)
+    print(f"Expected: {expected_hp:.2f}")
+    print(f"Actual:   {actual_hp:.2f}")
+
+    print("\nDEF")
+    print("Base:", monster.defense)
+    print(f"Expected: {expected_def:.2f}")
+    print(f"Actual:   {actual_def:.2f}")
+
+    print("\nSPD")
+    print("Base:", monster.speed)
+    print(f"Expected: {expected_speed:.2f}")
+    print(f"Actual:   {actual_speed:.2f}")
+
+    clear_glyphs()
 
 player = Player("Ryuu")
 player.collection.append(create_monster("drake_igneous"))
@@ -23,7 +153,10 @@ enemies = [
     create_monster("drake_storm")
 ]
 
-battle(allies, enemies)
+test_glyph_sets(player.collection[0])
+
+
+#battle(allies, enemies)
 player.inventory.add_item(SealstoneType.ARCANE, 20)
 
 

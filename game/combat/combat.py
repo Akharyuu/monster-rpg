@@ -382,7 +382,7 @@ def handle_incapacitated_turn(monster, turn_context):
 def fill_action_gauges(combatants):
     for combatant in combatants:
         speed = combatant.get_effective_stat("speed")
-        combatant.increase_action_gauge(speed / 1000)
+        combatant.increase_action_gauge(speed / 2000)
 
 
 def get_ready_combatant(combatants):

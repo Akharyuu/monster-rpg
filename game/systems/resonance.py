@@ -1,4 +1,4 @@
-from ..factories import create_skill, create_passive
+from ..monster_factory import create_skill, create_passive
 from ..data.resonance_data import RESONANCE_DATA
 from ..data.monster_data import MONSTER_DATA
 

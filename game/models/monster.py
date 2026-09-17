@@ -2,12 +2,14 @@ from .enums import Attribute, EffectType
 from .skills import SkillResult
 from ..combat.passive_triggers import trigger_passives
 from ..data.passive_data import PASSIVE_DATA
+from ..data.glyph_stat_data import GLYPH_STAT_MAP
+from ..data.glyph_set_data import GLYPH_SET_DATA
 
 class Monster:
     def __init__(self, monster_id, name, family, attribute, rarity, health, max_health, attack, defense, speed, 
                  skills=None, passives=None, level=1, ascended=False, combat_resources=None):
 
-        #Atributos
+        #Attributes
         self.monster_id = monster_id
         self.name = name
         self.family = family
@@ -16,13 +18,14 @@ class Monster:
         self.level = level
         self.ascended = ascended
         self.action_gauge = 0
+        self.resonance = 0
 
         if combat_resources is None:
             self.combat_resources = {}
         else:
             self.combat_resources = combat_resources
 
-        #Estadísticas
+        #Stats
         self.max_health = max_health
         self.health = health
         self.attack = attack
@@ -35,7 +38,7 @@ class Monster:
         self.crit_rate = 15
         self.crit_damage = 50
 
-        #Habilidades y Glifos
+        #Skills / Passives
         if skills is None:
             self.skills = []
         else:
@@ -46,15 +49,19 @@ class Monster:
         else:
             self.passives = passives
 
-        self.glyphs = []
-        self.resonance = 0
+        #Glyphs
+        self.glyphs = {
+            1: None,
+            2: None,
+            3: None,
+            4: None,
+            5: None
+        }
 
-        #Buffs y debuffs
+        #Buffs / Debuffs
         self.buffs = []
         self.debuffs = []
 
-
-    #Nombre mostrado.
     @property
     def display_name(self):
         if self.ascended:
@@ -62,16 +69,13 @@ class Monster:
 
         return f"{self.attribute.value} {self.family}"
 
-
     @property
     def is_alive(self):
         return self.health > 0
 
-
     @property
     def health(self):
         return self._health
-
 
     @health.setter
     def health(self, value):
@@ -82,7 +86,6 @@ class Monster:
 
         self._health = value
 
-
     @property
     def is_stunned(self):
         for debuff in self.debuffs:
@@ -90,7 +93,6 @@ class Monster:
                 return True
 
         return False
-
 
     @property
     def is_frozen(self):
@@ -100,11 +102,9 @@ class Monster:
 
         return False
 
-
     @property
     def cannot_act(self):
         return self.is_stunned or self.is_frozen
-
 
     @property
     def is_silenced(self):
@@ -113,7 +113,6 @@ class Monster:
                 return True
 
         return False
-
 
     @property
     def has_immunity(self):
@@ -132,6 +131,40 @@ class Monster:
                 return True
 
         return False
+
+
+#Glyph methods
+    def equip_glyph(self, glyph):
+        old_glyph = self.glyphs[glyph.slot_id]
+
+        self.glyphs[glyph.slot_id] = glyph
+
+        return old_glyph
+
+
+    def unequip_glyph(self, slot):
+        glyph = self.glyphs[slot]
+
+        self.glyphs[slot] = None
+
+        return glyph
+
+
+    def get_active_sets(self):
+        sets = {}
+        active_sets = {}
+
+        for glyph in self.glyphs.values():
+            if glyph is None:
+                continue
+
+            sets[glyph.set_id] = sets.get(glyph.set_id, 0) + 1
+
+        for set_id, quantity in sets.items():
+            if quantity >= GLYPH_SET_DATA[set_id]["pieces_required"]:
+                active_sets[set_id] = quantity // GLYPH_SET_DATA[set_id]["pieces_required"]
+
+        return active_sets
 
 
 #Action Gauge methods
@@ -347,6 +380,53 @@ class Monster:
             print(f"{self.display_name} takes {int(total_damage)} damage from DoT.")
             print()
 
+
+    def get_equipped_stat(self, stat):
+
+        base_stat = getattr(self, stat)
+
+        flat = GLYPH_STAT_MAP[stat]["flat"]
+        flat_bonus = 0
+
+        percent = GLYPH_STAT_MAP[stat].get("percent")
+        percent_bonus = 0
+
+        for glyph in self.glyphs.values():
+
+            if glyph is None:
+                continue
+
+            if glyph.main_stat == flat:
+                flat_bonus += glyph.main_value
+
+            elif glyph.main_stat == percent:
+                percent_bonus += glyph.main_value
+                
+            for sub_stat in glyph.sub_stats:
+                if sub_stat.stat == flat:
+                    flat_bonus += sub_stat.total_value
+
+                elif sub_stat.stat == percent:
+                    percent_bonus += sub_stat.total_value
+
+        active_set_bonus = self.get_active_sets()
+
+        for set_id, quantity in active_set_bonus.items():
+
+            set_data = GLYPH_SET_DATA[set_id]
+            effects = set_data.get("effects", {})
+
+            if flat in effects:
+                flat_bonus += effects[flat] * quantity
+
+            if percent and percent in effects:
+                percent_bonus += effects[percent] * quantity
+
+        if percent:
+            return base_stat * (1 + percent_bonus / 100) + flat_bonus
+
+        return base_stat + flat_bonus
+    
                 
     def get_effective_stat(self, stat):
 
@@ -355,23 +435,19 @@ class Monster:
 
         for buff in self.buffs:
             if stat == buff.stat:
-
                 if buff.modifier_mode == "additive":
                     additive_modifier += buff.modifier
-
                 else:
                     multiplicative_modifier *= buff.modifier
 
         for debuff in self.debuffs:
             if stat == debuff.stat:
-
                 if debuff.modifier_mode == "additive":
                     additive_modifier += debuff.modifier
-
                 else:
                     multiplicative_modifier *= debuff.modifier
 
-        base = getattr(self, stat)
+        base = self.get_equipped_stat(stat)
 
         return (
             base * multiplicative_modifier

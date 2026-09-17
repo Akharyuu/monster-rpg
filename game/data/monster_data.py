@@ -1,6 +1,7 @@
 from ..models.enums import Attribute, SkillType
 
 MONSTER_DATA = {
+
     "drake_igneous": {
         "name": "Kaelgor",
         "family": "Drake",
@@ -10,7 +11,7 @@ MONSTER_DATA = {
         "max_health": 12125,
         "attack": 963,
         "defense": 707,
-        "speed": 112,
+        "speed": 224,
 
         "skills": [
             "drake_claw",
@@ -22,6 +23,7 @@ MONSTER_DATA = {
             "cinderblood"
         ]
     },
+
     "drake_abyssal": {
         "name": "Vharak",
         "family": "Drake",
@@ -31,7 +33,7 @@ MONSTER_DATA = {
         "max_health": 14075,
         "attack": 693,
         "defense": 921,
-        "speed": 108,
+        "speed": 216,
 
         "skills": [
             "drake_claw",
@@ -43,6 +45,7 @@ MONSTER_DATA = {
             "frozen_scales"
         ]
     },
+    
     "drake_storm": {
         "name": "???",
         "family": "Drake",
@@ -52,12 +55,13 @@ MONSTER_DATA = {
         "max_health": 9875,
         "attack": 1047,
         "defense": 653,
-        "speed": 118,
+        "speed": 236,
 
         "skills": [
             "drake_claw"
         ]
     },
+
     "goblin_igneous": {
         "name": "Trull",
         "family": "Goblin",
@@ -67,12 +71,13 @@ MONSTER_DATA = {
         "max_health": 75,
         "attack": 13,
         "defense": 8,
-        "speed": 80,
+        "speed": 160,
 
         "skills": [
             "drake_claw"
         ]
     },
+
     "golem_storm": {
         "name": "Gorga'th",
         "family": "Golem",
@@ -82,26 +87,14 @@ MONSTER_DATA = {
         "max_health": 160,
         "attack": 5,
         "defense": 38,
-        "speed": 45,
+        "speed": 90,
 
         "skills": [
-            {
-                "skill_id": "heavy_slam",
-                "name": "Heavy Slam",
-                "type": SkillType.DAMAGE,
-                "power": 20,
-                "cooldown": 0
-            },
-            {
-                "skill_id": "earths_echo",
-                "name": "Earth's Echo",
-                "type": SkillType.HEALING,
-                "scaling_stat": "defense",
-                "base_scaling_ratio": 0.35,
-                "cooldown": 3
-            }
+            "heavy_slam",
+            "earths_echo"
         ]
     },
+
     "piñata": {
         "name": "Piñata",
         "family": "Piñata",
@@ -111,7 +104,7 @@ MONSTER_DATA = {
         "max_health": 100000,
         "attack": 1000,
         "defense": 1000,
-        "speed": 100,
+        "speed": 200,
 
         "skills": [
             "drake_claw"
