@@ -1,10 +1,10 @@
 import pytest
-from game.glyph_factory import create_glyph
+from game.factories.glyph_factory import create_glyph
 from game.data.glyph_stat_data import GLYPH_STAT_DATA
 from game.data.glyph_slot_data import GLYPH_SLOT_DATA
 from game.models.glyphs import Glyph, GlyphSubstat
-from game.monster_factory import create_monster
-from game.status_effect_factory import create_status_effect
+from game.factories.monster_factory import create_monster
+from game.factories.status_effect_factory import create_status_effect
 from math import ceil
 
 RARITIES = ["common", "rare", "epic", "legendary"]
@@ -207,6 +207,7 @@ def test_replace_and_unequip_glyph():
     monster = create_monster("drake_igneous")
 
     glyph_a = Glyph(
+        instance_id="test_glyph_1",
         slot_id=1,
         set_id="fury",
         main_stat="HP",
@@ -215,6 +216,7 @@ def test_replace_and_unequip_glyph():
     )
 
     glyph_b = Glyph(
+        instance_id="test_glyph_2",
         slot_id=1,
         set_id="velocity",
         main_stat="ATK",
@@ -243,6 +245,7 @@ def test_equipped_stats_include_flat_percent_and_direct_bonuses():
     monster = create_monster("drake_igneous")
 
     glyph_1 = Glyph(
+        instance_id="test_glyph_1",
         slot_id=1,
         set_id="predator",
         main_stat="ATK",
@@ -257,6 +260,7 @@ def test_equipped_stats_include_flat_percent_and_direct_bonuses():
     )
 
     glyph_2 = Glyph(
+        instance_id="test_glyph_2",
         slot_id=2,
         set_id="predator",
         main_stat="ATK%",
@@ -287,6 +291,7 @@ def test_effective_stat_applies_buff_after_glyph_stats():
     monster = create_monster("drake_igneous")
 
     glyph = Glyph(
+        instance_id="test_glyph_1",
         slot_id=2,
         set_id="predator",
         main_stat="ATK%",
@@ -315,3 +320,10 @@ def test_effective_stat_applies_buff_after_glyph_stats():
     expected_attack = equipped_attack * 1.30
 
     assert monster.get_effective_stat("attack") == pytest.approx(expected_attack)
+
+
+def test_glyphs_have_unique_instance_ids():
+    glyph_a = create_glyph("legendary")
+    glyph_b = create_glyph("legendary")
+
+    assert glyph_a.instance_id != glyph_b.instance_id

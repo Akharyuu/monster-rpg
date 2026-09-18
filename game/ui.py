@@ -9,7 +9,7 @@ def main_menu():
         "3. Battle\n"
         "4. Codex\n"
         "5. Inventory\n"
-        "6. Exit\n"
+        "6. Save & Exit\n"
     )
 
     return input("> ")

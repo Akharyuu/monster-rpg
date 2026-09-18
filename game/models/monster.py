@@ -6,16 +6,18 @@ from ..data.glyph_stat_data import GLYPH_STAT_MAP
 from ..data.glyph_set_data import GLYPH_SET_DATA
 
 class Monster:
-    def __init__(self, monster_id, name, family, attribute, rarity, health, max_health, attack, defense, speed, 
-                 skills=None, passives=None, level=1, ascended=False, combat_resources=None):
+    def __init__(self, instance_id, monster_id, name, family, attribute, rarity, health, max_health, attack, defense, speed, 
+                 skills=None, passives=None, level=1, experience=0, ascended=False, combat_resources=None):
 
         #Attributes
+        self.instance_id = instance_id
         self.monster_id = monster_id
         self.name = name
         self.family = family
         self.attribute = attribute
         self.rarity = rarity
         self.level = level
+        self.experience = experience
         self.ascended = ascended
         self.action_gauge = 0
         self.resonance = 0

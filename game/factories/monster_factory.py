@@ -1,17 +1,22 @@
-from .models.monster import Monster
-from .models.skills import DamageSkill, HealingSkill, PassiveSkill
-from .data.monster_data import MONSTER_DATA
-from .data.skill_data import SKILL_DATA
-from .models.enums import SkillType
-from .data.passive_data import PASSIVE_DATA
+from ..models.monster import Monster
+from ..models.skills import DamageSkill, HealingSkill, PassiveSkill
+from ..data.monster_data import MONSTER_DATA
+from ..data.skill_data import SKILL_DATA
+from ..models.enums import SkillType
+from ..data.passive_data import PASSIVE_DATA
+
+from uuid import uuid4
 
 
-def create_monster(monster_id):
+def create_monster(monster_id, instance_id=None):
 
     try: 
         data = MONSTER_DATA[monster_id]
     except KeyError:
         return None
+
+    if instance_id is None:
+        instance_id = str(uuid4())
 
     name = data["name"]
     family = data["family"]
@@ -34,6 +39,7 @@ def create_monster(monster_id):
         passives.append(create_passive(passive_id))
 
     new = Monster(
+        instance_id=instance_id,
         monster_id=monster_id,
         name=name, 
         family=family, 

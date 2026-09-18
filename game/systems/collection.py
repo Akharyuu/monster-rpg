@@ -33,3 +33,4 @@ def get_compatible_dupes(target, collection):
             dupe_list.append(monster)
 
     return dupe_list
+

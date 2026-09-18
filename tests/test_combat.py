@@ -1,0 +1,485 @@
+import random
+import pytest
+
+from game.factories.monster_factory import create_monster
+from game.factories.status_effect_factory import create_status_effect
+from game.systems.resonance import update_resonance_kit
+from game.combat.combat import begin_turn, end_turn
+
+
+def test_attack_up_is_multiplicative():
+
+    monster = create_monster("drake_igneous")
+
+    attack_before_buff = monster.get_equipped_stat("attack")
+
+    attack_up = create_status_effect(
+        effect_id="attack_up",
+        duration=2,
+        source=monster
+    )
+
+    monster.apply_status_effect(attack_up)
+
+    expected_attack = attack_before_buff * 1.30
+
+    assert monster.get_effective_stat("attack") == pytest.approx(
+        expected_attack
+    )
+
+
+def test_crit_rate_up_is_additive():
+
+    monster = create_monster("drake_igneous")
+
+    crit_before_buff = monster.get_equipped_stat("crit_rate")
+
+    crit_rate_up = create_status_effect(
+        effect_id="crit_rate_up",
+        duration=2,
+        source=monster
+    )
+
+    monster.apply_status_effect(crit_rate_up)
+
+    expected_crit_rate = crit_before_buff + 30
+
+    assert monster.get_effective_stat("crit_rate") == pytest.approx(
+        expected_crit_rate
+    )
+
+
+def test_immunity_blocks_debuff():
+
+    monster = create_monster("drake_igneous")
+
+    immunity = create_status_effect(
+        effect_id="immunity",
+        duration=2,
+        source=monster
+    )
+
+    monster.apply_status_effect(immunity)
+
+    freeze = create_status_effect(
+        effect_id="freeze",
+        duration=1
+    )
+
+    monster.apply_status_effect(freeze)
+
+    assert immunity in monster.buffs
+    assert freeze not in monster.debuffs
+
+
+def test_action_gauge_is_clamped_between_zero_and_one():
+
+    monster = create_monster("drake_igneous")
+
+    monster.action_gauge = 0.95
+    monster.increase_action_gauge(0.20)
+
+    assert monster.action_gauge == pytest.approx(1.0)
+
+    monster.reduce_action_gauge(2.0)
+
+    assert monster.action_gauge == pytest.approx(0.0)
+
+
+def test_combat_freeze_breaks_on_hit():
+
+    monster = create_monster("drake_igneous")
+
+    freeze = create_status_effect(
+        effect_id="freeze",
+        duration=1
+    )
+
+    monster.apply_status_effect(freeze)
+
+    broken_effects = monster.receive_damage(1)
+
+    assert freeze not in monster.debuffs
+    assert freeze in broken_effects
+
+
+def test_frostborne_preserves_freeze_on_hit():
+
+    abyssal = create_monster("drake_abyssal")
+    target = create_monster("drake_igneous")
+
+    abyssal.resonance = 2
+    update_resonance_kit(abyssal)
+
+    freeze = create_status_effect(
+        effect_id="freeze",
+        duration=1,
+        source=abyssal
+    )
+
+    target.apply_status_effect(freeze)
+
+    broken_effects = target.receive_damage(
+        1,
+        source=abyssal
+    )
+
+    assert freeze in target.debuffs
+    assert broken_effects == []
+
+
+def test_shattered_fury_buffs_ally_that_breaks_freeze(monkeypatch):
+
+    abyssal = create_monster("drake_abyssal")
+    ally = create_monster("drake_igneous")
+    target = create_monster("drake_igneous")
+
+    abyssal.resonance = 4
+    update_resonance_kit(abyssal)
+
+    freeze = create_status_effect(
+        effect_id="freeze",
+        duration=1,
+        source=abyssal
+    )
+
+    target.apply_status_effect(freeze)
+
+    ally.action_gauge = 0
+
+    # Evitamos otros procs aleatorios como Cinderblood
+    monkeypatch.setattr(
+        random,
+        "random",
+        lambda: 0.99
+    )
+
+    skill = ally.get_skill(1)
+
+    skill.execute(
+        ally,
+        [target]
+    )
+
+    buff_ids = [
+        buff.effect_id
+        for buff in ally.buffs
+    ]
+
+    assert "attack_up" in buff_ids
+    assert "crit_rate_up" in buff_ids
+
+    assert ally.action_gauge == pytest.approx(0.15)
+
+
+def test_freeze_can_be_resisted(monkeypatch):
+
+    abyssal = create_monster("drake_abyssal")
+    target = create_monster("drake_igneous")
+
+    abyssal.accuracy = 0
+    target.resistance = 100
+
+    speed_break = create_status_effect(
+        effect_id="speed_break",
+        duration=2,
+        source=abyssal
+    )
+
+    target.apply_status_effect(speed_break)
+
+    # Hace que el 50% de Freeze siempre procée.
+    monkeypatch.setattr(
+        random,
+        "random",
+        lambda: 0.0
+    )
+
+    # Tirada de resistencia extremadamente baja:
+    # debe ser resistida.
+    monkeypatch.setattr(
+        random,
+        "uniform",
+        lambda a, b: 0.0
+    )
+
+    skill = abyssal.get_skill(3)
+
+    skill.execute(
+        abyssal,
+        [target]
+    )
+
+    debuff_ids = [
+        debuff.effect_id
+        for debuff in target.debuffs
+    ]
+
+    assert "freeze" not in debuff_ids
+
+
+def test_absolute_zero_ignores_resistance(monkeypatch):
+
+    abyssal = create_monster("drake_abyssal")
+    target = create_monster("drake_igneous")
+
+    abyssal.resonance = 5
+    update_resonance_kit(abyssal)
+
+    abyssal.accuracy = 0
+    target.resistance = 100
+
+    speed_break = create_status_effect(
+        effect_id="speed_break",
+        duration=2,
+        source=abyssal
+    )
+
+    target.apply_status_effect(speed_break)
+
+    monkeypatch.setattr(
+        random,
+        "random",
+        lambda: 0.0
+    )
+
+    # Si R5 NO ignorase resistencia,
+    # esta tirada provocaría resist.
+    monkeypatch.setattr(
+        random,
+        "uniform",
+        lambda a, b: 0.0
+    )
+
+    skill = abyssal.get_skill(3)
+
+    skill.execute(
+        abyssal,
+        [target]
+    )
+
+    debuff_ids = [
+        debuff.effect_id
+        for debuff in target.debuffs
+    ]
+
+    assert "freeze" in debuff_ids
+
+
+def test_flame_devourer_consumes_burn_and_heals(monkeypatch):
+
+    igneous = create_monster("drake_igneous")
+    target = create_monster("drake_abyssal")
+
+    burn = create_status_effect(
+        effect_id="burn",
+        duration=3,
+        stacks=3,
+        source=igneous
+    )
+
+    target.apply_status_effect(burn)
+
+    igneous.health = int(
+        igneous.max_health * 0.20
+    )
+
+    health_before = igneous.health
+
+    # Evita que Cinderblood vuelva a meter Burn
+    # durante el propio ataque.
+    monkeypatch.setattr(
+        random,
+        "random",
+        lambda: 0.99
+    )
+
+    skill = igneous.get_skill(3)
+
+    skill.execute(
+        igneous,
+        [target]
+    )
+
+    burn_ids = [
+        debuff.effect_id
+        for debuff in target.debuffs
+    ]
+
+    assert "burn" not in burn_ids
+    assert igneous.health > health_before
+
+
+def test_flame_devourer_heals_even_if_target_dies(monkeypatch):
+
+    igneous = create_monster("drake_igneous")
+    target = create_monster("drake_abyssal")
+
+    burn = create_status_effect(
+        effect_id="burn",
+        duration=3,
+        stacks=3,
+        source=igneous
+    )
+
+    target.apply_status_effect(burn)
+
+    target.health = 1
+
+    igneous.health = int(
+        igneous.max_health * 0.20
+    )
+
+    health_before = igneous.health
+
+    monkeypatch.setattr(
+        random,
+        "random",
+        lambda: 0.99
+    )
+
+    skill = igneous.get_skill(3)
+
+    skill.execute(
+        igneous,
+        [target]
+    )
+
+    assert target.is_alive is False
+    assert igneous.health > health_before
+
+
+def test_multihit_continues_after_target_dies(monkeypatch):
+
+    abyssal = create_monster("drake_abyssal")
+    target = create_monster("drake_igneous")
+
+    target.health = 1
+
+    monkeypatch.setattr(
+        random,
+        "random",
+        lambda: 0.99
+    )
+
+    skill = abyssal.get_skill(2)
+
+    result = skill.execute(
+        abyssal,
+        [target]
+    )
+
+    target_result = result.target_results[0]
+
+    assert target.is_alive is False
+
+    assert len(
+        target_result["hit_results"]
+    ) == skill.hits
+
+
+def test_dead_target_does_not_receive_per_hit_effects(monkeypatch):
+
+    abyssal = create_monster("drake_abyssal")
+    target = create_monster("drake_igneous")
+
+    target.health = 1
+
+    # Fuerza los procs de Speed Break
+    monkeypatch.setattr(
+        random,
+        "random",
+        lambda: 0.0
+    )
+
+    skill = abyssal.get_skill(2)
+
+    skill.execute(
+        abyssal,
+        [target]
+    )
+
+    debuff_ids = [
+        debuff.effect_id
+        for debuff in target.debuffs
+    ]
+
+    assert "speed_break" not in debuff_ids
+
+
+def test_cooldowns_reduce_at_start_of_turn():
+
+    monster = create_monster("drake_igneous")
+
+    skill = monster.get_skill(2)
+
+    skill.current_cooldown = 3
+
+    begin_turn(monster)
+
+    assert skill.current_cooldown == 2
+
+
+def test_effect_applied_during_turn_does_not_lose_duration():
+
+    monster = create_monster("drake_igneous")
+
+    turn_context = begin_turn(monster)
+
+    attack_up = create_status_effect(
+        effect_id="attack_up",
+        duration=2,
+        source=monster
+    )
+
+    monster.apply_status_effect(attack_up)
+
+    end_turn(
+        monster,
+        turn_context
+    )
+
+    assert attack_up.remaining_turns == 2
+
+
+def test_effect_present_at_turn_start_loses_duration():
+
+    monster = create_monster("drake_igneous")
+
+    attack_up = create_status_effect(
+        effect_id="attack_up",
+        duration=2,
+        source=monster
+    )
+
+    monster.apply_status_effect(attack_up)
+
+    turn_context = begin_turn(monster)
+
+    end_turn(
+        monster,
+        turn_context
+    )
+
+    assert attack_up.remaining_turns == 1
+
+
+def test_burn_deals_damage_at_start_of_turn():
+
+    source = create_monster("drake_igneous")
+    target = create_monster("drake_abyssal")
+
+    burn = create_status_effect(
+        effect_id="burn",
+        duration=3,
+        stacks=1,
+        source=source
+    )
+
+    target.apply_status_effect(burn)
+
+    health_before = target.health
+
+    begin_turn(target)
+
+    assert target.health < health_before

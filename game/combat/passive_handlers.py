@@ -1,5 +1,5 @@
 from ..data.passive_data import PASSIVE_DATA
-from ..status_effect_factory import create_status_effect
+from ..factories.status_effect_factory import create_status_effect
 import random
 
 def apply_burn(owner, context, passive):

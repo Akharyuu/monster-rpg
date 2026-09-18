@@ -1,7 +1,7 @@
 import random
 from .enums import SkillType, EffectType, TargetType
 from ..data.status_effect_data import STATUS_EFFECT_DATA
-from ..status_effect_factory import create_status_effect
+from ..factories.status_effect_factory import create_status_effect
 from ..combat.passive_handlers import PASSIVE_HANDLERS
 from ..combat.passive_triggers import trigger_passives
 from ..combat.skill_damage_handlers import DAMAGE_HANDLERS

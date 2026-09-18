@@ -4,7 +4,8 @@ from math import ceil
 import random
 
 class Glyph:
-    def __init__(self, slot_id, set_id, main_stat, sub_stats, rarity, level=0):
+    def __init__(self, instance_id, slot_id, set_id, main_stat, sub_stats, rarity, level=0):
+        self.instance_id = instance_id
         self.slot_id = slot_id
         self.set_id = set_id
         self.main_stat = main_stat

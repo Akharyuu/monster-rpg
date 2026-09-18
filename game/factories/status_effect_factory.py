@@ -1,5 +1,5 @@
-from .data.status_effect_data import STATUS_EFFECT_DATA
-from .models.status_effect import StatusEffect
+from ..data.status_effect_data import STATUS_EFFECT_DATA
+from ..models.status_effect import StatusEffect
 
 def create_status_effect(
     effect_id,

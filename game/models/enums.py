@@ -14,6 +14,21 @@ class SkillType(Enum):
     PASSIVE = "Passive"
 
 
+class TargetType(Enum):
+    SINGLE_ENEMY = auto()
+    ALL_ENEMIES = auto()
+    RANDOM_ENEMIES = auto()
+    SELF = auto()
+    SINGLE_ALLY = auto()
+    ALL_ALLIES = auto()
+
+
+class EffectType(Enum):
+    BUFF = "Buff"
+    DEBUFF = "Debuff"
+    STATUS = "Status"
+
+
 class SealstoneType(Enum):
     FADED = "Faded"
     RUNIC = "Runic"
@@ -29,17 +44,6 @@ class EssenceType(Enum):
     ECLIPSE = "Eclipse"
 
 
-class EffectType(Enum):
-    BUFF = "Buff"
-    DEBUFF = "Debuff"
-    STATUS = "Status"
 
 
-class TargetType(Enum):
-    SINGLE_ENEMY = auto()
-    ALL_ENEMIES = auto()
-    RANDOM_ENEMIES = auto()
-    SELF = auto()
-    SINGLE_ALLY = auto()
-    ALL_ALLIES = auto()
 

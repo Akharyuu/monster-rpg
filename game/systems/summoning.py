@@ -1,7 +1,7 @@
 import random
 from ..data.monster_data import MONSTER_DATA
 from ..data.sealstone_data import SEALSTONE_DATA
-from ..monster_factory import create_monster
+from ..factories.monster_factory import create_monster
 
 def summon(player, sealstone_type):
     monster_ids = []

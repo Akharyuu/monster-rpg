@@ -1,8 +1,13 @@
 from ..models.enums import EssenceType
 
 class Inventory: 
-    def __init__(self):
+    def __init__(self, glyphs=None):
         self.items = {}
+
+        if glyphs is None:
+            self.glyphs = {}
+        else:
+            self.glyphs = glyphs
 
 
     def add_item(self, item, amount=1):
@@ -30,3 +35,20 @@ class Inventory:
                 del self.items[item]
             return True
         return False
+
+
+    def add_glyph(self, glyph):
+
+        self.glyphs[glyph.instance_id] = glyph
+
+
+    def get_glyph(self, instance_id):
+
+        return self.glyphs.get(instance_id)
+
+
+    def remove_glyph(self, instance_id):
+        return self.glyphs.pop(instance_id, None)
+
+
+
