@@ -1,12 +1,24 @@
-from ..models.glyphs import Glyph, GlyphSubstat
-from ..data.glyph_stat_data import GLYPH_SUBSTATS, GLYPH_STAT_DATA
-from ..data.glyph_set_data import GLYPH_SET_DATA
-from ..data.glyph_slot_data import GLYPH_SLOT_DATA
-
 import random
+
 from math import ceil
 from uuid import uuid4
 
+from ..data.glyph_set_data import GLYPH_SET_DATA
+from ..data.glyph_slot_data import GLYPH_SLOT_DATA
+from ..data.glyph_stat_data import (
+    GLYPH_STAT_DATA,
+    GLYPH_SUBSTATS
+)
+
+from ..models.glyphs import (
+    Glyph,
+    GlyphSubstat
+)
+
+
+# =========================================================
+#                     GLYPH CREATION
+# =========================================================
 
 def create_glyph(rarity, instance_id=None):
 
@@ -31,13 +43,17 @@ def create_glyph(rarity, instance_id=None):
     return glyph
 
 
+# =========================================================
+#                    SUBSTAT CREATION
+# =========================================================
+
 def create_sub_stats(main_stat, rarity):
     sub_stats = []
 
     stat_pool = GLYPH_SUBSTATS.copy()
     stat_pool.remove(main_stat)
 
-    for i in range(4):
+    for _ in range(4):
         random_stat = random.choice(stat_pool)
 
         max_roll = GLYPH_STAT_DATA[random_stat]["sub_roll_max"][rarity]

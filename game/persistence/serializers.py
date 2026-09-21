@@ -1,3 +1,7 @@
+# =========================================================
+#                          GLYPHS
+# =========================================================
+
 def glyph_to_dict(glyph):
 
     sub_stat_data = []
@@ -24,6 +28,10 @@ def glyph_to_dict(glyph):
     return glyph_data
 
 
+# =========================================================
+#                         MONSTERS
+# =========================================================
+
 def monster_to_dict(monster):
 
     monster_glyphs = {}
@@ -41,6 +49,7 @@ def monster_to_dict(monster):
         "monster_id": monster.monster_id,
         "level": monster.level,
         "experience": monster.experience,
+        "level_limit": monster.level_limit,
         "ascended": monster.ascended,
         "resonance": monster.resonance,
 
@@ -49,6 +58,10 @@ def monster_to_dict(monster):
 
     return monster_data
 
+
+# =========================================================
+#                        INVENTORY
+# =========================================================
 
 def inventory_to_dict(inventory):
 
@@ -77,6 +90,11 @@ def inventory_to_dict(inventory):
     return inventory_data
 
 
+# =========================================================
+#                        COLLECTION
+# =========================================================
+
+
 def collection_to_dict(collection):
 
     monsters_data = []
@@ -92,6 +110,10 @@ def collection_to_dict(collection):
 
     return collection_data
 
+
+# =========================================================
+#                          PLAYER
+# =========================================================
 
 def player_to_dict(player):
 

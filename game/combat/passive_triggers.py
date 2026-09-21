@@ -1,3 +1,7 @@
+# =========================================================
+#                    PASSIVE TRIGGERS
+# =========================================================
+
 def trigger_passives(trigger_name, owner, context):
 
     context["trigger"] = trigger_name

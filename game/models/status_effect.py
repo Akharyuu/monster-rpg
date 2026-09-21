@@ -1,4 +1,9 @@
-class StatusEffect():
+class StatusEffect:
+
+    # =========================================================
+    #                       INITIALIZATION
+    # =========================================================
+
     def __init__(self, effect_id, name, stat, effect_type, modifier, duration, stacks=1, max_stacks=1, source=None, modifier_mode="multiplicative"):
         self.effect_id = effect_id
         self.name = name
@@ -13,12 +18,20 @@ class StatusEffect():
         self.modifier_mode = modifier_mode
 
 
+    # =========================================================
+    #                       PROPERTIES
+    # =========================================================
+
     @property
     def is_active(self):
         return self.remaining_turns > 0
 
 
+    # =========================================================
+    #                      TURN HANDLING
+    # =========================================================
+
     def reduce_remaining_turns(self):
-        self.remaining_turns -= 1
-        if self.remaining_turns < 0:
-            self.remaining_turns = 0
+
+        if self.remaining_turns > 0:
+            self.remaining_turns -= 1

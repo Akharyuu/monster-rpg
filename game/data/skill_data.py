@@ -2,6 +2,52 @@ from ..models.enums import SkillType, TargetType
 
 SKILL_DATA = {
 
+    # =========================================================
+    #                         SLIME
+    # =========================================================
+
+    # S1
+    "ooze_slam": {
+        "name": "Ooze Slam",
+        "type": SkillType.DAMAGE,
+        "multiplier": 2.3,
+        "hits": 1,
+        "target_type": TargetType.SINGLE_ENEMY,
+        "cooldown": 0
+    },
+
+    # =========================================================
+    #                         SPROUT
+    # =========================================================
+
+    # S1
+    "nurturing_lash": {
+        "name": "Nurturing Lash",
+        "type": SkillType.DAMAGE,
+        "multiplier": 1.6,
+        "hits": 1,
+        "target_type": TargetType.SINGLE_ENEMY,
+        "cooldown": 0,
+
+        "after_use_handlers": [
+            {
+                "handler": "heal_lowest_hp_ally",
+                "data": {
+                    "max_health_ratio": 0.05
+                }
+            }
+        ]
+    },
+
+    # =========================================================
+    #                         DRAKE
+    # =========================================================
+
+    # ---------------------------------------------------------
+    #                      SHARED SKILLS
+    # ---------------------------------------------------------
+
+    # S1
     "drake_claw": {
         "name": "Drake Claw",
         "type": SkillType.DAMAGE,
@@ -19,6 +65,11 @@ SKILL_DATA = {
         ]
     },
 
+    # ---------------------------------------------------------
+    #                     IGNEOUS DRAKE
+    # ---------------------------------------------------------
+
+    # S2
     "scorching_breath": {
         "name": "Scorching Breath",
         "type": SkillType.DAMAGE,
@@ -61,6 +112,9 @@ SKILL_DATA = {
         }
     },
 
+
+
+    # S3
     "flame_devourer": {
         "name": "Flame Devourer",
         "type": SkillType.DAMAGE,
@@ -167,6 +221,11 @@ SKILL_DATA = {
         ]
     },
 
+    # ---------------------------------------------------------
+    #                     ABYSSAL DRAKE
+    # ---------------------------------------------------------
+
+    # S2
     "rime_breath": {
         "name": "Rime Breath",
         "type": SkillType.DAMAGE,
@@ -203,6 +262,9 @@ SKILL_DATA = {
         ]
     },
 
+
+
+    # S3
     "glacial_collapse": {
         "name": "Glacial Collapse",
         "type": SkillType.DAMAGE,

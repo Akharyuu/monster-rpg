@@ -1,5 +1,6 @@
 from enum import Enum, auto
 
+
 class Attribute(Enum):
     IGNEOUS = "Igneous"
     ABYSSAL = "Abyssal"
@@ -8,10 +9,12 @@ class Attribute(Enum):
     VOID = "Void"
 
 
+
 class SkillType(Enum):
     DAMAGE = "Damage"
     HEALING = "Healing"
     PASSIVE = "Passive"
+
 
 
 class TargetType(Enum):
@@ -23,10 +26,12 @@ class TargetType(Enum):
     ALL_ALLIES = auto()
 
 
+
 class EffectType(Enum):
     BUFF = "Buff"
     DEBUFF = "Debuff"
     STATUS = "Status"
+
 
 
 class SealstoneType(Enum):
@@ -35,6 +40,7 @@ class SealstoneType(Enum):
     ARCANE = "Arcane"
     TWILIGHT = "Twilight"
     PRIMORDIAL = "Primordial"
+
 
 
 class EssenceType(Enum):

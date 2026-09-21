@@ -1,9 +1,16 @@
-from ..data.glyph_stat_data import GLYPH_STAT_DATA
-from ..data.glyph_level_data import GLYPH_LEVEL_DATA
 from math import ceil
 import random
 
+from ..data.glyph_stat_data import GLYPH_STAT_DATA
+from ..data.glyph_level_data import GLYPH_LEVEL_DATA
+
+
 class Glyph:
+
+    # =========================================================
+    #                       INITIALIZATION
+    # =========================================================
+
     def __init__(self, instance_id, slot_id, set_id, main_stat, sub_stats, rarity, level=0):
         self.instance_id = instance_id
         self.slot_id = slot_id
@@ -13,6 +20,11 @@ class Glyph:
         self.rarity = rarity
         self.level = level
 
+
+    # =========================================================
+    #                         VALUES
+    # =========================================================
+
     @property
     def main_value(self):
         max_value = GLYPH_STAT_DATA[self.main_stat]["main_max"][self.rarity]
@@ -21,29 +33,42 @@ class Glyph:
         return ceil(max_value * level_multiplier)
 
 
+    # =========================================================
+    #                       LEVELING
+    # =========================================================
+
     def level_up(self):
-        if self.level < 15:
-            self.level +=1
-            return True
 
-        return False
+        if self.level >= 15:
+            return False
+
+        self.level += 1
+
+        return True
 
 
-    def glyph_level_upgrade(self, amount=1):
-        for i in range(amount):
-            if self.level_up():
 
-                data = GLYPH_LEVEL_DATA[self.level]
+    def upgrade_levels(self, amount=1):
+        for _ in range(amount):
 
-                if data.get("substat_rolls", False):
-                    self.roll_substat(data["substat_rolls"])
+            if not self.level_up():
+                break
+
+            data = GLYPH_LEVEL_DATA[self.level]
+
+            if data.get("substat_rolls", False):
+                self.roll_substat(data["substat_rolls"])
              
+
+    # =========================================================
+    #                        SUBSTATS
+    # =========================================================
 
     def roll_substat(self, rolls):
         
         sub_stat = random.choice(self.sub_stats)
 
-        for i in range(rolls):
+        for _ in range(rolls):
 
             max_roll = GLYPH_STAT_DATA[sub_stat.stat]["sub_roll_max"][self.rarity]
             min_roll = ceil(max_roll / 2)
@@ -54,10 +79,22 @@ class Glyph:
 
 
 
+
+
 class GlyphSubstat:
+
+    # =========================================================
+    #                       INITIALIZATION
+    # =========================================================
+
     def __init__(self, stat, rolls):
         self.stat = stat
         self.rolls = rolls
+
+
+    # =========================================================
+    #                         VALUES
+    # =========================================================
 
     @property
     def total_value(self):

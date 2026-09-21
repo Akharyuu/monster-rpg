@@ -1,4 +1,5 @@
 RESONANCE_DATA = {
+
     "drake_igneous": {
         1: [
             {
@@ -39,6 +40,7 @@ RESONANCE_DATA = {
             }
         ]
     },
+    
     "drake_abyssal": {
         1: [
             {

@@ -1,15 +1,26 @@
-from ..models.glyphs import Glyph, GlyphSubstat
-from ..systems.inventory import Inventory
 from ..models.enums import EssenceType, SealstoneType
+from ..models.glyphs import Glyph, GlyphSubstat
+
 from ..factories.monster_factory import create_monster
+
+from ..systems.inventory import Inventory
 from ..systems.player import Player
 from ..systems.resonance import update_resonance_kit
+
+
+# =========================================================
+#                         MAPPINGS
+# =========================================================
 
 ITEM_TYPE_MAP = {
     "EssenceType": EssenceType,
     "SealstoneType": SealstoneType
 }
 
+
+# =========================================================
+#                          GLYPHS
+# =========================================================
 
 def glyph_from_dict(data):
 
@@ -37,6 +48,10 @@ def glyph_from_dict(data):
     return glyph
 
 
+# =========================================================
+#                        INVENTORY
+# =========================================================
+
 def inventory_from_dict(data):
 
     inventory = Inventory()
@@ -59,6 +74,10 @@ def inventory_from_dict(data):
     return inventory
 
 
+# =========================================================
+#                         MONSTERS
+# =========================================================
+
 def monster_from_dict(data, inventory):
 
     monster = create_monster(
@@ -68,9 +87,13 @@ def monster_from_dict(data, inventory):
 
     monster.level = data["level"]
     monster.experience = data["experience"]
+    monster.level_limit = data["level_limit"]
     monster.ascended = data["ascended"]
+    monster.update_level_stats()
+    
     monster.resonance = data["resonance"]
     update_resonance_kit(monster)
+
 
     for slot, glyph_id in data["glyphs"].items():
 
@@ -89,6 +112,7 @@ def monster_from_dict(data, inventory):
     return monster
 
 
+
 def collection_from_dict(data, inventory):
 
     collection = []
@@ -99,6 +123,10 @@ def collection_from_dict(data, inventory):
 
     return collection
 
+
+# =========================================================
+#                          PLAYER
+# =========================================================
 
 def player_from_dict(data):
 

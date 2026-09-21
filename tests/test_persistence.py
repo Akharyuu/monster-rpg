@@ -101,6 +101,7 @@ def test_monster_serialization_round_trip_with_glyph():
 
     original.level = 12
     original.experience = 450
+    original.level_limit = 20
     original.resonance = 2
 
     original.equip_glyph(glyph)
@@ -113,6 +114,7 @@ def test_monster_serialization_round_trip_with_glyph():
     assert loaded.monster_id == original.monster_id
     assert loaded.level == 12
     assert loaded.experience == 450
+    assert loaded.level_limit == 20
     assert loaded.resonance == 2
 
     loaded_glyph = loaded.glyphs[glyph.slot_id]

@@ -4,7 +4,8 @@ import pytest
 from game.factories.monster_factory import create_monster
 from game.factories.status_effect_factory import create_status_effect
 from game.systems.resonance import update_resonance_kit
-from game.combat.combat import begin_turn, end_turn
+from game.combat.combat import battle, begin_turn, end_turn
+import game.combat.combat as combat_module
 
 
 def test_attack_up_is_multiplicative():
@@ -483,3 +484,73 @@ def test_burn_deals_damage_at_start_of_turn():
     begin_turn(target)
 
     assert target.health < health_before
+
+
+def test_reset_combat_state_restores_monster():
+
+    monster = create_monster("drake_igneous")
+
+    monster.health = 100
+    monster.action_gauge = 0.8
+    monster.combat_resources["test"] = 3
+
+    monster.skills[1].current_cooldown = 2
+
+    monster.reset_combat_state()
+
+    assert monster.health == monster.max_health
+    assert monster.action_gauge == 0
+    assert monster.buffs == []
+    assert monster.debuffs == []
+    assert monster.combat_resources == {}
+
+    for skill in monster.skills:
+        assert skill.current_cooldown == 0
+
+
+def test_battle_resets_state_after_run(monkeypatch):
+
+    ally = create_monster("drake_igneous")
+    enemy = create_monster("drake_storm")
+
+
+    def fake_get_ready_combatant(combatants):
+        return ally
+
+
+    def fake_player_turn(active_ally, allies, enemies):
+
+        # Simulamos cosas que podrían haber ocurrido durante el combate.
+        active_ally.health = 100
+        active_ally.action_gauge = 0.7
+        active_ally.combat_resources["test"] = 3
+
+        return "run"
+
+
+    monkeypatch.setattr(
+        combat_module,
+        "get_ready_combatant",
+        fake_get_ready_combatant
+    )
+
+    monkeypatch.setattr(
+        combat_module,
+        "player_turn",
+        fake_player_turn
+    )
+
+
+    outcome = battle(
+        [ally],
+        [enemy]
+    )
+
+
+    assert outcome == "run"
+
+    assert ally.health == ally.max_health
+    assert ally.action_gauge == 0
+    assert ally.buffs == []
+    assert ally.debuffs == []
+    assert ally.combat_resources == {}

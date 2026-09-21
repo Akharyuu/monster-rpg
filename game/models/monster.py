@@ -4,10 +4,18 @@ from ..combat.passive_triggers import trigger_passives
 from ..data.passive_data import PASSIVE_DATA
 from ..data.glyph_stat_data import GLYPH_STAT_MAP
 from ..data.glyph_set_data import GLYPH_SET_DATA
+from ..data.experience_data import XP_TO_NEXT_LEVEL, BASE_EXP_YIELD, RARITY_EXP_MULTIPLIER
+from ..data.monster_data import MONSTER_DATA
+from ..data.stat_growth_data import LEVEL_STAT_MULTIPLIER, ASCENDED_STAT_MULTIPLIER
 
 class Monster:
+
+    # =========================================================
+    #                       INITIALIZATION
+    # =========================================================
+
     def __init__(self, instance_id, monster_id, name, family, attribute, rarity, health, max_health, attack, defense, speed, 
-                 skills=None, passives=None, level=1, experience=0, ascended=False, combat_resources=None):
+                 skills=None, passives=None, level=1, level_limit=10, experience=0, ascended=False, combat_resources=None):
 
         #Attributes
         self.instance_id = instance_id
@@ -17,6 +25,7 @@ class Monster:
         self.attribute = attribute
         self.rarity = rarity
         self.level = level
+        self.level_limit = level_limit
         self.experience = experience
         self.ascended = ascended
         self.action_gauge = 0
@@ -64,6 +73,11 @@ class Monster:
         self.buffs = []
         self.debuffs = []
 
+
+    # =========================================================
+    #                      BASIC PROPERTIES
+    # =========================================================
+
     @property
     def display_name(self):
         if self.ascended:
@@ -71,13 +85,11 @@ class Monster:
 
         return f"{self.attribute.value} {self.family}"
 
-    @property
-    def is_alive(self):
-        return self.health > 0
 
     @property
     def health(self):
         return self._health
+
 
     @health.setter
     def health(self, value):
@@ -88,6 +100,16 @@ class Monster:
 
         self._health = value
 
+
+    @property
+    def is_alive(self):
+        return self.health > 0
+
+
+    # =========================================================
+    #                  COMBAT STATE PROPERTIES
+    # =========================================================
+
     @property
     def is_stunned(self):
         for debuff in self.debuffs:
@@ -95,6 +117,7 @@ class Monster:
                 return True
 
         return False
+
 
     @property
     def is_frozen(self):
@@ -104,9 +127,6 @@ class Monster:
 
         return False
 
-    @property
-    def cannot_act(self):
-        return self.is_stunned or self.is_frozen
 
     @property
     def is_silenced(self):
@@ -115,6 +135,7 @@ class Monster:
                 return True
 
         return False
+
 
     @property
     def has_immunity(self):
@@ -125,262 +146,30 @@ class Monster:
         return False
 
 
-    def has_passive_trait(self, trait):
-        for passive in self.passives:
-            data = PASSIVE_DATA[passive.skill_id]
-
-            if trait in data.get("traits", []):
-                return True
-
-        return False
+    @property
+    def cannot_act(self):
+        return self.is_stunned or self.is_frozen
 
 
-#Glyph methods
-    def equip_glyph(self, glyph):
-        old_glyph = self.glyphs[glyph.slot_id]
+    # =========================================================
+    #                          STATS
+    # =========================================================
 
-        self.glyphs[glyph.slot_id] = glyph
+    def update_level_stats(self):
 
-        return old_glyph
+        data = MONSTER_DATA[self.monster_id]
 
-
-    def unequip_glyph(self, slot):
-        glyph = self.glyphs[slot]
-
-        self.glyphs[slot] = None
-
-        return glyph
-
-
-    def get_active_sets(self):
-        sets = {}
-        active_sets = {}
-
-        for glyph in self.glyphs.values():
-            if glyph is None:
-                continue
-
-            sets[glyph.set_id] = sets.get(glyph.set_id, 0) + 1
-
-        for set_id, quantity in sets.items():
-            if quantity >= GLYPH_SET_DATA[set_id]["pieces_required"]:
-                active_sets[set_id] = quantity // GLYPH_SET_DATA[set_id]["pieces_required"]
-
-        return active_sets
-
-
-#Action Gauge methods
-    def increase_action_gauge(self, amount):
-        self.action_gauge += amount
-
-        if self.action_gauge > 1:
-            self.action_gauge = 1
-
-
-    def reduce_action_gauge(self, amount):
-        self.action_gauge -= amount
-
-        if self.action_gauge < 0:
-            self.action_gauge = 0
-
-
-    def reset_action_gauge(self):
-        self.action_gauge = 0
-
-
-#Skill methods
-    def use_skill(self, targets, skill):
-
-        if skill not in self.skills:
-            print(f"{self.name} no conoce la habilidad {skill.name}.")
-            return SkillResult(False, None)
-
-        if not skill.is_available():
-            print(f"The skill is currently on cooldown. {skill.current_cooldown} turns left.")
-            return SkillResult(False, None)
-        
-        # Shared context for this specific skill execution.
-        context = {
-            "skill": skill,
-            "targets": targets
-        }
-
-        # Passives that activate before the skill.
-        trigger_passives(
-            "before_skill",
-            self,
-            context
-        )
-
-        skill_result = skill.execute(
-            self,
-            targets
-        )
-
-        # Add the result so after_skill passives can inspect what happened.
-        context["skill_result"] = skill_result
-
-        skill.trigger_cooldown()
-
-        # Passives that activate after the skill.
-        trigger_passives(
-            "after_skill",
-            self,
-            context
-        )
-
-        return skill_result
-
-
-    def get_skill(self, index):
-        if index not in range(1, len(self.skills) + 1):
-            return None
-
-        return self.skills[index -1]
-
-
-    def receive_damage(self, damage, source=None):
-        self.health -= damage
-
-        broken_effects = []
-
-        preserve_freeze = (
-            source is not None
-            and source.has_passive_trait("preserve_freeze_on_hit")
-        )
-
-        new_debuffs = []
-
-        for debuff in self.debuffs:
-
-            if debuff.effect_id == "freeze" and not preserve_freeze:
-                broken_effects.append(debuff)
-                continue
-
-            new_debuffs.append(debuff)
-
-        self.debuffs = new_debuffs
-
-        return broken_effects
-
-
-    def get_attribute_modifier(self, defender):
-        if ((self.attribute == Attribute.IGNEOUS and defender.attribute == Attribute.ABYSSAL) or 
-            (self.attribute == Attribute.ABYSSAL and defender.attribute == Attribute.STORM) or
-            (self.attribute == Attribute.STORM and defender.attribute == Attribute.IGNEOUS)):
-            return 0.8
-
-        elif ((self.attribute == Attribute.IGNEOUS and defender.attribute == Attribute.STORM) or 
-            (self.attribute == Attribute.ABYSSAL and defender.attribute == Attribute.IGNEOUS) or
-            (self.attribute == Attribute.STORM and defender.attribute == Attribute.ABYSSAL)):
-            return 1.2
-
+        if self.ascended:
+            multiplier = ASCENDED_STAT_MULTIPLIER[self.level]
         else:
-            return 1
+            multiplier = LEVEL_STAT_MULTIPLIER[self.level]
 
+        self.max_health = round(data["max_health"] * multiplier)
+        self.attack = round(data["attack"] * multiplier)
+        self.defense = round(data["defense"] * multiplier)
+        self.speed = round(data["speed"] * multiplier)
+        self.health = self.max_health
 
-    def heal(self, value):
-        base_health = self.health
-        self.health += value
-        return self.health - base_health
-
-
-    def reduce_skill_cooldowns(self):
-        for skill in self.skills:
-            skill.reduce_cooldown()
-
-
-#Buff/Debuff methods
-    def reduce_remaining_turns(self, effects_at_turn_start):
-
-        #Buffs
-        for buff in self.buffs:
-            if id(buff) in effects_at_turn_start:
-                buff.reduce_remaining_turns()
-
-        active_buffs = []
-
-        for buff in self.buffs:
-            if buff.is_active:
-                active_buffs.append(buff)
-
-        self.buffs = active_buffs        
-
-        #Debuffs
-        for debuff in self.debuffs:
-            if id(debuff) in effects_at_turn_start:
-                debuff.reduce_remaining_turns()
-
-        active_debuffs = []
-
-        for debuff in self.debuffs:
-            if debuff.is_active:
-                active_debuffs.append(debuff)
-
-        self.debuffs = active_debuffs   
-
-
-    def apply_status_effect(self, effect):
-
-        if effect.effect_type == EffectType.BUFF:
-            effects_list = self.buffs
-
-        elif effect.effect_type == EffectType.DEBUFF:
-            if self.has_immunity:
-                return None
-
-            effects_list = self.debuffs
-
-        else:
-            return None
-
-        for active_effect in effects_list:
-            if active_effect.effect_id == effect.effect_id:
-
-                if active_effect.effect_id in ("burn", "poison"):
-                    active_effect.stacks += effect.stacks
-
-                    if active_effect.stacks > active_effect.max_stacks:
-                        active_effect.stacks = active_effect.max_stacks
-
-                if effect.duration > active_effect.remaining_turns:
-                    active_effect.remaining_turns = effect.duration
-
-                # Update who applied/refreshed the effect.
-                active_effect.source = effect.source
-
-                return active_effect
-
-        if len(effects_list) < 5:
-            effects_list.append(effect)
-            return effect
-
-        return None
-
-
-    def apply_damage_over_time(self):
-        total_damage = 0
-
-        for debuff in self.debuffs:
-            if debuff.effect_id == "burn":
-
-                if debuff.stacks == 1:
-                    damage = self.max_health * 0.03 
-                elif debuff.stacks == 2:
-                    damage = self.max_health * 0.06 
-                elif debuff.stacks == 3:
-                    damage = self.max_health * 0.1 
-
-                total_damage += damage
-
-            elif debuff.effect_id == "poison":
-                damage = self.max_health * 0.05 * debuff.stacks
-                total_damage += damage
-
-        if total_damage > 0:
-            self.health -= int(total_damage)
-            print(f"{self.display_name} takes {int(total_damage)} damage from DoT.")
-            print()
 
 
     def get_equipped_stat(self, stat):
@@ -429,6 +218,7 @@ class Monster:
 
         return base_stat + flat_bonus
     
+
                 
     def get_effective_stat(self, stat):
 
@@ -457,7 +247,356 @@ class Monster:
         )
 
 
-#Combat resources methods (passive stuff/charges...)
+
+    def get_attribute_modifier(self, defender):
+        if ((self.attribute == Attribute.IGNEOUS and defender.attribute == Attribute.ABYSSAL) or 
+            (self.attribute == Attribute.ABYSSAL and defender.attribute == Attribute.STORM) or
+            (self.attribute == Attribute.STORM and defender.attribute == Attribute.IGNEOUS)):
+            return 0.8
+
+        elif ((self.attribute == Attribute.IGNEOUS and defender.attribute == Attribute.STORM) or 
+            (self.attribute == Attribute.ABYSSAL and defender.attribute == Attribute.IGNEOUS) or
+            (self.attribute == Attribute.STORM and defender.attribute == Attribute.ABYSSAL)):
+            return 1.2
+
+        else:
+            return 1
+
+
+    # =========================================================
+    #                        LEVEL & EXP
+    # =========================================================
+
+    def gain_exp(self, exp):
+
+        if self.level >= self.level_limit:
+            return
+
+        while exp > 0:
+
+            required_exp_to_level_up = (XP_TO_NEXT_LEVEL[self.level] - self.experience)
+
+            if exp >= required_exp_to_level_up:
+
+                exp -= required_exp_to_level_up
+                self.level_up()
+
+                if self.level >= self.level_limit:
+                    break
+
+            else:
+                self.experience += exp
+                break
+
+
+
+    def level_up(self):
+        self.level += 1
+        self.experience = 0
+        self.update_level_stats()
+
+
+
+    def get_exp_yield(self):
+
+        base_exp = BASE_EXP_YIELD[self.level]
+        rarity_multiplier = RARITY_EXP_MULTIPLIER[self.rarity]
+
+        return round(base_exp * rarity_multiplier)
+           
+
+    # =========================================================
+    #                          GLYPHS
+    # =========================================================
+
+    def equip_glyph(self, glyph):
+        old_glyph = self.glyphs[glyph.slot_id]
+
+        self.glyphs[glyph.slot_id] = glyph
+
+        return old_glyph
+
+
+
+    def unequip_glyph(self, slot):
+        glyph = self.glyphs[slot]
+
+        self.glyphs[slot] = None
+
+        return glyph
+
+
+
+    def get_active_sets(self):
+        sets = {}
+        active_sets = {}
+
+        for glyph in self.glyphs.values():
+            if glyph is None:
+                continue
+
+            sets[glyph.set_id] = sets.get(glyph.set_id, 0) + 1
+
+        for set_id, quantity in sets.items():
+            if quantity >= GLYPH_SET_DATA[set_id]["pieces_required"]:
+                active_sets[set_id] = quantity // GLYPH_SET_DATA[set_id]["pieces_required"]
+
+        return active_sets
+
+
+    # =========================================================
+    #                   SKILLS & PASSIVES
+    # =========================================================
+
+    def get_skill(self, index):
+        if index not in range(1, len(self.skills) + 1):
+            return None
+
+        return self.skills[index -1]
+
+
+    
+    def use_skill(self, targets, skill, combat_context=None):
+
+        if skill not in self.skills:
+            print(f"{self.name} no conoce la habilidad {skill.name}.")
+            return SkillResult(False, None)
+
+        if not skill.is_available():
+            print(f"The skill is currently on cooldown. {skill.current_cooldown} turns left.")
+            return SkillResult(False, None)
+        
+        # Shared context for this specific skill execution.
+        context = {
+            "skill": skill,
+            "targets": targets
+        }
+
+        if combat_context is not None:
+            context.update(combat_context)
+
+        # Passives that activate before the skill.
+        trigger_passives(
+            "before_skill",
+            self,
+            context
+        )
+
+        skill_result = skill.execute(
+            self,
+            targets,
+            context
+        )
+
+        # Add the result so after_skill passives can inspect what happened.
+        context["skill_result"] = skill_result
+
+        skill.trigger_cooldown()
+
+        # Passives that activate after the skill.
+        trigger_passives(
+            "after_skill",
+            self,
+            context
+        )
+
+        return skill_result
+
+
+
+    def reduce_skill_cooldowns(self):
+        for skill in self.skills:
+            skill.reduce_cooldown()
+
+
+
+    def has_passive_trait(self, trait):
+        for passive in self.passives:
+            data = PASSIVE_DATA[passive.skill_id]
+
+            if trait in data.get("traits", []):
+                return True
+
+        return False
+
+
+    # =========================================================
+    #                     HEALTH & DAMAGE
+    # =========================================================
+
+    def receive_damage(self, damage, source=None):
+        self.health -= damage
+
+        broken_effects = []
+
+        preserve_freeze = (
+            source is not None
+            and source.has_passive_trait("preserve_freeze_on_hit")
+        )
+
+        new_debuffs = []
+
+        for debuff in self.debuffs:
+
+            if debuff.effect_id == "freeze" and not preserve_freeze:
+                broken_effects.append(debuff)
+                continue
+
+            new_debuffs.append(debuff)
+
+        self.debuffs = new_debuffs
+
+        return broken_effects
+
+
+
+    def heal(self, value):
+        base_health = self.health
+        self.health += value
+        return self.health - base_health
+
+
+
+    def reset_health(self):
+        self.health = self.max_health
+
+
+    # =========================================================
+    #                      STATUS EFFECTS
+    # =========================================================
+
+    def apply_status_effect(self, effect):
+
+        if effect.effect_type == EffectType.BUFF:
+            effects_list = self.buffs
+
+        elif effect.effect_type == EffectType.DEBUFF:
+            if self.has_immunity:
+                return None
+
+            effects_list = self.debuffs
+
+        else:
+            return None
+
+        for active_effect in effects_list:
+            if active_effect.effect_id == effect.effect_id:
+
+                if active_effect.effect_id in ("burn", "poison"):
+                    active_effect.stacks += effect.stacks
+
+                    if active_effect.stacks > active_effect.max_stacks:
+                        active_effect.stacks = active_effect.max_stacks
+
+                if effect.duration > active_effect.remaining_turns:
+                    active_effect.remaining_turns = effect.duration
+
+                # Update who applied/refreshed the effect.
+                active_effect.source = effect.source
+
+                return active_effect
+
+        if len(effects_list) < 5:
+            effects_list.append(effect)
+            return effect
+
+        return None
+
+
+
+    def reduce_remaining_turns(self, effects_at_turn_start):
+
+        #Buffs
+        for buff in self.buffs:
+            if id(buff) in effects_at_turn_start:
+                buff.reduce_remaining_turns()
+
+        active_buffs = []
+
+        for buff in self.buffs:
+            if buff.is_active:
+                active_buffs.append(buff)
+
+        self.buffs = active_buffs        
+
+        #Debuffs
+        for debuff in self.debuffs:
+            if id(debuff) in effects_at_turn_start:
+                debuff.reduce_remaining_turns()
+
+        active_debuffs = []
+
+        for debuff in self.debuffs:
+            if debuff.is_active:
+                active_debuffs.append(debuff)
+
+        self.debuffs = active_debuffs   
+
+
+
+    def apply_damage_over_time(self):
+        total_damage = 0
+
+        for debuff in self.debuffs:
+            if debuff.effect_id == "burn":
+
+                if debuff.stacks == 1:
+                    damage = self.max_health * 0.03 
+                elif debuff.stacks == 2:
+                    damage = self.max_health * 0.06 
+                elif debuff.stacks == 3:
+                    damage = self.max_health * 0.1 
+
+                total_damage += damage
+
+            elif debuff.effect_id == "poison":
+                damage = self.max_health * 0.05 * debuff.stacks
+                total_damage += damage
+
+        if total_damage > 0:
+            self.health -= int(total_damage)
+            print(f"{self.display_name} takes {int(total_damage)} damage from DoT.")
+            print()
+
+
+
+    def reset_buffs(self):
+        self.buffs = []
+
+
+
+    def reset_debuffs(self):
+        self.debuffs = []
+
+
+    # =========================================================
+    #                       ACTION GAUGE
+    # =========================================================
+
+    def increase_action_gauge(self, amount):
+        self.action_gauge += amount
+
+        if self.action_gauge > 1:
+            self.action_gauge = 1
+
+
+
+    def reduce_action_gauge(self, amount):
+        self.action_gauge -= amount
+
+        if self.action_gauge < 0:
+            self.action_gauge = 0
+
+
+
+    def reset_action_gauge(self):
+        self.action_gauge = 0
+
+
+    # =========================================================
+    #                   COMBAT RESOURCES
+    # =========================================================
+
     def add_combat_resource(self, name, value, max_value):
         if name in self.combat_resources:
             self.combat_resources[name] += value
@@ -468,11 +607,13 @@ class Monster:
             self.combat_resources[name] = max_value
 
 
+
     def get_combat_resource(self, name):
         if name in self.combat_resources:
             return self.combat_resources[name]
 
         return 0
+
 
 
     def consume_combat_resource(self, name, value):
@@ -483,11 +624,48 @@ class Monster:
         return False
 
 
+
     def reset_combat_resources(self):
         self.combat_resources = {}
 
 
-#Other methods
+    # =========================================================
+    #                      COMBAT RESET
+    # =========================================================
+
+    def reset_combat_state(self):
+        self.reset_health()
+        self.reset_action_gauge()
+        self.reset_buffs()
+        self.reset_debuffs()
+        self.reset_combat_resources()
+
+        for skill in self.skills:
+            skill.reset_cooldown()
+
+
+    # =========================================================
+    #                      PROGRESSION
+    # =========================================================
+
+    def can_resonate_with(self, other):
+        return (
+            self.monster_id == other.monster_id 
+            and self.resonance < 5 
+            and self is not other
+        )
+
+
+
+    def increase_resonance(self):
+        if self.resonance < 5:
+            self.resonance += 1
+
+
+    # =========================================================
+    #                      PRESENTATION
+    # =========================================================
+
     def show(self):
         print(f"{self.display_name}   Lvl {self.level}   {'★' * self.rarity}\n\n"
               f"HP: {self.health} / {self.max_health}\n"
@@ -514,19 +692,10 @@ class Monster:
         print("\n")
 
 
-    def can_resonate_with(self, other):
-        return (
-            self.monster_id == other.monster_id 
-            and self.resonance < 5 
-            and self is not other
-        )
+    # =========================================================
+    #                  PYTHON SPECIAL METHODS
+    # =========================================================
 
-
-    def increase_resonance(self):
-        if self.resonance < 5:
-            self.resonance += 1
-
-        
     def __str__(self):
         return f"{self.name} - Health: {self.health}/{self.max_health} - Attack: {self.attack} - Defense: {self.defense}"
 

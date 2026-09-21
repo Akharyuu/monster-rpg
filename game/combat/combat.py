@@ -1,73 +1,104 @@
-from ..ui import select_skill, show_battle_state, show_damage_skill_result, select_enemy, select_ally
-from ..models.skills import SkillType
-from ..models.enums import TargetType
+import math
 import random
+
+from ..models.enums import TargetType
+from ..models.skills import SkillType
+
+from ..ui import (
+    select_ally,
+    select_enemy,
+    select_skill,
+    show_battle_state,
+    show_damage_skill_result
+)
+
+
+# =========================================================
+#                       BATTLE LOOP
+# =========================================================
 
 def battle(allies, enemies):
 
-    # Clean last battle combat_resources
-    for monster in allies + enemies:
-        monster.reset_combat_resources()
+    all_combatants = allies + enemies
 
-    # Combat continues while both teams have at least one living monster.
-    while (
-        any(ally.is_alive for ally in allies)
-        and any(enemy.is_alive for enemy in enemies)
-    ):
+    # Clean last battle combat_state
+    for monster in all_combatants:
+        monster.reset_combat_state()
 
-        # Only living monsters participate in Action Gauge calculations.
-        living_allies = [
-            ally for ally in allies
-            if ally.is_alive
-        ]
+    try:
+        # Combat continues while both teams have at least one living monster.
+        while (
+            any(ally.is_alive for ally in allies)
+            and any(enemy.is_alive for enemy in enemies)
+        ):
 
-        living_enemies = [
-            enemy for enemy in enemies
-            if enemy.is_alive
-        ]
+            # Only living monsters participate in Action Gauge calculations.
+            living_allies = [
+                ally for ally in allies
+                if ally.is_alive
+            ]
 
-        # Action Gauge treats every living monster as a combatant, regardless of which team it belongs to.
-        combatants = living_allies + living_enemies
+            living_enemies = [
+                enemy for enemy in enemies
+                if enemy.is_alive
+            ]
 
-        fill_action_gauges(combatants)
+            # Action Gauge treats every living monster as a combatant, regardless of which team it belongs to.
+            combatants = living_allies + living_enemies
 
-        # Select the monster whose Action Gauge is ready to take a turn.
-        active_combatant = get_ready_combatant(combatants)
+            fill_action_gauges(combatants)
 
-        # If nobody reached full Action Gauge yet, advance another tick.
-        if active_combatant is None:
-            continue
+            # Select the monster whose Action Gauge is ready to take a turn.
+            active_combatant = get_ready_combatant(combatants)
 
-        # Gauge resets before the turn so any gauge gained during the action is preserved for the next turn.
-        active_combatant.reset_action_gauge()
+            # If nobody reached full Action Gauge yet, advance another tick.
+            if active_combatant is None:
+                continue
 
-        # Determine which turn logic to use based on team membership.
-        if active_combatant in allies:
-            outcome = player_turn(
-                active_combatant,
-                allies,
-                enemies
+            # Gauge resets before the turn so any gauge gained during the action is preserved for the next turn.
+            active_combatant.reset_action_gauge()
+
+            # Predict which combatant is currently closest to the next turn.
+            upcoming_combatant = get_upcoming_combatant(
+                combatants
             )
 
-        else:
-            outcome = enemy_turn(
-                active_combatant,
-                enemies,
-                allies
-            )
+            # Determine which turn logic to use based on team membership.
+            if active_combatant in allies:
+                outcome = player_turn(
+                    active_combatant,
+                    allies,
+                    enemies,
+                    upcoming_combatant
+                )
 
-        # player_turn/enemy_turn may detect victory, defeat or run.
-        if outcome is not None:
-            return outcome
+            else:
+                outcome = enemy_turn(
+                    active_combatant,
+                    enemies,
+                    allies
+                )
 
-    # Reaching this point means one of the two teams has no living monsters.
-    if all(not ally.is_alive for ally in allies):
-        return "defeat"
+            # player_turn/enemy_turn may detect victory, defeat or run.
+            if outcome is not None:
+                return outcome
 
-    return "victory"
+        # Reaching this point means one of the two teams has no living monsters.
+        if all(not ally.is_alive for ally in allies):
+            return "defeat"
+
+        return "victory"
+
+    finally:
+        for monster in all_combatants:
+            monster.reset_combat_state()       
 
 
-def player_turn(active_ally, allies, enemies):
+# =========================================================
+#                       PLAYER TURN
+# =========================================================
+
+def player_turn(active_ally, allies, enemies, upcoming_combatant):
 
     turn_context = begin_turn(active_ally)
 
@@ -91,7 +122,8 @@ def player_turn(active_ally, allies, enemies):
     show_battle_state(
         allies,
         enemies,
-        active_ally
+        active_ally, 
+        upcoming_combatant
     )
 
     if handle_incapacitated_turn(
@@ -137,7 +169,11 @@ def player_turn(active_ally, allies, enemies):
 
                     skill_result = active_ally.use_skill(
                         targets,
-                        skill
+                        skill,
+                        combat_context={
+                            "team": allies,
+                            "opponents": enemies
+                        }
                     )
 
                     if skill_result.success:
@@ -164,7 +200,11 @@ def player_turn(active_ally, allies, enemies):
 
                     skill_result = active_ally.use_skill(
                         targets,
-                        skill
+                        skill,
+                        combat_context={
+                            "team": allies,
+                            "opponents": enemies
+                        }
                     )
 
                     if skill_result.success:
@@ -199,6 +239,10 @@ def player_turn(active_ally, allies, enemies):
             continue
 
 
+# =========================================================
+#                        ENEMY TURN
+# =========================================================
+
 def enemy_turn(active_enemy, enemies, allies):
 
     turn_context = begin_turn(active_enemy)
@@ -227,10 +271,7 @@ def enemy_turn(active_enemy, enemies, allies):
         return None
 
     # TODO: Replace with real enemy AI.
-    if active_enemy.is_silenced:
-        enemy_skill = active_enemy.get_skill(1)
-    else:
-        enemy_skill = active_enemy.get_skill(1)
+    enemy_skill = active_enemy.get_skill(1)
 
     outcome = None
 
@@ -275,7 +316,11 @@ def enemy_turn(active_enemy, enemies, allies):
 
                 skill_result = active_enemy.use_skill(
                     targets,
-                    enemy_skill
+                    enemy_skill,
+                    combat_context={
+                        "team": enemies,
+                        "opponents": allies
+                    }
                 )
 
                 if skill_result.success:
@@ -297,7 +342,11 @@ def enemy_turn(active_enemy, enemies, allies):
 
                 skill_result = active_enemy.use_skill(
                     targets,
-                    enemy_skill
+                    enemy_skill,
+                    combat_context={
+                        "team": enemies,
+                        "opponents": allies
+                    }
                 )
 
                 if skill_result.success:
@@ -318,6 +367,10 @@ def enemy_turn(active_enemy, enemies, allies):
 
     return outcome
 
+
+# =========================================================
+#                      TURN LIFECYCLE
+# =========================================================
 
 def begin_turn(monster):
 
@@ -341,6 +394,7 @@ def begin_turn(monster):
     }
 
 
+
 def end_turn(monster, turn_context):
 
     # Resolves mechanics that happen when the monster's turn ends.
@@ -348,6 +402,7 @@ def end_turn(monster, turn_context):
     monster.reduce_remaining_turns(
         turn_context["effects_at_turn_start"]
     )
+
 
 
 def handle_incapacitated_turn(monster, turn_context):
@@ -378,49 +433,120 @@ def handle_incapacitated_turn(monster, turn_context):
     return True
 
 
-#Action Gauges
+# =========================================================
+#                       ACTION GAUGE
+# =========================================================
+
 def fill_action_gauges(combatants):
+
     for combatant in combatants:
+        
         speed = combatant.get_effective_stat("speed")
-        combatant.increase_action_gauge(speed / 2000)
+
+        combatant.increase_action_gauge(
+            speed / 2000
+        )
+
 
 
 def get_ready_combatant(combatants):
+
     ready = [
         combatant
         for combatant in combatants
-        if combatant.is_alive and combatant.action_gauge >= 1
+        if combatant.is_alive
+        and combatant.action_gauge >= 1
     ]
 
     if not ready:
         return None
 
-    highest_gauge = max(
-        combatant.action_gauge
-        for combatant in ready
-    )
-
-    gauge_tied = [
-        combatant
-        for combatant in ready
-        if combatant.action_gauge == highest_gauge
-    ]
-
     highest_speed = max(
         combatant.get_effective_stat("speed")
-        for combatant in gauge_tied
+        for combatant in ready
     )
 
     speed_tied = [
         combatant
-        for combatant in gauge_tied
-        if combatant.get_effective_stat("speed") == highest_speed
+        for combatant in ready
+        if combatant.get_effective_stat("speed")
+        == highest_speed
     ]
 
     return random.choice(speed_tied)
 
 
-#Auxiliar
+
+def get_upcoming_combatant(combatants):
+
+    candidates = []
+
+    for combatant in combatants:
+
+        if not combatant.is_alive:
+            continue
+
+        speed = combatant.get_effective_stat("speed")
+        gauge_gain = speed / 2000
+
+        if gauge_gain <= 0:
+            continue
+
+        if combatant.action_gauge >= 1:
+            ticks_needed = 0
+
+        else:
+            remaining_gauge = (
+                1 - combatant.action_gauge
+            )
+
+            ticks_needed = math.ceil(
+                remaining_gauge / gauge_gain
+            )
+
+        candidates.append(
+            (
+                ticks_needed,
+                speed,
+                combatant
+            )
+        )
+
+    if not candidates:
+        return None
+
+    minimum_ticks = min(
+        candidate[0]
+        for candidate in candidates
+    )
+
+    next_candidates = [
+        candidate
+        for candidate in candidates
+        if candidate[0] == minimum_ticks
+    ]
+
+    highest_speed = max(
+        candidate[1]
+        for candidate in next_candidates
+    )
+
+    speed_tied = [
+        candidate
+        for candidate in next_candidates
+        if candidate[1] == highest_speed
+    ]
+
+    if len(speed_tied) > 1:
+        return None
+
+    return speed_tied[0][2]
+
+
+# =========================================================
+#                    TARGET RESOLUTION
+# =========================================================
+
 def resolve_targets(skill, actor, team, opponents):
 
     alive_team = [

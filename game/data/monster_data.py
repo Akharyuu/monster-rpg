@@ -1,6 +1,114 @@
-from ..models.enums import Attribute, SkillType
+from ..models.enums import Attribute
 
 MONSTER_DATA = {
+
+    # =========================================================
+    #                          SLIMES
+    # =========================================================
+
+    "slime_igneous": {
+        "name": "Igneous Slime",
+        "family": "Slime",
+        "attribute": Attribute.IGNEOUS,
+        "rarity": 1,
+
+        "max_health": 7600,
+        "attack": 485,
+        "defense": 330,
+        "speed": 184,
+
+        "skills": [
+            "ooze_slam"
+        ]
+    },
+
+    "slime_abyssal": {
+        "name": "Abyssal Slime",
+        "family": "Slime",
+        "attribute": Attribute.ABYSSAL,
+        "rarity": 1,
+
+        "max_health": 8300,
+        "attack": 420,
+        "defense": 390,
+        "speed": 176,
+
+        "skills": [
+            "ooze_slam"
+        ]
+    },
+
+    "slime_storm": {
+        "name": "Storm Slime",
+        "family": "Slime",
+        "attribute": Attribute.STORM,
+        "rarity": 1,
+
+        "max_health": 7200,
+        "attack": 455,
+        "defense": 320,
+        "speed": 198,
+
+        "skills": [
+            "ooze_slam"
+        ]
+    },
+
+    # =========================================================
+    #                         SPROUTS
+    # =========================================================
+
+    "sprout_igneous": {
+        "name": "Igneous Sprout",
+        "family": "Sprout",
+        "attribute": Attribute.IGNEOUS,
+        "rarity": 1,
+
+        "max_health": 6900,
+        "attack": 410,
+        "defense": 470,
+        "speed": 188,
+
+        "skills": [
+            "nurturing_lash"
+        ]
+    },
+
+    "sprout_abyssal": {
+        "name": "Abyssal Sprout",
+        "family": "Sprout",
+        "attribute": Attribute.ABYSSAL,
+        "rarity": 1,
+
+        "max_health": 7400,
+        "attack": 350,
+        "defense": 535,
+        "speed": 180,
+
+        "skills": [
+            "nurturing_lash"
+        ]
+    },
+
+    "sprout_storm": {
+        "name": "Storm Sprout",
+        "family": "Sprout",
+        "attribute": Attribute.STORM,
+        "rarity": 1,
+
+        "max_health": 6600,
+        "attack": 380,
+        "defense": 455,
+        "speed": 202,
+
+        "skills": [
+            "nurturing_lash"
+        ]
+    },
+
+    # =========================================================
+    #                          DRAKES
+    # =========================================================
 
     "drake_igneous": {
         "name": "Kaelgor",
@@ -61,6 +169,10 @@ MONSTER_DATA = {
             "drake_claw"
         ]
     },
+
+    # =========================================================
+    #                          TEST
+    # =========================================================
 
     "goblin_igneous": {
         "name": "Trull",

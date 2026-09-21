@@ -1,6 +1,12 @@
+import random
+
 from ..data.passive_data import PASSIVE_DATA
 from ..factories.status_effect_factory import create_status_effect
-import random
+
+
+# =========================================================
+#                         BURN
+# =========================================================
 
 def apply_burn(owner, context, passive):
     target = context["target"]
@@ -26,6 +32,10 @@ def apply_burn(owner, context, passive):
             if action_gauge_gain > 0:
                 owner.increase_action_gauge(action_gauge_gain)
 
+
+# =========================================================
+#                     FROZEN SCALES
+# =========================================================
 
 def frozen_scales(owner, context, passive):
 
@@ -132,6 +142,10 @@ def frozen_scales(owner, context, passive):
                     skill_to_reset.current_cooldown = 0
 
 
+# =========================================================
+#                     SHATTERED FURY
+# =========================================================
+
 def shattered_fury(owner, context, passive):
 
     data = PASSIVE_DATA[passive.skill_id]
@@ -156,7 +170,9 @@ def shattered_fury(owner, context, passive):
 
 
 
-
+# =========================================================
+#                      HANDLER REGISTRY
+# =========================================================
 
 PASSIVE_HANDLERS = {
     "apply_burn": apply_burn,

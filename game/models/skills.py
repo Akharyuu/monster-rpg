@@ -1,15 +1,24 @@
 import random
+
 from .enums import SkillType, EffectType, TargetType
 from ..data.status_effect_data import STATUS_EFFECT_DATA
 from ..factories.status_effect_factory import create_status_effect
+
 from ..combat.passive_handlers import PASSIVE_HANDLERS
 from ..combat.passive_triggers import trigger_passives
 from ..combat.skill_damage_handlers import DAMAGE_HANDLERS
 from ..combat.skill_after_handlers import AFTER_SKILL_HANDLERS
 from ..combat.skill_on_hit_handlers import ON_HIT_HANDLERS
 from ..combat.skill_effect_conditions import EFFECT_CONDITIONS
+from ..combat.skill_after_use_handlers import AFTER_USE_HANDLERS
+
 
 class Skill:
+
+    # =========================================================
+    #                       INITIALIZATION
+    # =========================================================
+
     def __init__(self, skill_id, name, target_type=None, cooldown=0):
         self.skill_id = skill_id
         self.name = name
@@ -18,35 +27,65 @@ class Skill:
         self.current_cooldown = 0
 
 
+    # =========================================================
+    #                        COOLDOWN
+    # =========================================================
+
     def is_available(self):
         return self.current_cooldown == 0
+
 
 
     def trigger_cooldown(self):
         self.current_cooldown = self.cooldown
 
 
+
     def reduce_cooldown(self):
-        self.current_cooldown -= 1
 
-        if self.current_cooldown < 0:
-            self.current_cooldown = 0
+        if self.current_cooldown > 0:
+            self.current_cooldown -= 1
 
+
+
+    def reset_cooldown(self):
+        self.current_cooldown = 0
+
+
+    # =========================================================
+    #                  PYTHON SPECIAL METHODS
+    # =========================================================
 
     def __eq__(self, other):
         return isinstance(other, Skill) and self.skill_id == other.skill_id
 
 
+
     def __repr__(self):
-        return f"Skill({self.name, self.cooldown})"
+        return (
+            f"Skill("
+            f"name='{self.name}', "
+            f"cooldown={self.cooldown}"
+            f")"
+        )
+
+
 
 
 
 class DamageSkill(Skill):
-    def __init__(self, skill_id, name, multiplier, hits, hit_multipliers, target_type, scaling_stat="attack", 
-                 cooldown=0, damage_handler=None, damage_handler_data=None, on_hit_handlers=None, after_skill_handlers=None, effects=None):
+
+    # =========================================================
+    #                       INITIALIZATION
+    # =========================================================
+
+    def __init__(self, skill_id, name, multiplier, hits, hit_multipliers, target_type, scaling_stat="attack", cooldown=0, 
+                 damage_handler=None, damage_handler_data=None, on_hit_handlers=None, after_skill_handlers=None, after_use_handlers=None,
+                 effects=None):
         super().__init__(skill_id, name, target_type, cooldown)
+
         self.skill_type = SkillType.DAMAGE
+
         self.multiplier = multiplier
         self.hits = hits
         self.hit_multipliers = hit_multipliers
@@ -58,6 +97,7 @@ class DamageSkill(Skill):
             )
 
         self.scaling_stat = scaling_stat
+
         self.damage_handler = damage_handler
         self.damage_handler_data = damage_handler_data
 
@@ -73,13 +113,25 @@ class DamageSkill(Skill):
             else []
         )
 
-        if effects is not None:
-            self.effects = effects
-        else: 
-            self.effects = []
+        self.after_use_handlers = (
+            after_use_handlers
+            if after_use_handlers is not None
+            else []
+        )
 
+        self.effects = (
+            effects
+            if effects is not None
+            else []
+        )
+
+
+    # =========================================================
+    #                    DAMAGE CALCULATION
+    # =========================================================
 
     def damage_calc(self, attacker, defender, hit_multiplier):
+            
             critical = False
 
             #Gets the effective scaling stat for the skill and applies it to calc raw damage
@@ -98,6 +150,7 @@ class DamageSkill(Skill):
                 damage_data = handler(attacker, defender, self)
 
             bonus_damage = damage_data.get("damage_multiplier", 1)
+
             ignore_defense = damage_data.get("ignore_defense", False)
 
             raw_damage = effective_scaling_stat * self.multiplier * bonus_damage * hit_multiplier
@@ -109,6 +162,7 @@ class DamageSkill(Skill):
             damage_reduction = 1
 
             if not ignore_defense:
+
                 effective_defense = defender.get_effective_stat("defense")
 
                 damage_reduction = 1000 / (1000 + effective_defense)
@@ -120,16 +174,24 @@ class DamageSkill(Skill):
             critical_damage_bonus = 1
 
             if random.randint(1, 100) <= attacker.get_effective_stat("crit_rate"):
-                critical_damage_bonus += attacker.crit_damage / 100
+                critical_damage_bonus += attacker.get_effective_stat("crit_damage") / 100
                 critical = True
 
             #Final damage
             final_damage = raw_damage * damage_reduction * attribute_modifier * critical_damage_bonus
 
-            return int(final_damage), critical
+            return max(1, int(final_damage)), critical
 
 
-    def execute(self, caster, targets):
+# =========================================================
+#                        EXECUTION
+# =========================================================
+
+    def execute(self, caster, targets, context=None):
+            
+        if context is None:
+            context = {}
+    
         target_results = []
 
         # RANDOM_ENEMIES can choose a different living target on every hit.
@@ -177,7 +239,8 @@ class DamageSkill(Skill):
                     caster,
                     target,
                     hit,
-                    current_result
+                    current_result,
+                    gameplay_active=gameplay_active
                 )
 
             # Resolve effects that happen after all hits against each target.
@@ -192,10 +255,18 @@ class DamageSkill(Skill):
                 random_target_results.values()
             )
 
-            return SkillResult(
+            skill_result = SkillResult(
                 success=True,
                 target_results=target_results
             )
+
+            self.resolve_after_use(
+                caster,
+                skill_result,
+                context
+            )
+
+            return skill_result
 
 
         # SINGLE_ENEMY and ALL_ENEMIES:
@@ -228,11 +299,23 @@ class DamageSkill(Skill):
 
             target_results.append(target_result)
 
-        return SkillResult(
+        skill_result = SkillResult(
             success=True,
             target_results=target_results
         )
 
+        self.resolve_after_use(
+            caster,
+            skill_result,
+            context
+        )
+
+        return skill_result
+
+
+# =========================================================
+#                     STATUS EFFECTS
+# =========================================================
 
     def try_apply_effect(self, effect, caster, target):
 
@@ -294,6 +377,10 @@ class DamageSkill(Skill):
         return applied_effect
 
 
+# =========================================================
+#                       TARGET STATE
+# =========================================================
+
     def get_target_snapshot(self, target):
         debuffs = {}
 
@@ -306,6 +393,7 @@ class DamageSkill(Skill):
         return {
             "debuffs": debuffs
         }
+
 
 
     def create_target_result(self, target):
@@ -321,6 +409,10 @@ class DamageSkill(Skill):
             "snapshot": self.get_target_snapshot(target)
         }
 
+
+# =========================================================
+#                      HIT RESOLUTION
+# =========================================================
 
     def resolve_hit(self, caster, target, hit_index, target_result, gameplay_active=True):
     
@@ -431,6 +523,10 @@ class DamageSkill(Skill):
                         )
 
 
+# =========================================================
+#                  AFTER TARGET RESOLUTION
+# =========================================================
+
     def resolve_after_skill_for_target(self, caster, target_result):
 
         # Resolves mechanics that happen after all hits against one target.
@@ -504,29 +600,86 @@ class DamageSkill(Skill):
             )
 
 
+# =========================================================
+#                   AFTER USE RESOLUTION
+# =========================================================
+
+    def resolve_after_use(self, caster, skill_result, context):
+
+        for handler_config in self.after_use_handlers:
+
+            handler_name = handler_config["handler"]
+            data = handler_config.get("data", {})
+
+            handler = AFTER_USE_HANDLERS[
+                handler_name
+            ]
+
+            result = handler(
+                caster,
+                self,
+                data,
+                context,
+                skill_result
+            )
+
+            if result is not None:
+                skill_result.events.append(result)
+
+
+
+
 
 class HealingSkill(Skill):
+
+    # =========================================================
+    #                       INITIALIZATION
+    # =========================================================
+
     def __init__(self, skill_id, name, scaling_stat, base_scaling_ratio, target_type, scaling_bonus=0, cooldown=0):
         super().__init__(skill_id, name, target_type, cooldown)
+
         self.skill_type = SkillType.HEALING
         self.scaling_stat = scaling_stat
         self.base_scaling_ratio = base_scaling_ratio
         self.scaling_bonus = scaling_bonus
 
 
+    # =========================================================
+    #                         HEALING
+    # =========================================================
+
     @property
     def scaling_ratio(self):
-        return self.base_scaling_ratio + self.scaling_bonus 
+        return (
+            self.base_scaling_ratio
+            + self.scaling_bonus
+        )
+
 
 
     def healing(self, caster, target):
-        stat_value = getattr(caster, self.scaling_stat)
-        heal_value = int(self.scaling_ratio * stat_value)
 
-        return target.heal(heal_value)
+        stat_value = caster.get_effective_stat(
+            self.scaling_stat
+        )
+
+        heal_value = int(
+            self.scaling_ratio
+            * stat_value
+        )
+
+        return target.heal(
+            heal_value
+        )
 
 
-    def execute(self, caster, targets):
+    # =========================================================
+    #                        EXECUTION
+    # =========================================================
+
+    def execute(self, caster, targets, context=None):
+
         target_results = []
 
         for target in targets:
@@ -540,21 +693,34 @@ class HealingSkill(Skill):
             )
 
         return SkillResult(
-            True,
+            success=True,
             target_results=target_results
         )
 
 
 
+
+
 class PassiveSkill(Skill):
+
+    # =========================================================
+    #                       INITIALIZATION
+    # =========================================================
+
     def __init__(self, skill_id, name, trigger=None, handler=None):
         super().__init__(skill_id, name)
+
         self.trigger = trigger
         self.handler = handler
         self.skill_type = SkillType.PASSIVE
 
 
+    # =========================================================
+    #                       ACTIVATION
+    # =========================================================
+
     def activate(self, owner, context):
+
         if self.handler is None:
             return
 
@@ -564,11 +730,18 @@ class PassiveSkill(Skill):
 
 
 class SkillResult():
-    def __init__(self, success, value=0, critical=False, effects_applied=None, hit_results=None, target_results=None):
+
+    # =========================================================
+    #                       INITIALIZATION
+    # =========================================================
+
+    def __init__(self, success, value=0, critical=False, effects_applied=None, hit_results=None, target_results=None, events=None):
         self.success = success
         self.value = value
         self.critical = critical
+        
         self.effects_applied = effects_applied if effects_applied is not None else []
         self.hit_results = hit_results if hit_results is not None else []
         self.target_results = target_results if target_results is not None else []
+        self.events = events if events is not None else []
 

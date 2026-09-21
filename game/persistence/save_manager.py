@@ -1,8 +1,12 @@
 import json
 
-from .serializers import player_to_dict
 from .deserializers import player_from_dict
+from .serializers import player_to_dict
 
+
+# =========================================================
+#                         SAVING
+# =========================================================
 
 def save_player(player, file_path):
 
@@ -16,6 +20,10 @@ def save_player(player, file_path):
             ensure_ascii=False
         )
 
+
+# =========================================================
+#                         LOADING
+# =========================================================
 
 def load_player(file_path):
 

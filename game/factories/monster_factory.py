@@ -1,19 +1,30 @@
-from ..models.monster import Monster
-from ..models.skills import DamageSkill, HealingSkill, PassiveSkill
-from ..data.monster_data import MONSTER_DATA
-from ..data.skill_data import SKILL_DATA
-from ..models.enums import SkillType
-from ..data.passive_data import PASSIVE_DATA
-
 from uuid import uuid4
 
+from ..data.monster_data import MONSTER_DATA
+from ..data.passive_data import PASSIVE_DATA
+from ..data.skill_data import SKILL_DATA
+
+from ..models.enums import SkillType
+from ..models.monster import Monster
+from ..models.skills import (
+    DamageSkill,
+    HealingSkill,
+    PassiveSkill
+)
+
+
+# =========================================================
+#                    MONSTER CREATION
+# =========================================================
 
 def create_monster(monster_id, instance_id=None):
 
-    try: 
-        data = MONSTER_DATA[monster_id]
-    except KeyError:
-        return None
+    if monster_id not in MONSTER_DATA:
+        raise ValueError(
+            f"Unknown monster id: {monster_id}"
+        )
+
+    data = MONSTER_DATA[monster_id]
 
     if instance_id is None:
         instance_id = str(uuid4())
@@ -38,7 +49,7 @@ def create_monster(monster_id, instance_id=None):
     for passive_id in data.get("passives", []):
         passives.append(create_passive(passive_id))
 
-    new = Monster(
+    monster = Monster(
         instance_id=instance_id,
         monster_id=monster_id,
         name=name, 
@@ -54,52 +65,78 @@ def create_monster(monster_id, instance_id=None):
         passives=passives
     )
 
-    return new
+    monster.update_level_stats()
+    
+    return monster
 
+
+# =========================================================
+#                      SKILL CREATION
+# =========================================================
 
 def create_skill(skill_id):
+
+    if skill_id not in SKILL_DATA:
+        raise ValueError(
+            f"Unknown skill id: {skill_id}"
+        )
+
     skill = SKILL_DATA[skill_id]
-    new = None
 
     if skill["type"] == SkillType.DAMAGE:
-        new = DamageSkill(
-            skill_id,
-            skill["name"], 
-            skill["multiplier"], 
-            skill.get("hits", 1),
-            skill.get("hit_multipliers", []),
-            skill["target_type"],
-            skill.get("scaling_stat", "attack"),
-            skill["cooldown"],
-            skill.get("damage_handler", None),
-            skill.get("damage_handler_data", None),
-            skill.get("on_hit_handlers", None),
-            skill.get("after_skill_handlers", None),
-            skill.get("effects", [])
+
+        return DamageSkill(
+            skill_id=skill_id,
+            name=skill["name"],
+            multiplier=skill["multiplier"],
+            hits=skill.get("hits", 1),
+            hit_multipliers=skill.get("hit_multipliers", []),
+            target_type=skill["target_type"],
+            scaling_stat=skill.get("scaling_stat", "attack"),
+            cooldown=skill["cooldown"],
+            damage_handler=skill.get("damage_handler"),
+            damage_handler_data=skill.get("damage_handler_data"),
+            on_hit_handlers=skill.get("on_hit_handlers"),
+            after_skill_handlers=skill.get("after_skill_handlers"),
+            after_use_handlers=skill.get("after_use_handlers"),
+            effects=skill.get("effects", [])
         )
-  
-    elif skill["type"] == SkillType.HEALING:
-        new = HealingSkill(
-            skill_id,
-            skill["name"],
-            skill["scaling_stat"],
-            skill["base_scaling_ratio"],
-            skill["target_type"],
+
+    if skill["type"] == SkillType.HEALING:
+
+        return HealingSkill(
+            skill_id=skill_id,
+            name=skill["name"],
+            scaling_stat=skill["scaling_stat"],
+            base_scaling_ratio=skill["base_scaling_ratio"],
+            target_type=skill["target_type"],
             cooldown=skill["cooldown"]
         )
 
-    return new
+    raise ValueError(
+        f"Unsupported skill type for {skill_id}: "
+        f"{skill['type']}"
+    )
 
+
+# =========================================================
+#                    PASSIVE CREATION
+# =========================================================
 
 def create_passive(passive_id):
+    
+    if passive_id not in PASSIVE_DATA:
+        raise ValueError(
+            f"Unknown passive id: {passive_id}"
+        )
+
     passive = PASSIVE_DATA[passive_id]
 
-    new = PassiveSkill(
+    return PassiveSkill(
         skill_id=passive_id,
         name=passive["name"],
         trigger=passive.get("trigger"),
         handler=passive.get("handler")
     )
 
-    return new
 

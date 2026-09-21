@@ -1,4 +1,9 @@
 PASSIVE_DATA = {
+
+    # =========================================================
+    #                    IGNEOUS DRAKE
+    # =========================================================
+
     "cinderblood": {
         "name": "Cinderblood",
         "trigger": "on_hit",
@@ -29,6 +34,10 @@ PASSIVE_DATA = {
         "action_gauge": 0.10
     },
 
+    # =========================================================
+    #                    ABYSSAL DRAKE
+    # =========================================================
+    
     "frozen_scales": {
         "name": "Frozen Scales",
         "trigger": ["before_skill", "after_skill"],

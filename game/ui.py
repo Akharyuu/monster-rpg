@@ -1,11 +1,24 @@
 from .models.enums import SealstoneType, EssenceType
 
-#MAIN MENU:
+
+# =========================================================
+#                        CONSTANTS
+# =========================================================
+
+UI_WIDTH = 54
+BAR_WIDTH = 20
+
+
+
+# =========================================================
+#                       MAIN MENU
+# =========================================================
+
 def main_menu():
     print(
         "     Monster RPG\n\n"
         "1. Collection\n"
-        "2. Summon\n"
+        "2. Unseal\n"
         "3. Battle\n"
         "4. Codex\n"
         "5. Inventory\n"
@@ -13,6 +26,7 @@ def main_menu():
     )
 
     return input("> ")
+
 
 
 def collection_menu():
@@ -27,16 +41,29 @@ def collection_menu():
     return input("> ")
 
 
-def summon_menu():
-    sealstones = list(SealstoneType)
 
-    print("Select a Sealstone to use for the summon:\n")
-    for i, sealstone in enumerate(SealstoneType, start=1): 
-        print(f"{i}. {sealstone.value}")
+def unseal_menu(inventory):
 
-    print(f"{len(sealstones) + 1}. Back")
+    available_sealstones = []
 
-    return input("\n> ")
+    for sealstone in SealstoneType:
+        if inventory.get_amount(sealstone) > 0:
+            available_sealstones.append(sealstone)
+
+    print("Select a Sealstone to unseal:\n")
+
+    for i, sealstone in enumerate(available_sealstones, start=1):
+        amount = inventory.get_amount(sealstone)
+
+        print(
+            f"{i}. {sealstone.value} "
+            f"x{amount}"
+        )
+
+    print(f"{len(available_sealstones) + 1}. Back")
+
+    return input("\n> "), available_sealstones
+
 
 
 def inventory_menu():
@@ -49,57 +76,104 @@ def inventory_menu():
     return input("> ")
 
 
-#BATTLE UI:
-def show_battle_state(allies, enemies, active_ally):
+# =========================================================
+#                       BATTLE STATE
+# =========================================================
+
+def show_battle_state(allies, enemies, active_monster=None, upcoming_monster=None):
+
     print("\n==============================")
     print("            BATTLE")
     print("==============================")
 
-    # Show all living allies.
+    # Allies
     for i, ally in enumerate(allies, start=1):
         if not ally.is_alive:
             continue
 
-        if ally is active_ally:
-            print(f"\nALLY {i} [ACTIVE]")
-        else:
-            print(f"\nALLY {i}")
-            
+        markers = []
+
+        if ally is active_monster:
+            markers.append("ACTIVE")
+
+        if ally is upcoming_monster:
+            markers.append("UP NEXT")
+
+        marker_text = f" [{' | '.join(markers)}]" if markers else ""
+
+        print(f"\nALLY {i}{marker_text}")
+
         show_combat(ally)
         show_status_effects(ally)
         show_combat_resources(ally)
 
-    # Show all living enemies.
+    # Enemies
     for i, enemy in enumerate(enemies, start=1):
         if not enemy.is_alive:
             continue
 
-        print(f"\nENEMY {i}")
+        markers = []
+
+        if enemy is active_monster:
+            markers.append("ACTIVE")
+
+        if enemy is upcoming_monster:
+            markers.append("UP NEXT")
+
+        marker_text = f" [{' | '.join(markers)}]" if markers else ""
+
+        print(f"\nENEMY {i}{marker_text}")
+
         show_combat(enemy)
         show_status_effects(enemy)
         show_combat_resources(enemy)
 
-    print("------------------------------")
+    print("\n------------------------------")
 
+
+# =========================================================
+#                   MONSTER COMBAT INFO
+# =========================================================
 
 def show_combat(monster):
+
     print(
         f"{monster.display_name} | "
         f"Lvl {monster.level} | "
         f"HP: {monster.health}/{monster.max_health}"
     )
 
-    print(f"[{draw_hp_bar(monster.health, monster.max_health)}]")
+    print(
+        f"HP [{draw_hp_bar(monster.health, monster.max_health)}]"
+    )
+
+    print(
+        f"AG [{draw_action_gauge(monster.action_gauge)}] "
+        f"{monster.action_gauge * 100:.0f}%"
+    )
 
     skill_texts = []
 
     for i, skill in enumerate(monster.skills, start=1):
-        skill_texts.append(f"[{i}] {skill.name} CD:{skill.current_cooldown}")
+
+        if skill.current_cooldown > 0:
+            status = f"[CD:{skill.current_cooldown}]"
+        else:
+            status = "[READY]"
+
+        skill_texts.append(
+            f"[{i}] {skill.name} {status}"
+        )
 
     print("Skills:", " | ".join(skill_texts))
 
 
+# =========================================================
+#                     STATUS EFFECTS
+# =========================================================
+
 def show_status_effects(monster):
+
     if monster.buffs:
         buffs = []
 
@@ -110,12 +184,14 @@ def show_status_effects(monster):
                 text += f" x{buff.stacks}"
 
             text += f" ({buff.remaining_turns})"
+
             buffs.append(text)
 
         print("Buffs:", ", ".join(buffs))
 
     else:
         print("Buffs: -")
+
 
     if monster.debuffs:
         debuffs = []
@@ -127,6 +203,7 @@ def show_status_effects(monster):
                 text += f" x{debuff.stacks}"
 
             text += f" ({debuff.remaining_turns})"
+
             debuffs.append(text)
 
         print("Debuffs:", ", ".join(debuffs))
@@ -135,39 +212,100 @@ def show_status_effects(monster):
         print("Debuffs: -")
 
 
+# =========================================================
+#                    COMBAT RESOURCES
+# =========================================================
+
+def show_combat_resources(monster):
+
+    if not monster.combat_resources:
+        return
+
+    resources = []
+
+    for name, value in monster.combat_resources.items():
+        display_name = name.replace("_", " ").title()
+
+        resources.append(
+            f"{display_name}: {value}"
+        )
+
+    print("Resources:", " | ".join(resources))
+
+
+# =========================================================
+#                       COMBAT BARS
+# =========================================================
+
 def draw_hp_bar(health, max_health):
-    filled = int((health / max_health) * 20)
-    empty = 20 - filled
 
-    return (filled * "█") + (empty * "-")
+    if max_health <= 0:
+        return "-" * BAR_WIDTH
 
+    ratio = health / max_health
+    ratio = max(0, min(ratio, 1))
+
+    filled = int(ratio * BAR_WIDTH)
+    empty = BAR_WIDTH - filled
+
+    return ("█" * filled) + ("-" * empty)
+
+
+
+def draw_action_gauge(action_gauge):
+
+    action_gauge = max(0, min(action_gauge, 1))
+
+    filled = int(action_gauge * BAR_WIDTH)
+    empty = BAR_WIDTH - filled
+
+    return ("▮" * filled) + ("·" * empty)
+
+
+# =========================================================
+#                      PLAYER INPUT
+# =========================================================
 
 def select_skill(monster):
 
     while True:
-        number = input("Que habilidad quieres usar?\n> ")
 
-        try: 
-            number = int(number)
+        choice = input("Choose skill:\n> ")
 
-            chosen_skill = monster.get_skill(number)
-            if chosen_skill is None: 
-                print("El número seleccionado no existe.")
-                continue
-
-            if monster.is_silenced and number != 1:
-                print("Silence prevents using this skill.")
-                continue
-            
-            return chosen_skill
-
-        except ValueError: 
-            print("El valor introducido no es un número.")
+        if not choice.isdigit():
+            print("The value entered is not a number.")
             continue
+
+        number = int(choice)
+
+        chosen_skill = monster.get_skill(number)
+
+        if chosen_skill is None:
+            print("That skill does not exist.")
+            continue
+
+        if monster.is_silenced and number != 1:
+            print("Silence prevents using this skill.")
+            continue
+
+        if not chosen_skill.is_available():
+            print(
+                f"{chosen_skill.name} is on cooldown "
+                f"({chosen_skill.current_cooldown} turns remaining)."
+            )
+            continue
+
+        return chosen_skill
+
 
 
 def select_enemy(enemies):
-    alive_enemies = [enemy for enemy in enemies if enemy.is_alive]
+
+    alive_enemies = [
+        enemy
+        for enemy in enemies
+        if enemy.is_alive
+    ]
 
     print("\nChoose target:")
 
@@ -178,20 +316,27 @@ def select_enemy(enemies):
         )
 
     while True:
+
         choice = input("> ")
 
-        if choice.isdigit():
-            index = int(choice) - 1
+        if not choice.isdigit():
+            print("Invalid target.")
+            continue
 
-            if 0 <= index < len(alive_enemies):
-                return alive_enemies[index]
+        index = int(choice) - 1
+
+        if 0 <= index < len(alive_enemies):
+            return alive_enemies[index]
 
         print("Invalid target.")
 
 
+
 def select_ally(allies):
+
     alive_allies = [
-        ally for ally in allies
+        ally
+        for ally in allies
         if ally.is_alive
     ]
 
@@ -204,19 +349,28 @@ def select_ally(allies):
         )
 
     while True:
+
         choice = input("> ")
 
-        if choice.isdigit():
-            index = int(choice) - 1
+        if not choice.isdigit():
+            print("Invalid target.")
+            continue
 
-            if 0 <= index < len(alive_allies):
-                return alive_allies[index]
+        index = int(choice) - 1
+
+        if 0 <= index < len(alive_allies):
+            return alive_allies[index]
 
         print("Invalid target.")
 
 
+# =========================================================
+#                      COMBAT EVENTS
+# =========================================================
+
 def show_combat_event(actor_name, skill_name, messages):
-    print(f"{actor_name} used {skill_name}!")
+
+    print(f"\n{actor_name} used {skill_name}!")
 
     for message in messages:
         print(f"→ {message}")
@@ -224,31 +378,45 @@ def show_combat_event(actor_name, skill_name, messages):
     print()
 
 
+
 def show_damage_skill_result(actor, skill, skill_result):
+
     messages = []
 
-    for target_index, target_result in enumerate(skill_result.target_results, start=1):
+    multiple_targets = len(skill_result.target_results) > 1
+
+    for target_index, target_result in enumerate(
+        skill_result.target_results,
+        start=1
+    ):
+
         target = target_result["target"]
         hit_results = target_result["hit_results"]
-        any_critical = target_result["any_critical"]
         total_damage = target_result["total_damage"]
-        effects_applied = target_result["effects_applied"] 
+        effects_applied = target_result["effects_applied"]
 
-        if len(skill_result.target_results) > 1:
-            target_prefix = f"Enemy {target_index}: "
+        if multiple_targets:
+            target_prefix = f"{target.display_name}: "
         else:
             target_prefix = ""
 
-        #Damage/hits
+        # Damage / hits
         if len(hit_results) > 1:
-            for i, hit in enumerate(hit_results, start=1):
+
+            for hit_index, hit in enumerate(hit_results, start=1):
+
                 if hit["critical"]:
                     messages.append(
-                        f"{target_prefix}Hit {i}: CRITICAL! {target.display_name} took {hit['damage']} damage"
+                        f"{target_prefix}"
+                        f"Hit {hit_index}: CRITICAL! "
+                        f"{hit['damage']} damage"
                     )
+
                 else:
                     messages.append(
-                        f"{target_prefix}Hit {i}: {target.display_name} took {hit['damage']} damage"
+                        f"{target_prefix}"
+                        f"Hit {hit_index}: "
+                        f"{hit['damage']} damage"
                     )
 
             messages.append(
@@ -256,23 +424,28 @@ def show_damage_skill_result(actor, skill, skill_result):
             )
 
         else:
-            if any_critical:
+
+            if hit_results[0]["critical"]:
                 messages.append(
-                    f"{target_prefix}CRITICAL! {target.display_name} took {total_damage} damage"
+                    f"{target_prefix}"
+                    f"CRITICAL! {total_damage} damage"
                 )
+
             else:
                 messages.append(
-                    f"{target_prefix}{target.display_name} took {total_damage} damage"
+                    f"{target_prefix}"
+                    f"{total_damage} damage"
                 )
 
-        #Effects
-        shown_effect_ids = []
+        # Effects
+        shown_effect_ids = set()
 
         for effect in effects_applied:
+
             if effect.effect_id in shown_effect_ids:
                 continue
 
-            shown_effect_ids.append(effect.effect_id)
+            shown_effect_ids.add(effect.effect_id)
 
             text = f"{target_prefix}{effect.name}"
 
@@ -283,6 +456,18 @@ def show_damage_skill_result(actor, skill, skill_result):
 
             messages.append(text)
 
+    for event in skill_result.events:
+
+        if event["type"] == "heal":
+
+            target = event["target"]
+            value = event["value"]
+
+            messages.append(
+                f"{target.display_name} recovered "
+                f"{value} HP"
+            )
+
     show_combat_event(
         actor.display_name,
         skill.name,
@@ -290,24 +475,27 @@ def show_damage_skill_result(actor, skill, skill_result):
     )
 
 
-def show_combat_resources(monster):
-    if not monster.combat_resources:
-        return
+# =========================================================
+#                      COLLECTION UI
+# =========================================================
 
-    resources = []
+def show_collection(collection):
 
-    for name, value in monster.combat_resources.items():
-        display_name = name.replace("_", " ").title()
-        resources.append(f"{display_name}: {value}")
+    for i, monster in enumerate(collection, start=1):
+        print(
+            f"{i}. {monster.display_name} | Lvl {monster.level} | {'★' * monster.rarity} | R{monster.resonance}"
+        )
 
-    print("Resources:", " | ".join(resources))
 
+# =========================================================
+#                      INVENTORY UI
+# =========================================================
 
-#INVENTORY UI:
 def show_sealstones(inventory):
     for sealstone in SealstoneType:
         amount = inventory.get_amount(sealstone)
         print(f"{sealstone.value} Sealstone x{amount}")
+
 
 
 def show_essences(inventory):
@@ -316,3 +504,41 @@ def show_essences(inventory):
         print(f"{essence.value} Essence x{amount}")
 
 
+# =========================================================
+#                       DIALOG UI
+# =========================================================
+
+def print_header(title):
+    print()
+    print("=" * UI_WIDTH)
+    print(title.center(UI_WIDTH))
+    print("=" * UI_WIDTH)
+
+
+
+def print_subheader(title):
+    print()
+    print("-" * UI_WIDTH)
+    print(title.center(UI_WIDTH))
+    print("-" * UI_WIDTH)
+
+
+
+def wait_for_input(message="[ENTER] Continue"):
+    input(f"\n{message} ")
+
+
+
+def display_dialog(dialog, player):
+
+    for line in dialog:
+
+        if line["speaker"] == "player":
+            speaker = player.name
+        else:
+            speaker = line["speaker"].replace("_", " ").title()
+
+        print(f"\n{speaker.upper()}")
+        print(f"  {line['text']}")
+
+        input("\n  ▸ ")
