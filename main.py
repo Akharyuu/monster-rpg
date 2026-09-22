@@ -180,7 +180,7 @@ while True:
 
                 ally_monsters = [player.collection[choice]]
 
-                enemy_monsters = [create_monster("drake_storm")]
+                enemy_monsters = [create_monster("drake_abyssal")]
 
                 outcome = battle(ally_monsters, enemy_monsters)
 

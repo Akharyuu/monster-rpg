@@ -4,7 +4,15 @@ import pytest
 from game.factories.monster_factory import create_monster
 from game.factories.status_effect_factory import create_status_effect
 from game.systems.resonance import update_resonance_kit
-from game.combat.combat import battle, begin_turn, end_turn
+from game.combat.combat import (
+    battle,
+    begin_turn,
+    end_turn,
+    choose_skill,
+    choose_enemy_target,
+    estimate_damage,
+    sees_kill
+)
 import game.combat.combat as combat_module
 
 
@@ -518,7 +526,7 @@ def test_battle_resets_state_after_run(monkeypatch):
         return ally
 
 
-    def fake_player_turn(active_ally, allies, enemies):
+    def fake_player_turn(active_ally, allies, enemies, upcoming_combatant):
 
         # Simulamos cosas que podrían haber ocurrido durante el combate.
         active_ally.health = 100
@@ -554,3 +562,251 @@ def test_battle_resets_state_after_run(monkeypatch):
     assert ally.buffs == []
     assert ally.debuffs == []
     assert ally.combat_resources == {}
+
+
+# =========================================================
+#                        ENEMY AI
+# =========================================================
+
+def test_estimate_damage_uses_total_multihit_damage():
+
+    attacker = create_monster("drake_abyssal")
+    target = create_monster("drake_igneous")
+
+    skill = attacker.get_skill(2)
+
+    single_hit_damage = skill.base_damage_calc(
+        attacker,
+        target,
+        1
+    )
+
+    estimated_damage = estimate_damage(
+        attacker,
+        target,
+        skill
+    )
+
+    assert estimated_damage == pytest.approx(
+        single_hit_damage * skill.hits
+    )
+
+
+def test_estimate_damage_ignores_critical_hits():
+
+    attacker = create_monster("drake_abyssal")
+    target = create_monster("drake_igneous")
+
+    attacker.crit_rate = 100
+
+    skill = attacker.get_skill(2)
+
+    estimated_damage = estimate_damage(
+        attacker,
+        target,
+        skill
+    )
+
+    normal_damage = 0
+
+    for hit in range(skill.hits):
+
+        multiplier = 1
+
+        if skill.hit_multipliers:
+            multiplier = skill.hit_multipliers[hit]
+
+        normal_damage += skill.base_damage_calc(
+            attacker,
+            target,
+            multiplier
+        )
+
+    assert estimated_damage == pytest.approx(
+        normal_damage
+    )
+
+
+def test_estimate_damage_ignores_damage_handler():
+
+    attacker = create_monster("drake_igneous")
+    target = create_monster("drake_abyssal")
+
+    skill = attacker.get_skill(2)
+
+    damage_without_burn = estimate_damage(
+        attacker,
+        target,
+        skill
+    )
+
+    burn = create_status_effect(
+        effect_id="burn",
+        duration=3,
+        stacks=3,
+        source=attacker
+    )
+
+    target.apply_status_effect(burn)
+
+    damage_with_burn = estimate_damage(
+        attacker,
+        target,
+        skill
+    )
+
+    assert damage_with_burn == pytest.approx(
+        damage_without_burn
+    )
+
+
+def test_sees_kill_when_estimated_damage_is_enough():
+
+    attacker = create_monster("drake_abyssal")
+    target = create_monster("drake_igneous")
+
+    skill = attacker.get_skill(2)
+
+    estimated_damage = estimate_damage(
+        attacker,
+        target,
+        skill
+    )
+
+    target.health = int(
+        estimated_damage
+    )
+
+    assert sees_kill(
+        attacker,
+        target,
+        skill
+    ) is True
+
+
+def test_does_not_see_kill_when_damage_is_insufficient():
+
+    attacker = create_monster("drake_abyssal")
+    target = create_monster("drake_igneous")
+
+    skill = attacker.get_skill(2)
+
+    estimated_damage = estimate_damage(
+        attacker,
+        target,
+        skill
+    )
+
+    target.health = int(
+        estimated_damage
+    ) + 1
+
+    assert sees_kill(
+        attacker,
+        target,
+        skill
+    ) is False
+
+
+def test_enemy_target_prioritizes_guaranteed_kill():
+
+    attacker = create_monster("drake_igneous")
+
+    kill_target = create_monster(
+        "drake_abyssal"
+    )
+
+    attribute_target = create_monster(
+        "drake_storm"
+    )
+
+    skill = attacker.get_skill(1)
+
+    kill_target.health = 1
+
+    selected_target = choose_enemy_target(
+        attacker,
+        [
+            kill_target,
+            attribute_target
+        ],
+        skill
+    )
+
+    assert selected_target is kill_target
+
+
+def test_enemy_target_prioritizes_attribute_advantage_when_no_kill():
+
+    attacker = create_monster("drake_igneous")
+
+    neutral_target = create_monster(
+        "drake_igneous"
+    )
+
+    advantage_target = create_monster(
+        "drake_storm"
+    )
+
+    neutral_target.health = neutral_target.max_health
+    advantage_target.health = advantage_target.max_health
+
+    skill = attacker.get_skill(1)
+
+    selected_target = choose_enemy_target(
+        attacker,
+        [
+            neutral_target,
+            advantage_target
+        ],
+        skill
+    )
+
+    assert selected_target is advantage_target
+
+
+def test_enemy_target_favors_lowest_hp_target(monkeypatch):
+
+    attacker = create_monster("drake_igneous")
+
+    low_hp_target = create_monster(
+        "drake_abyssal"
+    )
+
+    high_hp_target = create_monster(
+        "drake_abyssal"
+    )
+
+    low_hp_target.health = int(
+        low_hp_target.max_health * 0.40
+    )
+
+    high_hp_target.health = int(
+        high_hp_target.max_health * 0.90
+    )
+
+    skill = attacker.get_skill(1)
+
+    def fake_choices(
+        population,
+        weights,
+        k
+    ):
+        return [population[0]]
+
+    monkeypatch.setattr(
+        random,
+        "choices",
+        fake_choices
+    )
+
+    selected_target = choose_enemy_target(
+        attacker,
+        [
+            high_hp_target,
+            low_hp_target
+        ],
+        skill
+    )
+
+    assert selected_target is low_hp_target

@@ -130,17 +130,46 @@ class DamageSkill(Skill):
     #                    DAMAGE CALCULATION
     # =========================================================
 
+    def base_damage_calc(self, attacker, defender, hit_multiplier, damage_multiplier=1, ignore_defense=False):
+
+        #Gets the effective scaling stat for the skill and applies it to calc raw damage
+        scaling_stat = self.scaling_stat
+        effective_scaling_stat = attacker.get_effective_stat(
+            scaling_stat
+        )
+
+        #Normalize max_health stat to be in the same scale as other stats
+        if scaling_stat == "max_health":
+            effective_scaling_stat *= 0.08
+
+        raw_damage = (effective_scaling_stat * self.multiplier * damage_multiplier * hit_multiplier)
+
+        if raw_damage <= 0:
+            return 1
+
+        #Gets % damage reduction based on defense
+        damage_reduction = 1
+
+        if not ignore_defense:
+
+            effective_defense = defender.get_effective_stat(
+                "defense"
+            )
+
+            damage_reduction = (1000 / (1000 + effective_defense))
+
+        #Attribute Advantage
+        attribute_modifier = (attacker.get_attribute_modifier(defender))
+
+        final_damage = (raw_damage * damage_reduction * attribute_modifier)
+
+        return max(1, final_damage)
+
+
+
     def damage_calc(self, attacker, defender, hit_multiplier):
             
             critical = False
-
-            #Gets the effective scaling stat for the skill and applies it to calc raw damage
-            scaling_stat = self.scaling_stat
-            effective_scaling_stat = attacker.get_effective_stat(scaling_stat)
-
-            #Normalize max_health stat to be in the same scale as other stats
-            if scaling_stat == "max_health":
-                effective_scaling_stat *= 0.08
 
             #Manages the skill bonus damage calling to the respective handler, if there is one
             damage_data = {}
@@ -153,22 +182,7 @@ class DamageSkill(Skill):
 
             ignore_defense = damage_data.get("ignore_defense", False)
 
-            raw_damage = effective_scaling_stat * self.multiplier * bonus_damage * hit_multiplier
-
-            if raw_damage <= 0:
-                return 1, critical
-
-            #Gets % damage reduction based on defense
-            damage_reduction = 1
-
-            if not ignore_defense:
-
-                effective_defense = defender.get_effective_stat("defense")
-
-                damage_reduction = 1000 / (1000 + effective_defense)
-
-            #Attribute Advantage
-            attribute_modifier = attacker.get_attribute_modifier(defender)
+            base_damage = self.base_damage_calc(attacker, defender, hit_multiplier, bonus_damage, ignore_defense)
     
             #Crit Roll
             critical_damage_bonus = 1
@@ -178,14 +192,14 @@ class DamageSkill(Skill):
                 critical = True
 
             #Final damage
-            final_damage = raw_damage * damage_reduction * attribute_modifier * critical_damage_bonus
+            final_damage = base_damage * critical_damage_bonus
 
             return max(1, int(final_damage)), critical
 
 
-# =========================================================
-#                        EXECUTION
-# =========================================================
+    # =========================================================
+    #                        EXECUTION
+    # =========================================================
 
     def execute(self, caster, targets, context=None):
             
@@ -313,9 +327,9 @@ class DamageSkill(Skill):
         return skill_result
 
 
-# =========================================================
-#                     STATUS EFFECTS
-# =========================================================
+    # =========================================================
+    #                     STATUS EFFECTS
+    # =========================================================
 
     def try_apply_effect(self, effect, caster, target):
 
@@ -377,9 +391,9 @@ class DamageSkill(Skill):
         return applied_effect
 
 
-# =========================================================
-#                       TARGET STATE
-# =========================================================
+    # =========================================================
+    #                       TARGET STATE
+    # =========================================================
 
     def get_target_snapshot(self, target):
         debuffs = {}
@@ -410,9 +424,9 @@ class DamageSkill(Skill):
         }
 
 
-# =========================================================
-#                      HIT RESOLUTION
-# =========================================================
+    # =========================================================
+    #                      HIT RESOLUTION
+    # =========================================================
 
     def resolve_hit(self, caster, target, hit_index, target_result, gameplay_active=True):
     
@@ -523,9 +537,9 @@ class DamageSkill(Skill):
                         )
 
 
-# =========================================================
-#                  AFTER TARGET RESOLUTION
-# =========================================================
+    # =========================================================
+    #                  AFTER TARGET RESOLUTION
+    # =========================================================
 
     def resolve_after_skill_for_target(self, caster, target_result):
 
@@ -600,9 +614,9 @@ class DamageSkill(Skill):
             )
 
 
-# =========================================================
-#                   AFTER USE RESOLUTION
-# =========================================================
+    # =========================================================
+    #                   AFTER USE RESOLUTION
+    # =========================================================
 
     def resolve_after_use(self, caster, skill_result, context):
 

@@ -103,7 +103,7 @@ def show_battle_state(allies, enemies, active_monster=None, upcoming_monster=Non
 
         print(f"\nALLY {i}{marker_text}")
 
-        show_combat(ally)
+        show_combat(ally, active_monster)
         show_status_effects(ally)
         show_combat_resources(ally)
 
@@ -124,7 +124,7 @@ def show_battle_state(allies, enemies, active_monster=None, upcoming_monster=Non
 
         print(f"\nENEMY {i}{marker_text}")
 
-        show_combat(enemy)
+        show_combat(enemy, active_monster)
         show_status_effects(enemy)
         show_combat_resources(enemy)
 
@@ -135,7 +135,7 @@ def show_battle_state(allies, enemies, active_monster=None, upcoming_monster=Non
 #                   MONSTER COMBAT INFO
 # =========================================================
 
-def show_combat(monster):
+def show_combat(monster, active_monster=None):
 
     print(
         f"{monster.display_name} | "
@@ -143,13 +143,21 @@ def show_combat(monster):
         f"HP: {monster.health}/{monster.max_health}"
     )
 
-    print(
-        f"HP [{draw_hp_bar(monster.health, monster.max_health)}]"
-    )
+    health_percentage = (monster.health / monster.max_health * 100)
 
     print(
-        f"AG [{draw_action_gauge(monster.action_gauge)}] "
-        f"{monster.action_gauge * 100:.0f}%"
+        f"HP [{draw_hp_bar(monster.health, monster.max_health)}] "
+        f"{health_percentage:.0f}%"
+    )
+
+    action_gauge = monster.action_gauge
+
+    if monster is active_monster:
+        action_gauge = 1
+
+    print(
+        f"AG [{draw_action_gauge(action_gauge)} ] "
+        f"{action_gauge * 100:.0f}%"
     )
 
     skill_texts = []

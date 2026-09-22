@@ -65,7 +65,7 @@ def test_glyph_cannot_upgrade_above_level_15(rarity):
 
     glyph = create_glyph(rarity)
 
-    glyph.glyph_level_upgrade(20)
+    glyph.upgrade_levels(20)
 
     assert glyph.level == 15
 
@@ -75,7 +75,7 @@ def test_glyph_has_ten_total_rolls_at_level_15(rarity):
 
     glyph = create_glyph(rarity)
 
-    glyph.glyph_level_upgrade(15)
+    glyph.upgrade_levels(15)
 
     total_rolls = 0
 
@@ -90,7 +90,7 @@ def test_glyph_last_sub_stat_roll_is_double(rarity):
 
     glyph = create_glyph(rarity)
 
-    glyph.glyph_level_upgrade(14)
+    glyph.upgrade_levels(14)
 
     sub_stat_rolls_14 = {}
     sub_stat_rolls_15 = {}
@@ -98,7 +98,7 @@ def test_glyph_last_sub_stat_roll_is_double(rarity):
     for sub_stat in glyph.sub_stats:
         sub_stat_rolls_14[sub_stat.stat] = len(sub_stat.rolls)
 
-    glyph.glyph_level_upgrade(15)
+    glyph.upgrade_levels(15)
 
     for sub_stat in glyph.sub_stats:
         sub_stat_rolls_15[sub_stat.stat] = len(sub_stat.rolls)
@@ -129,7 +129,7 @@ def test_glyph_main_stat_reaches_main_max_at_15(rarity):
 
     glyph = create_glyph(rarity)
 
-    glyph.glyph_level_upgrade(15)
+    glyph.upgrade_levels(15)
 
     assert glyph.main_value == GLYPH_STAT_DATA[glyph.main_stat]["main_max"][glyph.rarity]
 
@@ -172,7 +172,7 @@ def test_glyph_sub_stat_rolls_happen_at_designed_levels(rarity):
         if glyph.level == 15:
             break
 
-        glyph.glyph_level_upgrade(1)
+        glyph.upgrade_levels(1)
 
     assert actual_pattern == expected_pattern
 
@@ -181,7 +181,7 @@ def test_glyph_sub_stat_rolls_happen_at_designed_levels(rarity):
 def test_all_glyph_rolls_stay_in_rarity_range(rarity):
 
     glyph = create_glyph(rarity)
-    glyph.glyph_level_upgrade(15)
+    glyph.upgrade_levels(15)
 
     for sub_stat in glyph.sub_stats:
 

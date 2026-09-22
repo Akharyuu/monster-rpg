@@ -270,8 +270,7 @@ def enemy_turn(active_enemy, enemies, allies):
     ):
         return None
 
-    # TODO: Replace with real enemy AI.
-    enemy_skill = active_enemy.get_skill(1)
+    enemy_skill = choose_skill(active_enemy)
 
     outcome = None
 
@@ -290,25 +289,11 @@ def enemy_turn(active_enemy, enemies, allies):
 
             if enemy_skill.target_type == TargetType.SINGLE_ENEMY:
 
-                alive_allies = [
-                    ally for ally in allies
-                    if ally.is_alive
-                ]
-
-                targets = [
-                    random.choice(alive_allies)
-                ]
+                targets = [choose_enemy_target(active_enemy, allies, enemy_skill)]
 
             elif enemy_skill.target_type == TargetType.SINGLE_ALLY:
 
-                alive_teammates = [
-                    enemy for enemy in enemies
-                    if enemy.is_alive
-                ]
-
-                targets = [
-                    random.choice(alive_teammates)
-                ]
+                targets = [choose_healing_target(enemies)]
 
         match enemy_skill.skill_type:
 
@@ -574,3 +559,180 @@ def resolve_targets(skill, actor, team, opponents):
             return alive_opponents
 
     return None
+
+
+# =========================================================
+#                         ENEMY AI
+# =========================================================
+
+def choose_skill(active_enemy, enemies):
+
+    base_skill = active_enemy.get_skill(1)
+
+    if active_enemy.is_silenced:
+        return base_skill
+
+    available_skills = []
+
+    for skill in active_enemy.skills:
+
+        if skill.current_cooldown == 0:
+
+            ally_needs_healing = any(
+                enemy.health / enemy.max_health < 0.75
+                for enemy in enemies
+            )
+
+            if (
+                skill.skill_type == SkillType.HEALING
+                and not ally_needs_healing
+            ):
+                continue
+
+            available_skills.append(skill)
+
+    if len(available_skills) <= 1:
+
+        return base_skill
+
+    if len(available_skills) == 2:
+
+        selected_skills = random.choices(
+            available_skills,
+            weights=[20, 80],
+            k=1
+        ) 
+
+    elif len(available_skills) == 3:
+
+        selected_skills = random.choices(
+            available_skills,
+            weights=[10, 55, 35],
+            k=1
+        ) 
+
+    return selected_skills[0]
+
+
+
+def choose_enemy_target(active_enemy, allies, skill):
+
+    alive_targets = []
+
+    for target in allies:
+
+        if target.is_alive:
+            alive_targets.append(target)
+
+    if len(alive_targets) == 1:
+        return alive_targets[0]
+
+    kill_range_targets = []
+
+    for target in alive_targets:
+
+        if sees_kill(active_enemy, target, skill):
+            kill_range_targets.append(target)
+
+    if kill_range_targets:
+        return random.choice(kill_range_targets)
+    
+    great_targets = []
+    normal_targets = []
+    bad_targets = []
+
+    for target in alive_targets:
+
+        modifier = active_enemy.get_attribute_modifier(target)
+
+        if modifier == 1.2:
+            great_targets.append(target)
+
+        elif modifier == 1:
+            normal_targets.append(target)
+
+        else:
+            bad_targets.append(target)
+
+    if great_targets:
+        target_pool = great_targets
+
+    elif normal_targets:
+        target_pool = normal_targets
+
+    elif bad_targets:
+        target_pool = bad_targets
+
+    if len(target_pool) == 1:
+        return target_pool[0]
+
+    lowest_hp_target = min(
+        target_pool,
+        key=lambda target: target.health / target.max_health
+    )
+
+    final_pool = [lowest_hp_target]
+
+    for target in target_pool:
+
+        if target not in final_pool:
+            final_pool.append(target)
+
+    other_targets = len(final_pool) - 1
+
+    weights = [
+        75
+    ]
+
+    for _ in range(other_targets):
+        weights.append(25 / other_targets)
+
+    selected_target = random.choices(
+        final_pool,
+        weights=weights,
+        k=1
+    )
+
+    return selected_target[0]
+
+
+
+def choose_healing_target(enemies):
+
+    alive_targets = []
+
+    for enemy in enemies:
+
+        if enemy.is_alive:
+            alive_targets.append(enemy)
+
+    return min(
+        alive_targets,
+        key=lambda target: target.health / target.max_health
+    )
+
+
+
+def estimate_damage(active_enemy, target, skill):
+
+    total_damage = 0
+
+    for hit in range(skill.hits):
+
+        multiplier = 1
+
+        if skill.hit_multipliers:
+            multiplier = skill.hit_multipliers[hit]
+
+        total_damage += skill.base_damage_calc(active_enemy, target, multiplier)
+
+    return total_damage
+
+
+
+def sees_kill(active_enemy, target, skill):
+
+    damage = estimate_damage(active_enemy, target, skill)
+
+    return damage >= target.health
+

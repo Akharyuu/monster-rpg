@@ -13,7 +13,7 @@ import pytest
 def test_glyph_serialization_round_trip():
 
     original = create_glyph("legendary")
-    original.glyph_level_upgrade(15)
+    original.upgrade_levels(15)
 
     data = glyph_to_dict(original)
 

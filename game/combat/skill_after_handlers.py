@@ -31,9 +31,9 @@ def consume_burn_and_heal(caster, target, skill, data, context):
 
     heal_ratio = data["heal_by_stacks"][initial_burn_stacks]
 
-    caster.heal(
-        heal_ratio * caster.max_health
-    )
+    heal_amount = int(caster.max_health * heal_ratio)
+
+    caster.heal(heal_amount)
 
 
 
