@@ -115,5 +115,20 @@ STATUS_EFFECT_DATA =  {
         "stat": None,
         "effect_type": EffectType.BUFF,
         "modifier": None
+    },
+
+    "regrowth": {
+        "name": "Regrowth",
+        "stat": None,
+        "effect_type": EffectType.BUFF,
+        "modifier": None,
+        "heal_ratio": 0.08
+    },
+
+    "shield": {
+        "name": "Shield",
+        "stat": None,
+        "effect_type": EffectType.BUFF,
+        "modifier": None
     }
 }

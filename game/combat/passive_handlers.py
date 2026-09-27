@@ -5,6 +5,29 @@ from ..factories.status_effect_factory import create_status_effect
 
 
 # =========================================================
+#                      SELF BUFFS
+# =========================================================
+
+def apply_self_buff(owner, context, passive):
+
+    data = passive.handler_data
+
+    trigger_chance = random.random()
+
+    if trigger_chance > data.get("chance", 1.00):
+        return
+
+    status_effect = create_status_effect(
+        effect_id=data["effect_id"],
+        duration=data["turns"],
+        stacks=data.get("stacks", 1),
+        source=owner
+    )
+
+    owner.apply_status_effect(status_effect)
+
+
+# =========================================================
 #                         BURN
 # =========================================================
 
@@ -31,6 +54,69 @@ def apply_burn(owner, context, passive):
 
             if action_gauge_gain > 0:
                 owner.increase_action_gauge(action_gauge_gain)
+
+
+# =========================================================
+#                         STUN
+# =========================================================
+
+def stun_on_hit_if_buff(owner, context, passive):
+
+    data = passive.handler_data
+
+    skill = context.get("skill")
+    target = context.get("target")
+
+    if skill is None or target is None:
+        return
+
+    if skill.skill_id not in data["allowed_skill_ids"]:
+        return
+
+    has_required_buff = any(
+        buff.effect_id == data["required_buff"]
+        for buff in owner.buffs
+    )
+
+    if not has_required_buff:
+        return
+
+    if random.random() > data["chance"]:
+        return
+
+    stun = create_status_effect(
+        effect_id="stun",
+        duration=data["turns"],
+        source=owner
+    )
+
+    applied_effect = target.apply_status_effect(
+        stun
+    )
+
+    if applied_effect is None:
+        return
+
+    on_success = data.get("on_success")
+
+    if on_success is None:
+        return
+
+    cooldown_reduction = on_success.get("reduce_skill_cooldown")
+
+    if cooldown_reduction is not None:
+
+        skill_ids = cooldown_reduction["skill_ids"]
+
+        amount = cooldown_reduction["amount"]
+
+        for owned_skill in owner.skills:
+
+            if owned_skill.skill_id in skill_ids:
+
+                owned_skill.current_cooldown = max( 0, owned_skill.current_cooldown - amount )
+
+                break
 
 
 # =========================================================
@@ -175,7 +261,9 @@ def shattered_fury(owner, context, passive):
 # =========================================================
 
 PASSIVE_HANDLERS = {
+    "apply_self_buff": apply_self_buff,
     "apply_burn": apply_burn,
+    "stun_on_hit_if_buff": stun_on_hit_if_buff,
     "frozen_scales": frozen_scales,
     "shattered_fury": shattered_fury
 }

@@ -1,7 +1,53 @@
 PASSIVE_DATA = {
 
     # =========================================================
-    #                    IGNEOUS DRAKE
+    #                        STORM DRYAD
+    # =========================================================
+
+    "natures_grace": {
+        "name": "Nature's Grace",
+        "handler": "natures_grace",
+
+        "handler_data": {
+            "hp_threshold": 0.50,
+            "healing_multiplier": 1.20
+        }
+    },
+
+    "natures_grace_overgrowth": {
+        "name": "Nature's Grace: Overgrowth",
+        "handler": "natures_grace",
+
+        "handler_data": {
+            "hp_threshold": 0.50,
+            "healing_multiplier": 1.20,
+
+            "overgrowth": {
+                "overheal_conversion": 0.50,
+                "max_shield_ratio": 0.10,
+                "shield_turns": 2
+            }
+        }
+    },
+
+    # =========================================================
+    #                      IGNEOUS GRIFFON
+    # =========================================================
+
+    "hawk_instinct": {
+        "name": "Hawk Instinct",
+        "trigger": "on_apply_stun",
+        "handler": "apply_self_buff",
+
+        "handler_data": {
+            "effect_id": "speed_up",
+            "chance": 1.00,
+            "turns": 2
+        }
+    },
+
+    # =========================================================
+    #                      IGNEOUS DRAKE
     # =========================================================
 
     "cinderblood": {
@@ -35,7 +81,7 @@ PASSIVE_DATA = {
     },
 
     # =========================================================
-    #                    ABYSSAL DRAKE
+    #                      ABYSSAL DRAKE
     # =========================================================
     
     "frozen_scales": {
@@ -109,5 +155,72 @@ PASSIVE_DATA = {
         ],
 
         "action_gauge": 0.15
+    },
+
+    # =========================================================
+    #                      STORM DRAKE
+    # =========================================================
+
+    "thunderheart": {
+        "name": "Thunderheart",
+        "handler": "thunderheart",
+
+        "handler_data": {
+            "damage_per_bonus_speed": 0.003,
+        }
+    },
+
+    "thunderheart_overclocked": {
+        "name": "Thunderheart: Overclocked",
+        "handler": "thunderheart",
+
+        "handler_data": {
+            "damage_per_bonus_speed": 0.003,
+            "speed_per_crit": 5,
+            "max_crit_rate_bonus": 30
+        }
+    },
+
+    "short_circuit": {
+        "name": "Short Circuit",
+        "trigger": "on_hit",
+        "handler": "stun_on_hit_if_buff",
+
+        "handler_data": {
+            "required_buff": "speed_up",
+            "allowed_skill_ids": [
+                "draconic_claw",
+                "lightning_rush"
+            ],
+            "chance": 0.10,
+            "turns": 1
+        }
+    },
+
+    "short_circuit_chain_reaction": {
+        "name": "Short Circuit: Chain Reaction",
+        "trigger": "on_hit",
+        "handler": "stun_on_hit_if_buff",
+
+        "handler_data": {
+            "required_buff": "speed_up",
+            "allowed_skill_ids": [
+                "draconic_claw",
+                "lightning_rush",
+                "lightning_rush_blitz"
+            ],
+            "chance": 0.10,
+            "turns": 1,
+
+            "on_success": {
+                "reduce_skill_cooldown": {
+                    "skill_ids": [
+                        "stormbreak",  
+                        "stormbreak_requiem" 
+                    ],
+                    "amount": 1
+                }
+            }
+        }
     },
 }

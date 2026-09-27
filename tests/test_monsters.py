@@ -46,7 +46,7 @@ def test_monster_without_resonance_data_can_load_at_r0():
 
 def test_monster_without_resonance_data_cannot_load_above_r0():
 
-    original = create_monster("drake_storm")
+    original = create_monster("slime_igneous")
 
     data = monster_to_dict(original)
     data["resonance"] = 1

@@ -9,39 +9,49 @@ CAMPAIGN_DATA = {
             "name": "Welcome, Binder",
 
             "events": [
+
+                # -------------------------------------------------
+                # INTRODUCTION
+                # -------------------------------------------------
                 {
                     "dialog": [
                         {
-                            "speaker": "senpai",
-                            "text": "Welcome to the Binder Organization."
+                            "speaker": "Riven",
+                            "text": "So you're the rookie they assigned me."
                         },
                         {
-                            "speaker": "senpai",
+                            "speaker": "Riven",
                             "text": (
-                                "As a Binder, your job is to protect people "
-                                "from dangerous Nimaras."
+                                "Hah. Relax, I'm not your instructor. "
+                                "They just asked me to make sure you don't "
+                                "get yourself killed on your first day."
                             )
                         },
                         {
-                            "speaker": "senpai",
+                            "speaker": "Riven",
                             "text": (
-                                "To do that, we form Bonds with Nimaras "
-                                "sealed inside Sealstones."
+                                "I'm Riven. Stick with me for a bit, "
+                                "learn the basics, and after that "
+                                "you're on your own."
                             )
                         },
                         {
-                            "speaker": "senpai",
+                            "speaker": "Riven",
                             "text": (
-                                "Once bound, that Nimara becomes your Servant."
+                                "First things first. You've got a "
+                                "Runic Sealstone, right?"
                             )
                         },
                         {
-                            "speaker": "senpai",
-                            "text": "And today, you're getting your first one."
+                            "speaker": "Riven",
+                            "text": "Good. Use it. Let's see who answers."
                         },
                     ]
                 },
 
+                # -------------------------------------------------
+                # FIRST SEALSTONE
+                # -------------------------------------------------
                 {
                     "reward": {
                         "items": [
@@ -56,21 +66,36 @@ CAMPAIGN_DATA = {
                 {
                     "unseal": {
                         "sealstone_type": SealstoneType.RUNIC,
-                        "forced_monster_id": "drake_igneous"
+                        "forced_monster_id": "griffon_igneous"
                     }
                 },
 
                 {
                     "dialog": [
                         {
-                            "speaker": "senpai",
-                            "text": "An Igneous Gryphon. Not bad for your first Bond."
+                            "speaker": "Riven",
+                            "text": "...Oh."
                         },
                         {
-                            "speaker": "senpai",
+                            "speaker": "Riven",
+                            "text": "A Griffon? Hah. You've got some nerve for a first-timer."
+                        },
+                        {
+                            "speaker": "Riven",
+                            "text": "I like it."
+                        },
+                        {
+                            "speaker": "Riven",
                             "text": (
-                                "Come on. There's a forest outside the city "
-                                "where new Binders usually train."
+                                "Come on. A few Nimaras have been wandering "
+                                "too close to the eastern road."
+                            )
+                        },
+                        {
+                            "speaker": "Riven",
+                            "text": (
+                                "Nothing serious. Perfect chance to see "
+                                "what your new partner can do."
                             )
                         },
                     ]
@@ -78,58 +103,49 @@ CAMPAIGN_DATA = {
 
                 # -------------------------------------------------
                 # STAGE 1
-                # Basic combat / S1 / Action Gauge
+                # S1 / ATTRIBUTES / BASIC COMBAT
                 # -------------------------------------------------
-                {
-                    "battle": {
-                        "enemies": [
-                            {
-                                "monster_id": "slime_storm",
-                                "level": 1
-                            }
-                        ],
-
-                        "tutorial": {
-                            "allowed_skills": [1]
-                        }
-                    }
-                },
-
                 {
                     "dialog": [
                         {
-                            "speaker": "senpai",
-                            "text": "Good. Your Servant acts when its Action Gauge is full."
+                            "speaker": "Riven",
+                            "text": "Alright. First one."
                         },
                         {
-                            "speaker": "senpai",
+                            "speaker": "Riven",
                             "text": (
-                                "Speed determines how quickly that gauge fills. "
-                                "Keep an eye on the turn order."
+                                "Before you attack, check its attribute. "
+                                "That matters more than you'd think."
+                            )
+                        },
+                        {
+                            "speaker": "Riven",
+                            "text": (
+                                "Igneous beats Storm. Storm beats Abyssal. "
+                                "Abyssal beats Igneous."
+                            )
+                        },
+                        {
+                            "speaker": "Riven",
+                            "text": (
+                                "You've got the advantage here. "
+                                "Show me what that Griffon can do."
                             )
                         },
                     ]
                 },
 
-                # -------------------------------------------------
-                # STAGE 2
-                # Multiple enemies / S2 / AoE / attributes
-                # -------------------------------------------------
                 {
                     "battle": {
                         "enemies": [
                             {
-                                "monster_id": "slime_abyssal",
+                                "monster_id": "slime_storm",
                                 "level": 2
-                            },
-                            {
-                                "monster_id": "sprout_igneous",
-                                "level": 3
                             }
                         ],
 
                         "tutorial": {
-                            "introduce_skill": 2,
+                            "allowed_skills": [1],
                             "teach_attributes": True
                         }
                     }
@@ -138,25 +154,172 @@ CAMPAIGN_DATA = {
                 {
                     "dialog": [
                         {
-                            "speaker": "senpai",
+                            "speaker": "Riven",
+                            "text": "Easy enough."
+                        },
+                        {
+                            "speaker": "Riven",
                             "text": (
-                                "Different attributes interact differently. "
-                                "Igneous has the advantage over Storm, "
-                                "but struggles against Abyssal."
+                                "See the Action Gauges? When one fills, "
+                                "that Nimara gets to move."
                             )
                         },
                         {
-                            "speaker": "senpai",
+                            "speaker": "Riven",
                             "text": (
-                                "You'll learn the matchups quickly. "
-                                "For now, that's enough for your first day."
+                                "Speed determines how quickly it fills. "
+                                "And trust me, Speed matters."
                             )
+                        },
+                    ]
+                },
+
+                # -------------------------------------------------
+                # STAGE 2
+                # S2 / MULTIPLE TARGETS / ROLES / ACTION GAUGE
+                # -------------------------------------------------
+                {
+                    "dialog": [
+                        {
+                            "speaker": "Riven",
+                            "text": "Two this time."
+                        },
+                        {
+                            "speaker": "Riven",
+                            "text": (
+                                "Don't just hit whatever's standing in front "
+                                "of you. Watch what each one does."
+                            )
+                        },
+                    ]
+                },
+
+                {
+                    "battle": {
+                        "enemies": [
+                            {
+                                "monster_id": "wisp_abyssal",
+                                "level": 3
+                            },
+                            {
+                                "monster_id": "sprout_storm",
+                                "level": 3
+                            }
+                        ],
+
+                        "tutorial": {
+                            "introduce_skill": 2
                         }
+                    }
+                },
+
+                {
+                    "dialog": [
+                        {
+                            "speaker": "Riven",
+                            "text": (
+                                "See? The Wisp can interfere with your "
+                                "Action Gauge."
+                            )
+                        },
+                        {
+                            "speaker": "Riven",
+                            "text": (
+                                "And the Sprout keeps its allies going."
+                            )
+                        },
+                        {
+                            "speaker": "Riven",
+                            "text": (
+                                "Different enemies, different problems. "
+                                "Learn which one needs to go first."
+                            )
+                        },
+                    ]
+                },
+
+                # -------------------------------------------------
+                # STAGE 3
+                # FIRST REAL FIGHT
+                # -------------------------------------------------
+                {
+                    "dialog": [
+                        {
+                            "speaker": "Riven",
+                            "text": "Alright."
+                        },
+                        {
+                            "speaker": "Riven",
+                            "text": "No hints this time."
+                        },
+                        {
+                            "speaker": "Riven",
+                            "text": "Read the field."
+                        },
+                    ]
+                },
+
+                {
+                    "battle": {
+                        "enemies": [
+                            {
+                                "monster_id": "thornet_igneous",
+                                "level": 3
+                            },
+                            {
+                                "monster_id": "sprout_storm",
+                                "level": 2
+                            }
+                        ]
+                    }
+                },
+
+                # -------------------------------------------------
+                # CHAPTER HOOK
+                # -------------------------------------------------
+                {
+                    "dialog": [
+                        {
+                            "speaker": "Riven",
+                            "text": "Hah. Not bad."
+                        },
+                        {
+                            "speaker": "Riven",
+                            "text": (
+                                "You're already starting to read the fight "
+                                "instead of just swinging at things."
+                            )
+                        },
+                        {
+                            "speaker": "Riven",
+                            "text": "..."
+                        },
+                        {
+                            "speaker": "Riven",
+                            "text": "Hold on."
+                        },
+                        {
+                            "speaker": "Riven",
+                            "text": (
+                                "Those tracks aren't from anything "
+                                "we fought today."
+                            )
+                        },
+                        {
+                            "speaker": "Riven",
+                            "text": "Bigger. Heavier."
+                        },
+                        {
+                            "speaker": "Riven",
+                            "text": (
+                                "Looks like tomorrow just got "
+                                "a little more interesting."
+                            )
+                        },
                     ]
                 },
             ]
         },
-
 
         # =========================================================
         # MISSION 2

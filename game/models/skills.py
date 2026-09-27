@@ -5,6 +5,7 @@ from ..data.status_effect_data import STATUS_EFFECT_DATA
 from ..factories.status_effect_factory import create_status_effect
 
 from ..combat.passive_handlers import PASSIVE_HANDLERS
+from ..combat.passive_modifiers import get_passive_damage_multiplier
 from ..combat.passive_triggers import trigger_passives
 from ..combat.skill_damage_handlers import DAMAGE_HANDLERS
 from ..combat.skill_after_handlers import AFTER_SKILL_HANDLERS
@@ -79,7 +80,7 @@ class DamageSkill(Skill):
     #                       INITIALIZATION
     # =========================================================
 
-    def __init__(self, skill_id, name, multiplier, hits, hit_multipliers, target_type, scaling_stat="attack", cooldown=0, 
+    def __init__(self, skill_id, name, multiplier, hits, hit_multipliers, target_type, hit_distribution= None, scaling_stat="attack", cooldown=0, 
                  damage_handler=None, damage_handler_data=None, on_hit_handlers=None, after_skill_handlers=None, after_use_handlers=None,
                  effects=None):
         super().__init__(skill_id, name, target_type, cooldown)
@@ -89,6 +90,7 @@ class DamageSkill(Skill):
         self.multiplier = multiplier
         self.hits = hits
         self.hit_multipliers = hit_multipliers
+        self.hit_distribution = hit_distribution
 
         if self.hit_multipliers and len(self.hit_multipliers) != self.hits:
             raise ValueError(
@@ -167,7 +169,7 @@ class DamageSkill(Skill):
 
 
 
-    def damage_calc(self, attacker, defender, hit_multiplier):
+    def damage_calc(self, attacker, defender, hit_multiplier, snapshot, hit_index):
             
             critical = False
 
@@ -176,9 +178,12 @@ class DamageSkill(Skill):
             
             if self.damage_handler:
                 handler = DAMAGE_HANDLERS[self.damage_handler]
-                damage_data = handler(attacker, defender, self)
+                damage_data = handler(attacker, defender, self, snapshot, hit_index)
 
             bonus_damage = damage_data.get("damage_multiplier", 1)
+
+            passive_damage_multiplier = get_passive_damage_multiplier(attacker)
+            bonus_damage *= passive_damage_multiplier
 
             ignore_defense = damage_data.get("ignore_defense", False)
 
@@ -217,6 +222,18 @@ class DamageSkill(Skill):
             random_target_results = {}
             last_target = None
 
+            guaranteed_targets = []
+
+            if self.hit_distribution == "one_each_then_random":
+
+                guaranteed_targets = [
+                    target
+                    for target in targets
+                    if target.is_alive
+                ]
+
+                random.shuffle(guaranteed_targets)
+
             for hit in range(self.hits):
 
                 # Recalculate living targets before every hit so a dead
@@ -228,7 +245,25 @@ class DamageSkill(Skill):
                 ]
 
                 if alive_targets:
-                    target = random.choice(alive_targets)
+
+                    if guaranteed_targets:
+
+                        while (
+                            guaranteed_targets
+                            and not guaranteed_targets[-1].is_alive
+                        ):
+                            guaranteed_targets.pop()
+
+                        if guaranteed_targets:
+                            target = guaranteed_targets.pop()
+                        else:
+                            target = random.choice(
+                                alive_targets
+                            )
+
+                    else:
+                        target = random.choice(alive_targets)    
+
                     last_target = target
                     gameplay_active = True
 
@@ -331,7 +366,7 @@ class DamageSkill(Skill):
     #                     STATUS EFFECTS
     # =========================================================
 
-    def try_apply_effect(self, effect, caster, target):
+    def try_apply_effect(self, effect, caster, target, snapshot=None):
 
         # CONDITION
         condition = effect.get("condition")
@@ -344,7 +379,8 @@ class DamageSkill(Skill):
                 caster,
                 target,
                 self,
-                condition
+                condition,
+                snapshot
             )
 
             if not condition_met:
@@ -388,6 +424,21 @@ class DamageSkill(Skill):
         elif effect_data["effect_type"] == EffectType.DEBUFF:
             applied_effect = target.apply_status_effect(status_effect)
 
+        # Trigger passives only when the effect was actually applied.
+        if applied_effect is not None:
+
+            if applied_effect.effect_id == "stun":
+
+                trigger_passives(
+                    "on_apply_stun",
+                    caster,
+                    {
+                        "target": target,
+                        "skill": self,
+                        "effect": applied_effect
+                    }
+                )
+
         return applied_effect
 
 
@@ -428,7 +479,7 @@ class DamageSkill(Skill):
     #                      HIT RESOLUTION
     # =========================================================
 
-    def resolve_hit(self, caster, target, hit_index, target_result, gameplay_active=True):
+    def resolve_hit(self, caster, target, hit_index, target_result, gameplay_active=True, hit_multiplier_override=None):
     
         # Resolves one complete hit against one target.
         # This centralizes all mechanics that must happen every time a hit lands,
@@ -441,13 +492,18 @@ class DamageSkill(Skill):
         # Some skills can give individual hits a different damage multiplier.
         hit_multiplier = 1.0
 
-        if self.hit_multipliers:
+        if hit_multiplier_override is not None:
+            hit_multiplier = hit_multiplier_override
+
+        elif self.hit_multipliers:
             hit_multiplier = self.hit_multipliers[hit_index]
 
         damage, critical = self.damage_calc(
             caster,
             target,
-            hit_multiplier
+            hit_multiplier,
+            target_result["snapshot"],
+            hit_index
         )
 
         # Always record the hit so the full skill sequence can be displayed,
@@ -513,7 +569,8 @@ class DamageSkill(Skill):
             "on_hit",
             caster,
             {
-                "target": target
+                "target": target,
+                "skill": self
             }
         )
 
@@ -528,7 +585,8 @@ class DamageSkill(Skill):
                     applied_effect = self.try_apply_effect(
                         effect,
                         caster,
-                        target
+                        target,
+                        target_result["snapshot"]
                     )
 
                     if applied_effect is not None:
@@ -564,7 +622,8 @@ class DamageSkill(Skill):
                     applied_effect = self.try_apply_effect(
                         effect,
                         caster,
-                        target
+                        target,
+                        target_result["snapshot"]
                     )
 
                     if applied_effect is not None:
@@ -587,7 +646,8 @@ class DamageSkill(Skill):
                         applied_effect = self.try_apply_effect(
                             effect,
                             caster,
-                            target
+                            target,
+                            target_result["snapshot"]
                         )
 
                         if applied_effect is not None:
@@ -650,13 +710,16 @@ class HealingSkill(Skill):
     #                       INITIALIZATION
     # =========================================================
 
-    def __init__(self, skill_id, name, scaling_stat, base_scaling_ratio, target_type, scaling_bonus=0, cooldown=0):
+    def __init__(self, skill_id, name, scaling_stat, base_scaling_ratio, target_type, scaling_bonus=0, cooldown=0, after_use_handlers=None):
         super().__init__(skill_id, name, target_type, cooldown)
 
         self.skill_type = SkillType.HEALING
+
         self.scaling_stat = scaling_stat
         self.base_scaling_ratio = base_scaling_ratio
         self.scaling_bonus = scaling_bonus
+
+        self.after_use_handlers = after_use_handlers if after_use_handlers is not None else []
 
 
     # =========================================================
@@ -694,22 +757,54 @@ class HealingSkill(Skill):
 
     def execute(self, caster, targets, context=None):
 
+        if context is None:
+            context = {}
+
         target_results = []
 
-        for target in targets:
-            heal_value = self.healing(caster, target)
+        # Traditional HealingSkills.
+        if self.scaling_stat is not None:
 
-            target_results.append(
-                {
-                    "target": target,
-                    "heal_value": heal_value
-                }
-            )
+            for target in targets:
 
-        return SkillResult(
+                heal_value = self.healing(
+                    caster,
+                    target
+                )
+
+                target_results.append(
+                    {
+                        "target": target,
+                        "heal_value": heal_value
+                    }
+                )
+
+        skill_result = SkillResult(
             success=True,
             target_results=target_results
         )
+
+        # Generic after-use mechanics.
+        for handler_config in self.after_use_handlers:
+
+            handler = AFTER_USE_HANDLERS[
+                handler_config["handler"]
+            ]
+
+            event = handler(
+                caster,
+                self,
+                handler_config.get("data", {}),
+                context,
+                skill_result
+            )
+
+            if event is not None:
+                skill_result.events.append(
+                    event
+                )
+
+        return skill_result
 
 
 
@@ -721,11 +816,18 @@ class PassiveSkill(Skill):
     #                       INITIALIZATION
     # =========================================================
 
-    def __init__(self, skill_id, name, trigger=None, handler=None):
+    def __init__(self, skill_id, name, trigger=None, handler=None, handler_data=None):
         super().__init__(skill_id, name)
 
         self.trigger = trigger
         self.handler = handler
+
+        self.handler_data = (
+            handler_data 
+            if handler_data is not None 
+            else {}
+        )
+
         self.skill_type = SkillType.PASSIVE
 
 

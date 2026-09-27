@@ -92,6 +92,7 @@ def create_skill(skill_id):
             hits=skill.get("hits", 1),
             hit_multipliers=skill.get("hit_multipliers", []),
             target_type=skill["target_type"],
+            hit_distribution=skill.get("hit_distribution"),
             scaling_stat=skill.get("scaling_stat", "attack"),
             cooldown=skill["cooldown"],
             damage_handler=skill.get("damage_handler"),
@@ -107,10 +108,12 @@ def create_skill(skill_id):
         return HealingSkill(
             skill_id=skill_id,
             name=skill["name"],
-            scaling_stat=skill["scaling_stat"],
-            base_scaling_ratio=skill["base_scaling_ratio"],
             target_type=skill["target_type"],
-            cooldown=skill["cooldown"]
+            scaling_stat=skill.get("scaling_stat"),
+            base_scaling_ratio=skill.get("base_scaling_ratio", 0),
+            scaling_bonus=skill.get("scaling_bonus", 0),
+            cooldown=skill["cooldown"],
+            after_use_handlers=skill.get("after_use_handlers")
         )
 
     raise ValueError(
@@ -136,7 +139,8 @@ def create_passive(passive_id):
         skill_id=passive_id,
         name=passive["name"],
         trigger=passive.get("trigger"),
-        handler=passive.get("handler")
+        handler=passive.get("handler"),
+        handler_data=passive.get("handler_data")
     )
 
 

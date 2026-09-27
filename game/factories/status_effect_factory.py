@@ -6,7 +6,7 @@ from ..models.status_effect import StatusEffect
 #                  STATUS EFFECT CREATION
 # =========================================================
 
-def create_status_effect(effect_id, duration, source=None, stacks=1):
+def create_status_effect(effect_id, duration, source=None, stacks=1, value=0):
         
     if effect_id not in STATUS_EFFECT_DATA:
         raise ValueError(
@@ -25,5 +25,6 @@ def create_status_effect(effect_id, duration, source=None, stacks=1):
         stacks=stacks,
         max_stacks=effect_data.get("max_stacks", 1),
         source=source,
-        modifier_mode=effect_data.get("modifier_mode", "multiplicative")
+        modifier_mode=effect_data.get("modifier_mode", "multiplicative"),
+        value=value
     )

@@ -1,12 +1,18 @@
 from .enums import Attribute, EffectType
+
 from .skills import SkillResult
+
 from ..combat.passive_triggers import trigger_passives
+from ..combat.passive_modifiers import get_passive_stat_bonus
+
 from ..data.passive_data import PASSIVE_DATA
 from ..data.glyph_stat_data import GLYPH_STAT_MAP
 from ..data.glyph_set_data import GLYPH_SET_DATA
 from ..data.experience_data import XP_TO_NEXT_LEVEL, BASE_EXP_YIELD, RARITY_EXP_MULTIPLIER
 from ..data.monster_data import MONSTER_DATA
 from ..data.stat_growth_data import LEVEL_STAT_MULTIPLIER, ASCENDED_STAT_MULTIPLIER
+from ..data.status_effect_data import STATUS_EFFECT_DATA
+
 
 class Monster:
 
@@ -174,7 +180,10 @@ class Monster:
 
     def get_equipped_stat(self, stat):
 
-        base_stat = getattr(self, stat)
+        if stat == "health":
+            base_stat = self.max_health
+        else:
+            base_stat = getattr(self, stat)
 
         flat = GLYPH_STAT_MAP[stat]["flat"]
         flat_bonus = 0
@@ -241,10 +250,24 @@ class Monster:
 
         base = self.get_equipped_stat(stat)
 
-        return (
-            base * multiplicative_modifier
-            + additive_modifier
-        )
+        effective_stat = ( base * multiplicative_modifier + additive_modifier )
+        effective_stat += get_passive_stat_bonus(self, stat)
+
+        return effective_stat
+
+
+
+    def get_healing_hp(self):
+
+        base_max_health = self.max_health
+
+        equipped_max_health = self.get_equipped_stat("health")
+
+        bonus_max_health = ( equipped_max_health - base_max_health )
+
+        healing_hp = ( base_max_health + bonus_max_health * 0.50 )
+
+        return healing_hp
 
 
 
@@ -425,6 +448,30 @@ class Monster:
     # =========================================================
 
     def receive_damage(self, damage, source=None):
+
+        # If monster has Shield, the shield absorbs damage
+        shield = None
+
+        for buff in self.buffs:
+
+            if buff.effect_id == "shield":
+                shield = buff
+                break
+
+        if shield is not None:
+
+            absorbed_damage = min(
+                damage,
+                shield.value
+            )
+
+            shield.value -= absorbed_damage
+            damage -= absorbed_damage
+
+            if shield.value <= 0:
+                self.buffs.remove(shield)
+
+        # When Shield is consumed // Monster has no Shield: process damage normally
         self.health -= damage
 
         broken_effects = []
@@ -481,6 +528,11 @@ class Monster:
 
         for active_effect in effects_list:
             if active_effect.effect_id == effect.effect_id:
+
+                if active_effect.effect_id == "shield":
+
+                    if effect.value > active_effect.value:
+                        active_effect.value = effect.value
 
                 if active_effect.effect_id in ("burn", "poison"):
                     active_effect.stacks += effect.stacks
@@ -557,6 +609,32 @@ class Monster:
             self.health -= int(total_damage)
             print(f"{self.display_name} takes {int(total_damage)} damage from DoT.")
             print()
+
+
+
+    def apply_healing_over_time(self):
+
+        total_healing = 0
+
+        for buff in self.buffs:
+
+            if buff.effect_id == "regrowth":
+
+                data = STATUS_EFFECT_DATA[buff.effect_id]
+
+                heal_amount = int( self.max_health * data["heal_ratio"] )
+
+                actual_heal = self.heal(heal_amount)
+
+                total_healing += actual_heal
+
+        if total_healing > 0:
+
+            print(
+                f"{self.display_name} "
+                f"recovers {total_healing} HP "
+                f"from Regrowth."
+            )
 
 
 

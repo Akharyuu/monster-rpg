@@ -476,6 +476,37 @@ def show_damage_skill_result(actor, skill, skill_result):
                 f"{value} HP"
             )
 
+        elif event["type"] == "aoe_follow_up_attack":
+
+            for target_result in event["target_results"]:
+
+                target = target_result["target"]
+
+                for hit_result in target_result["hit_results"]:
+
+                    damage = hit_result["damage"]
+                    critical = hit_result["critical"]
+
+                    if critical:
+                        messages.append(
+                            f"{target.display_name}: "
+                            f"CRITICAL! {damage} damage"
+                        )
+
+                    else:
+                        messages.append(
+                            f"{target.display_name}: "
+                            f"{damage} damage"
+                        )
+
+                for effect in target_result["effects_applied"]:
+
+                    messages.append(
+                        f"{target.display_name}: "
+                        f"{effect.name} "
+                        f"({effect.remaining_turns} turns)"
+                    )
+
     show_combat_event(
         actor.display_name,
         skill.name,
