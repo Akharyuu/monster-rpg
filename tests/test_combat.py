@@ -26,6 +26,10 @@ from game.combat.passive_modifiers import (
     get_passive_damage_multiplier,
     get_passive_stat_bonus
 )
+from game.combat.telemetry import (
+    create_battle_telemetry,
+    serialize_battle_telemetry
+)
 
 import game.combat.combat as combat_module
 
@@ -3124,4 +3128,208 @@ def test_damage_over_shield_spills_into_health():
     assert not any(
         buff.effect_id == "shield"
         for buff in monster.buffs
+    )
+
+
+
+# =========================================================
+#                    COMBAT TELEMETRY TESTS
+# =========================================================
+
+def test_direct_damage_is_recorded_in_telemetry(
+    monkeypatch
+):
+
+    attacker = create_monster(
+        "griffon_igneous"
+    )
+
+    defender = create_monster(
+        "slime_storm"
+    )
+
+    telemetry = create_battle_telemetry(
+        [attacker],
+        [defender]
+    )
+
+    skill = attacker.get_skill(1)
+
+    monkeypatch.setattr(
+        skill,
+        "damage_calc",
+        lambda *args, **kwargs: (
+            100,
+            False
+        )
+    )
+
+    skill.execute(
+        attacker,
+        [defender],
+        context={
+            "team": [attacker],
+            "opponents": [defender],
+            "telemetry": telemetry
+        }
+    )
+
+    result = serialize_battle_telemetry(
+        telemetry
+    )
+
+    assert (
+        result["team_a"][0]["direct_damage"]
+        == 100
+    )
+
+
+
+def test_healing_is_recorded_in_telemetry():
+
+    dryad = create_monster(
+        "dryad_storm"
+    )
+
+    ally = create_monster(
+        "drake_igneous"
+    )
+
+    enemy = create_monster(
+        "drake_abyssal"
+    )
+
+    ally.health = int(
+        ally.max_health * 0.50
+    )
+
+    telemetry = create_battle_telemetry(
+        [dryad, ally],
+        [enemy]
+    )
+
+    skill = create_skill(
+        "breath_of_the_grove"
+    )
+
+    skill.execute(
+        dryad,
+        [dryad, ally],
+        context={
+            "team": [dryad, ally],
+            "opponents": [enemy],
+            "telemetry": telemetry
+        }
+    )
+
+    result = serialize_battle_telemetry(
+        telemetry
+    )
+
+    assert (
+        result["team_a"][0]["healing"]
+        > 0
+    )
+
+
+
+def test_shield_absorption_is_credited_to_shield_source():
+
+    dryad = create_monster(
+        "dryad_storm"
+    )
+
+    ally = create_monster(
+        "drake_igneous"
+    )
+
+    enemy = create_monster(
+        "drake_abyssal"
+    )
+
+    telemetry = create_battle_telemetry(
+        [dryad, ally],
+        [enemy]
+    )
+
+    shield = create_status_effect(
+        effect_id="shield",
+        duration=2,
+        source=dryad,
+        value=500
+    )
+
+    ally.apply_status_effect(
+        shield
+    )
+
+    ally.receive_damage(
+        300,
+        source=enemy,
+        telemetry=telemetry
+    )
+
+    result = serialize_battle_telemetry(
+        telemetry
+    )
+
+    assert (
+        result["team_a"][0]["shield_absorbed"]
+        == 300
+    )
+
+
+
+def test_simulate_battle_returns_monster_telemetry():
+
+    team_a = [
+        create_monster(
+            "griffon_igneous"
+        )
+    ]
+
+    team_b = [
+        create_monster(
+            "slime_storm"
+        )
+    ]
+
+    result = simulate_battle(
+        team_a,
+        team_b
+    )
+
+    assert "telemetry" in result
+
+    assert len(
+        result["telemetry"]["team_a"]
+    ) == 1
+
+    assert len(
+        result["telemetry"]["team_b"]
+    ) == 1
+
+    assert (
+        result["telemetry"]["team_a"][0]
+        ["monster_id"]
+        == "griffon_igneous"
+    )
+
+
+
+def test_simulate_battles_returns_average_telemetry():
+
+    result = simulate_battles(
+        ["griffon_igneous"],
+        ["slime_storm"],
+        runs=3
+    )
+
+    assert "team_a_telemetry" in result
+    assert "team_b_telemetry" in result
+
+    assert (
+        result["team_a_telemetry"][0]
+        ["direct_damage"]
+        >= 0
     )

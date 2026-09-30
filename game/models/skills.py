@@ -12,6 +12,7 @@ from ..combat.skill_after_handlers import AFTER_SKILL_HANDLERS
 from ..combat.skill_on_hit_handlers import ON_HIT_HANDLERS
 from ..combat.skill_effect_conditions import EFFECT_CONDITIONS
 from ..combat.skill_after_use_handlers import AFTER_USE_HANDLERS
+from ..combat.telemetry import record_telemetry
 
 
 class Skill:
@@ -282,6 +283,10 @@ class DamageSkill(Skill):
                         self.create_target_result(target)
                     )
 
+                    random_target_results[target]["telemetry"] = (
+                        context.get("telemetry")
+                    )
+
                 current_result = random_target_results[target]
 
                 self.resolve_hit(
@@ -325,6 +330,10 @@ class DamageSkill(Skill):
 
             target_result = self.create_target_result(
                 target
+            )
+
+            target_result["telemetry"] = (
+                context.get("telemetry")
             )
 
             # Resolve every hit through the shared hit pipeline.
@@ -471,7 +480,8 @@ class DamageSkill(Skill):
             "any_critical": False,
             "hit_results": [],
             "effects_applied": [],
-            "snapshot": self.get_target_snapshot(target)
+            "snapshot": self.get_target_snapshot(target),
+            "telemetry": None
         }
 
 
@@ -526,9 +536,36 @@ class DamageSkill(Skill):
             return
 
         # Direct damage can break effects such as Freeze.
-        broken_effects = target.receive_damage(
-            damage,
-            source=caster
+        health_before = target.health
+
+        telemetry = target_result.get(
+            "telemetry"
+        )
+
+        if telemetry is None:
+
+            broken_effects = target.receive_damage(
+                damage,
+                source=caster
+            )
+
+        else:
+
+            broken_effects = target.receive_damage(
+                damage,
+                source=caster,
+                telemetry=telemetry
+            )
+
+        actual_health_damage = (
+            health_before - target.health
+        )
+
+        record_telemetry(
+            target_result.get("telemetry"),
+            caster,
+            "direct_damage",
+            actual_health_damage
         )
 
         # A broken Freeze can trigger passives belonging to the monster
@@ -770,6 +807,13 @@ class HealingSkill(Skill):
                 heal_value = self.healing(
                     caster,
                     target
+                )
+
+                record_telemetry(
+                    context.get("telemetry"),
+                    caster,
+                    "healing",
+                    heal_value
                 )
 
                 target_results.append(

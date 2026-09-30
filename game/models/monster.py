@@ -4,6 +4,7 @@ from .skills import SkillResult
 
 from ..combat.passive_triggers import trigger_passives
 from ..combat.passive_modifiers import get_passive_stat_bonus
+from ..combat.telemetry import record_telemetry
 
 from ..data.passive_data import PASSIVE_DATA
 from ..data.glyph_stat_data import GLYPH_STAT_MAP
@@ -447,7 +448,7 @@ class Monster:
     #                     HEALTH & DAMAGE
     # =========================================================
 
-    def receive_damage(self, damage, source=None):
+    def receive_damage(self, damage, source=None, telemetry=None):
 
         # If monster has Shield, the shield absorbs damage
         shield = None
@@ -467,6 +468,13 @@ class Monster:
 
             shield.value -= absorbed_damage
             damage -= absorbed_damage
+
+            record_telemetry(
+                telemetry,
+                shield.source,
+                "shield_absorbed",
+                absorbed_damage
+            )
 
             if shield.value <= 0:
                 self.buffs.remove(shield)
@@ -586,33 +594,61 @@ class Monster:
 
 
 
-    def apply_damage_over_time(self):
+    def apply_damage_over_time(self, telemetry=None):
         total_damage = 0
 
         for debuff in self.debuffs:
+
+            damage = 0
+
             if debuff.effect_id == "burn":
 
                 if debuff.stacks == 1:
-                    damage = self.max_health * 0.03 
+                    damage = self.max_health * 0.03
                 elif debuff.stacks == 2:
-                    damage = self.max_health * 0.06 
+                    damage = self.max_health * 0.06
                 elif debuff.stacks == 3:
-                    damage = self.max_health * 0.1 
-
-                total_damage += damage
+                    damage = self.max_health * 0.1
 
             elif debuff.effect_id == "poison":
-                damage = self.max_health * 0.05 * debuff.stacks
-                total_damage += damage
+                damage = (
+                    self.max_health
+                    * 0.05
+                    * debuff.stacks
+                )
+
+            damage = int(damage)
+
+            if damage <= 0:
+                continue
+
+            health_before = self.health
+
+            self.health -= damage
+
+            actual_damage = (
+                health_before - self.health
+            )
+
+            total_damage += actual_damage
+
+            record_telemetry(
+                telemetry,
+                debuff.source,
+                "dot_damage",
+                actual_damage
+            )
 
         if total_damage > 0:
-            self.health -= int(total_damage)
-            print(f"{self.display_name} takes {int(total_damage)} damage from DoT.")
+            print(
+                f"{self.display_name} takes "
+                f"{total_damage} damage from DoT."
+            )
             print()
 
 
 
-    def apply_healing_over_time(self):
+    def apply_healing_over_time(self, telemetry=None):
 
         total_healing = 0
 
@@ -627,6 +663,13 @@ class Monster:
                 actual_heal = self.heal(heal_amount)
 
                 total_healing += actual_heal
+
+                record_telemetry(
+                    telemetry,
+                    buff.source,
+                    "healing",
+                    actual_heal
+                )
 
         if total_healing > 0:
 
