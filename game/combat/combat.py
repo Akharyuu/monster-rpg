@@ -7,6 +7,8 @@ from ..combat.enemy_ai import (
     choose_skill
 )
 
+from ..factories.monster_factory import create_monster
+
 from ..models.enums import TargetType
 from ..models.skills import SkillType
 
@@ -357,6 +359,398 @@ def enemy_turn(active_enemy, enemies, allies):
     )
 
     return outcome
+
+
+# =========================================================
+#                      SIMULATE BATTLE
+# =========================================================
+
+def simulate_battle(team_a, team_b):
+
+    turns = 0
+
+    all_combatants = team_a + team_b
+
+    for monster in all_combatants:
+        monster.reset_combat_state()
+
+    try:
+        while (
+            any(monster_a.is_alive for monster_a in team_a)
+            and any(monster_b.is_alive for monster_b in team_b)
+        ):
+
+            living_team_a = [
+                monster for monster in team_a
+                if monster.is_alive
+            ]
+
+            living_team_b = [
+                monster for monster in team_b
+                if monster.is_alive
+            ]
+
+            combatants = living_team_a + living_team_b
+
+            fill_action_gauges(combatants)
+
+            active_combatant = get_ready_combatant(combatants)
+
+            if active_combatant is None:
+                continue
+
+            active_combatant.reset_action_gauge()
+
+            turns += 1
+
+            if active_combatant in team_a:
+
+                outcome = auto_turn(
+                    active_combatant,
+                    team_a,
+                    team_b
+                )
+
+                team_a_remaining_hp = sum(
+                    monster.health
+                    for monster in team_a
+                )
+
+                team_b_remaining_hp = sum(
+                    monster.health
+                    for monster in team_b
+                )
+
+                if outcome == "team_wins":
+
+                    return {
+                        "outcome": "team_a_wins",
+                        "turns": turns,
+                        "team_a_remaining_hp": team_a_remaining_hp,
+                        "team_b_remaining_hp": team_b_remaining_hp
+                    }
+                
+                elif outcome == "opponents_win":
+
+                    return {
+                        "outcome": "team_b_wins",
+                        "turns": turns,
+                        "team_a_remaining_hp": team_a_remaining_hp,
+                        "team_b_remaining_hp": team_b_remaining_hp
+                    }
+
+            else:
+
+                outcome = auto_turn(
+                    active_combatant,
+                    team_b,
+                    team_a
+                )
+
+                team_a_remaining_hp = sum(
+                    monster.health
+                    for monster in team_a
+                )
+
+                team_b_remaining_hp = sum(
+                    monster.health
+                    for monster in team_b
+                )
+
+                if outcome == "team_wins":
+
+                    return {
+                        "outcome": "team_b_wins",
+                        "turns": turns,
+                        "team_a_remaining_hp": team_a_remaining_hp,
+                        "team_b_remaining_hp": team_b_remaining_hp
+                    }
+
+                elif outcome == "opponents_win":
+
+                    return {
+                        "outcome": "team_a_wins",
+                        "turns": turns,
+                        "team_a_remaining_hp": team_a_remaining_hp,
+                        "team_b_remaining_hp": team_b_remaining_hp
+                    }
+
+        team_a_remaining_hp = sum(
+            monster.health
+            for monster in team_a
+        )
+
+        team_b_remaining_hp = sum(
+            monster.health
+            for monster in team_b
+        )
+
+        if all(not monster.is_alive for monster in team_a):
+
+            return {
+                "outcome": "team_b_wins",
+                "turns": turns,
+                "team_a_remaining_hp": team_a_remaining_hp,
+                "team_b_remaining_hp": team_b_remaining_hp
+            }
+
+        return {
+            "outcome": "team_a_wins",
+            "turns": turns,
+            "team_a_remaining_hp": team_a_remaining_hp,
+            "team_b_remaining_hp": team_b_remaining_hp
+        }
+
+    finally:
+        for monster in all_combatants:
+            monster.reset_combat_state()       
+
+
+
+def simulate_battles(team_a_ids, team_b_ids, runs):
+
+    wins_a = 0
+    wins_b = 0
+
+    total_turns = 0
+    minimum_turns = None
+    maximum_turns = None
+
+    team_a_remaining_hp = 0
+    team_b_remaining_hp = 0
+
+    team_a_remaining_hp_percent = 0
+    team_b_remaining_hp_percent = 0
+
+
+    for _ in range(runs):
+
+        team_a = []
+        team_b = []
+
+        for monster_id in team_a_ids:
+
+            monster = create_monster(monster_id)
+
+            team_a.append(monster)
+
+
+        for monster_id in team_b_ids:
+
+            monster = create_monster(monster_id)
+
+            team_b.append(monster)
+
+
+        # Total Max HP before the battle.
+        team_a_max_hp = sum(
+            monster.max_health
+            for monster in team_a
+        )
+
+        team_b_max_hp = sum(
+            monster.max_health
+            for monster in team_b
+        )
+
+
+        battle_result = simulate_battle(team_a, team_b)
+
+
+        # =========================================================
+        #                         WINS
+        # =========================================================
+
+        if battle_result["outcome"] == "team_a_wins":
+            wins_a += 1
+
+        else:
+            wins_b += 1
+
+
+        # =========================================================
+        #                         TURNS
+        # =========================================================
+
+        battle_turns = battle_result["turns"]
+
+        total_turns += battle_turns
+
+
+        if (
+            minimum_turns is None
+            or battle_turns < minimum_turns
+        ):
+            minimum_turns = battle_turns
+
+
+        if (
+            maximum_turns is None
+            or battle_turns > maximum_turns
+        ):
+            maximum_turns = battle_turns
+
+
+        # =========================================================
+        #                     REMAINING HP
+        # =========================================================
+
+        team_a_final_hp = battle_result["team_a_remaining_hp"]
+
+        team_b_final_hp = battle_result["team_b_remaining_hp"]
+
+
+        team_a_remaining_hp += (team_a_final_hp)
+
+        team_b_remaining_hp += (team_b_final_hp)
+
+
+        team_a_remaining_hp_percent += ( team_a_final_hp / team_a_max_hp * 100 )
+
+        team_b_remaining_hp_percent += ( team_b_final_hp / team_b_max_hp * 100 )
+
+
+    # =========================================================
+    #                        RESULTS
+    # =========================================================
+
+    team_a_win_rate = ( wins_a / runs * 100 )
+
+    team_b_win_rate = ( wins_b / runs * 100 )
+
+
+    average_turns = ( total_turns / runs )
+
+
+    team_a_average_remaining_hp = ( team_a_remaining_hp / runs )
+
+    team_b_average_remaining_hp = ( team_b_remaining_hp / runs )
+
+    team_a_average_remaining_hp_percent = ( team_a_remaining_hp_percent / runs )
+
+    team_b_average_remaining_hp_percent = ( team_b_remaining_hp_percent / runs )
+
+
+    print(
+        f"Team A win rate: "
+        f"{team_a_win_rate:.1f}%.\n"
+
+        f"Team B win rate: "
+        f"{team_b_win_rate:.1f}%.\n"
+
+        f"Average turns: "
+        f"{average_turns:.2f}.\n"
+
+        f"Minimum turns: "
+        f"{minimum_turns}.\n"
+
+        f"Maximum turns: "
+        f"{maximum_turns}.\n"
+
+        f"Team A average remaining HP: "
+        f"{team_a_average_remaining_hp:.2f} "
+        f"({team_a_average_remaining_hp_percent:.1f}%).\n"
+
+        f"Team B average remaining HP: "
+        f"{team_b_average_remaining_hp:.2f} "
+        f"({team_b_average_remaining_hp_percent:.1f}%)."
+    )
+
+
+    return {
+        "team_a_win_rate": team_a_win_rate,
+        "team_b_win_rate": team_b_win_rate,
+        "average_turns": average_turns,
+        "minimum_turns": minimum_turns,
+        "maximum_turns": maximum_turns,
+        "team_a_average_remaining_hp": team_a_average_remaining_hp,
+        "team_b_average_remaining_hp": team_b_average_remaining_hp,
+        "team_a_average_remaining_hp_percent": team_a_average_remaining_hp_percent,
+        "team_b_average_remaining_hp_percent": team_b_average_remaining_hp_percent
+    }
+
+
+
+
+# =========================================================
+#                       AUTO TURN
+# =========================================================
+
+def auto_turn(active_monster, team, opponents):
+
+    turn_context = begin_turn(active_monster)
+
+    if not active_monster.is_alive:
+
+        if all(not monster.is_alive for monster in team):
+            return "opponents_win"
+
+        return None
+
+    if handle_incapacitated_turn(active_monster, turn_context):
+        return None
+
+    monster_skill = choose_skill(active_monster, team, opponents)
+
+    outcome = None
+
+    if monster_skill is not None:
+
+        targets = resolve_targets(
+            monster_skill,
+            active_monster,
+            team,
+            opponents
+        )
+
+        if targets is None:
+
+            if monster_skill.target_type == TargetType.SINGLE_ENEMY:
+
+                targets = [choose_enemy_target(active_monster, opponents, monster_skill)]
+
+            elif monster_skill.target_type == TargetType.SINGLE_ALLY:
+
+                targets = [choose_healing_target(team)]
+
+        match monster_skill.skill_type:
+
+            case SkillType.DAMAGE:
+
+                skill_result = active_monster.use_skill(
+                    targets,
+                    monster_skill,
+                    combat_context={
+                        "team": team,
+                        "opponents": opponents
+                    }
+                )
+
+                if skill_result.success:
+
+                    if all(
+                        not opponent.is_alive
+                        for opponent in opponents
+                    ):
+                        outcome = "team_wins"
+
+            case SkillType.HEALING:
+
+                skill_result = active_monster.use_skill(
+                    targets,
+                    monster_skill,
+                    combat_context={
+                        "team": team,
+                        "opponents": opponents
+                    }
+                )
+
+    end_turn(
+        active_monster,
+        turn_context
+    )
+
+    return outcome   
 
 
 # =========================================================

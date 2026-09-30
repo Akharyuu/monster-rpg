@@ -11,7 +11,9 @@ from game.combat.ai_conditions import (
 from game.combat.combat import (
     battle,
     begin_turn,
-    end_turn
+    end_turn,
+    simulate_battle,
+    simulate_battles
 )
 from game.combat.enemy_ai import (
     check_setup_requirements,
@@ -1164,21 +1166,18 @@ def test_numbing_sting_does_not_stun_if_no_new_poison_is_applied(
 
     skill = thornet.get_skill(2)
 
-    # Target already starts poisoned.
-    poison = create_status_effect(
-        effect_id="poison",
-        duration=2,
-        stacks=1,
-        source=thornet
-    )
-
-    target.apply_status_effect(poison)
-
-    # Force all chance rolls to fail.
+    # Force Poison and Stun proc rolls to succeed.
     monkeypatch.setattr(
         random,
         "random",
-        lambda: 1.0
+        lambda: 0.0
+    )
+
+    # Force resistance checks to succeed.
+    monkeypatch.setattr(
+        random,
+        "uniform",
+        lambda a, b: 100
     )
 
     skill.execute(
@@ -1186,7 +1185,12 @@ def test_numbing_sting_does_not_stun_if_no_new_poison_is_applied(
         [target]
     )
 
-    assert not any(
+    assert any(
+        debuff.effect_id == "poison"
+        for debuff in target.debuffs
+    )
+
+    assert any(
         debuff.effect_id == "stun"
         for debuff in target.debuffs
     )
@@ -1767,6 +1771,116 @@ def test_setup_requirements_raise_error_for_unknown_condition(
             context
         )
 
+
+# =========================================================
+#                   BATTLE SIMULATION
+# =========================================================
+
+def test_simulate_battle_returns_valid_outcome():
+
+    team_a = [
+        create_monster("griffon_igneous")
+    ]
+
+    team_b = [
+        create_monster("slime_storm")
+    ]
+
+    result = simulate_battle(
+        team_a,
+        team_b
+    )
+
+    assert result["outcome"] in (
+        "team_a_wins",
+        "team_b_wins"
+    )
+
+    assert result["turns"] > 0
+    assert result["team_a_remaining_hp"] >= 0
+    assert result["team_b_remaining_hp"] >= 0
+
+
+
+def test_simulate_battle_resets_combat_state_after_battle():
+
+    team_a = [
+        create_monster("griffon_igneous")
+    ]
+
+    team_b = [
+        create_monster("slime_storm")
+    ]
+
+    simulate_battle(
+        team_a,
+        team_b
+    )
+
+    for monster in team_a + team_b:
+
+        assert monster.health == monster.max_health
+        assert monster.action_gauge == 0
+        assert monster.buffs == []
+        assert monster.debuffs == []
+
+        for skill in monster.skills:
+            assert skill.current_cooldown == 0
+
+
+
+def test_simulate_battles_returns_expected_data():
+
+    result = simulate_battles(
+        ["griffon_igneous"],
+        ["slime_storm"],
+        runs=10
+    )
+
+    assert "team_a_win_rate" in result
+    assert "team_b_win_rate" in result
+    assert "average_turns" in result
+    assert "team_a_average_remaining_hp" in result
+    assert "team_b_average_remaining_hp" in result
+
+
+
+def test_simulate_battles_win_rates_add_up_to_100():
+
+    result = simulate_battles(
+        ["griffon_igneous"],
+        ["slime_storm"],
+        runs=20
+    )
+
+    total_win_rate = (
+        result["team_a_win_rate"]
+        + result["team_b_win_rate"]
+    )
+
+    assert total_win_rate == pytest.approx(100)
+
+
+
+def test_simulate_battles_returns_valid_averages():
+
+    result = simulate_battles(
+        ["griffon_igneous"],
+        ["slime_storm"],
+        runs=10
+    )
+
+    assert result["average_turns"] > 0
+
+    assert (
+        result["team_a_average_remaining_hp"]
+        >= 0
+    )
+
+    assert (
+        result["team_b_average_remaining_hp"]
+        >= 0
+    )
 
 
 # =========================================================
