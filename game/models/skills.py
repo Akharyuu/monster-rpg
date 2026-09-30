@@ -538,11 +538,24 @@ class DamageSkill(Skill):
         # Direct damage can break effects such as Freeze.
         health_before = target.health
 
-        broken_effects = target.receive_damage(
-            damage,
-            source=caster,
-            telemetry=target_result.get("telemetry")
+        telemetry = target_result.get(
+            "telemetry"
         )
+
+        if telemetry is None:
+
+            broken_effects = target.receive_damage(
+                damage,
+                source=caster
+            )
+
+        else:
+
+            broken_effects = target.receive_damage(
+                damage,
+                source=caster,
+                telemetry=telemetry
+            )
 
         actual_health_damage = (
             health_before - target.health
