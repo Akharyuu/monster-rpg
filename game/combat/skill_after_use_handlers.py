@@ -1,5 +1,6 @@
 from ..factories.status_effect_factory import create_status_effect
 from ..combat.passive_modifiers import get_direct_heal_multiplier, get_overgrowth_shield
+from ..combat.telemetry import get_active_shield_value, record_telemetry
 
 
 # =========================================================
@@ -32,9 +33,20 @@ def heal_lowest_hp_ally(caster, skill, data, context, skill_result):
 
     actual_heal = target.heal(heal_amount)
 
+    record_telemetry(
+        context.get("telemetry"),
+        caster,
+        "healing",
+        actual_heal
+    )
+
     shield_amount, shield_turns = get_overgrowth_shield(caster, target, heal_amount, actual_heal)
 
     if shield_amount > 0:
+
+        shield_before = get_active_shield_value(
+            target
+        )
 
         shield = create_status_effect(
             effect_id="shield",
@@ -44,6 +56,17 @@ def heal_lowest_hp_ally(caster, skill, data, context, skill_result):
         )
 
         target.apply_status_effect(shield)
+
+        shield_after = get_active_shield_value(
+            target
+        )
+
+        record_telemetry(
+            context.get("telemetry"),
+            caster,
+            "shield_generated",
+            max(0, shield_after - shield_before)
+        )
 
     return {
         "type": "heal",
@@ -72,9 +95,20 @@ def heal_all_allies(caster, skill, data, context, skill_result):
 
         actual_heal = ally.heal(heal_amount)
 
+        record_telemetry(
+            context.get("telemetry"),
+            caster,
+            "healing",
+            actual_heal
+        )
+
         shield_amount, shield_turns = get_overgrowth_shield(caster, ally, heal_amount, actual_heal)
 
         if shield_amount > 0:
+
+            shield_before = get_active_shield_value(
+                ally
+            )
 
             shield = create_status_effect(
                 effect_id="shield",
@@ -84,6 +118,17 @@ def heal_all_allies(caster, skill, data, context, skill_result):
             )
 
             ally.apply_status_effect(shield)
+
+            shield_after = get_active_shield_value(
+                ally
+            )
+
+            record_telemetry(
+                context.get("telemetry"),
+                caster,
+                "shield_generated",
+                max(0, shield_after - shield_before)
+            )
 
         heal_results.append({
             "target": ally,
@@ -154,6 +199,10 @@ def aoe_follow_up_attack(caster, skill, data, context, skill_result):
     for target in living_opponents:
 
         target_result = skill.create_target_result(target)
+
+        target_result["telemetry"] = (
+            context.get("telemetry")
+        )
 
         skill.resolve_hit(
             caster,
