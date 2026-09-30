@@ -9,6 +9,14 @@ from ..combat.enemy_ai import (
 
 from ..factories.monster_factory import create_monster
 
+from ..combat.telemetry import (
+    add_team_telemetry,
+    average_team_telemetry,
+    create_battle_telemetry,
+    create_team_telemetry_totals,
+    serialize_battle_telemetry
+)
+
 from ..models.enums import TargetType
 from ..models.skills import SkillType
 
@@ -371,6 +379,11 @@ def simulate_battle(team_a, team_b):
 
     all_combatants = team_a + team_b
 
+    telemetry = create_battle_telemetry(
+        team_a,
+        team_b
+    )
+
     for monster in all_combatants:
         monster.reset_combat_state()
 
@@ -408,7 +421,8 @@ def simulate_battle(team_a, team_b):
                 outcome = auto_turn(
                     active_combatant,
                     team_a,
-                    team_b
+                    team_b,
+                    telemetry
                 )
 
                 team_a_remaining_hp = sum(
@@ -427,7 +441,10 @@ def simulate_battle(team_a, team_b):
                         "outcome": "team_a_wins",
                         "turns": turns,
                         "team_a_remaining_hp": team_a_remaining_hp,
-                        "team_b_remaining_hp": team_b_remaining_hp
+                        "team_b_remaining_hp": team_b_remaining_hp,
+                        "telemetry": serialize_battle_telemetry(
+                            telemetry
+                        )
                     }
                 
                 elif outcome == "opponents_win":
@@ -436,7 +453,10 @@ def simulate_battle(team_a, team_b):
                         "outcome": "team_b_wins",
                         "turns": turns,
                         "team_a_remaining_hp": team_a_remaining_hp,
-                        "team_b_remaining_hp": team_b_remaining_hp
+                        "team_b_remaining_hp": team_b_remaining_hp,
+                        "telemetry": serialize_battle_telemetry(
+                            telemetry
+                        )
                     }
 
             else:
@@ -444,7 +464,8 @@ def simulate_battle(team_a, team_b):
                 outcome = auto_turn(
                     active_combatant,
                     team_b,
-                    team_a
+                    team_a,
+                    telemetry
                 )
 
                 team_a_remaining_hp = sum(
@@ -463,7 +484,10 @@ def simulate_battle(team_a, team_b):
                         "outcome": "team_b_wins",
                         "turns": turns,
                         "team_a_remaining_hp": team_a_remaining_hp,
-                        "team_b_remaining_hp": team_b_remaining_hp
+                        "team_b_remaining_hp": team_b_remaining_hp,
+                        "telemetry": serialize_battle_telemetry(
+                            telemetry
+                        )
                     }
 
                 elif outcome == "opponents_win":
@@ -472,7 +496,10 @@ def simulate_battle(team_a, team_b):
                         "outcome": "team_a_wins",
                         "turns": turns,
                         "team_a_remaining_hp": team_a_remaining_hp,
-                        "team_b_remaining_hp": team_b_remaining_hp
+                        "team_b_remaining_hp": team_b_remaining_hp,
+                        "telemetry": serialize_battle_telemetry(
+                            telemetry
+                        )
                     }
 
         team_a_remaining_hp = sum(
@@ -522,6 +549,18 @@ def simulate_battles(team_a_ids, team_b_ids, runs):
     team_a_remaining_hp_percent = 0
     team_b_remaining_hp_percent = 0
 
+    team_a_telemetry_totals = (
+        create_team_telemetry_totals(
+            team_a_ids
+        )
+    )
+
+    team_b_telemetry_totals = (
+        create_team_telemetry_totals(
+            team_b_ids
+        )
+    )
+
 
     for _ in range(runs):
 
@@ -555,6 +594,16 @@ def simulate_battles(team_a_ids, team_b_ids, runs):
 
 
         battle_result = simulate_battle(team_a, team_b)
+
+        add_team_telemetry(
+            team_a_telemetry_totals,
+            battle_result["telemetry"]["team_a"]
+        )
+
+        add_team_telemetry(
+            team_b_telemetry_totals,
+            battle_result["telemetry"]["team_b"]
+        )
 
 
         # =========================================================
@@ -630,6 +679,20 @@ def simulate_battles(team_a_ids, team_b_ids, runs):
 
     team_b_average_remaining_hp_percent = ( team_b_remaining_hp_percent / runs )
 
+    team_a_average_telemetry = (
+        average_team_telemetry(
+            team_a_telemetry_totals,
+            runs
+        )
+    )
+
+    team_b_average_telemetry = (
+        average_team_telemetry(
+            team_b_telemetry_totals,
+            runs
+        )
+    )
+
 
     print(
         f"Team A win rate: "
@@ -666,7 +729,9 @@ def simulate_battles(team_a_ids, team_b_ids, runs):
         "team_a_average_remaining_hp": team_a_average_remaining_hp,
         "team_b_average_remaining_hp": team_b_average_remaining_hp,
         "team_a_average_remaining_hp_percent": team_a_average_remaining_hp_percent,
-        "team_b_average_remaining_hp_percent": team_b_average_remaining_hp_percent
+        "team_b_average_remaining_hp_percent": team_b_average_remaining_hp_percent,
+        "team_a_telemetry": team_a_average_telemetry,
+        "team_b_telemetry": team_b_average_telemetry
     }
 
 
@@ -676,9 +741,12 @@ def simulate_battles(team_a_ids, team_b_ids, runs):
 #                       AUTO TURN
 # =========================================================
 
-def auto_turn(active_monster, team, opponents):
+def auto_turn(active_monster, team, opponents, telemetry=None):
 
-    turn_context = begin_turn(active_monster)
+    turn_context = begin_turn(
+        active_monster,
+        telemetry
+    )
 
     if not active_monster.is_alive:
 
@@ -722,7 +790,8 @@ def auto_turn(active_monster, team, opponents):
                     monster_skill,
                     combat_context={
                         "team": team,
-                        "opponents": opponents
+                        "opponents": opponents,
+                        "telemetry": telemetry
                     }
                 )
 
@@ -741,7 +810,8 @@ def auto_turn(active_monster, team, opponents):
                     monster_skill,
                     combat_context={
                         "team": team,
-                        "opponents": opponents
+                        "opponents": opponents,
+                        "telemetry": telemetry
                     }
                 )
 
@@ -757,7 +827,7 @@ def auto_turn(active_monster, team, opponents):
 #                      TURN LIFECYCLE
 # =========================================================
 
-def begin_turn(monster):
+def begin_turn(monster, telemetry=None):
 
     # Prepares a monster's turn and returns temporary turn data.
 
@@ -772,8 +842,12 @@ def begin_turn(monster):
     # Cooldowns and damage-over-time are processed
     # before the monster can take its action.
     monster.reduce_skill_cooldowns()
-    monster.apply_damage_over_time()
-    monster.apply_healing_over_time()
+    monster.apply_damage_over_time(
+        telemetry
+    )
+    monster.apply_healing_over_time(
+        telemetry
+    )
 
     return {
         "effects_at_turn_start": effects_at_turn_start
