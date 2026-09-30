@@ -518,14 +518,20 @@ def simulate_battle(team_a, team_b):
                 "outcome": "team_b_wins",
                 "turns": turns,
                 "team_a_remaining_hp": team_a_remaining_hp,
-                "team_b_remaining_hp": team_b_remaining_hp
+                "team_b_remaining_hp": team_b_remaining_hp,
+                "telemetry": serialize_battle_telemetry(
+                    telemetry
+                )
             }
 
         return {
             "outcome": "team_a_wins",
             "turns": turns,
             "team_a_remaining_hp": team_a_remaining_hp,
-            "team_b_remaining_hp": team_b_remaining_hp
+            "team_b_remaining_hp": team_b_remaining_hp,
+            "telemetry": serialize_battle_telemetry(
+                telemetry
+            )
         }
 
     finally:
