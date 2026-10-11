@@ -3450,3 +3450,159 @@ def test_neutral_targeting_ignores_attribute_priority(
 
     assert attribute_target is advantaged_target
     assert neutral_ai_target is neutral_target
+
+
+
+def test_freeze_application_and_break_before_turn_are_tracked(
+    monkeypatch
+):
+
+    controller = create_monster(
+        "drake_abyssal"
+    )
+
+    ally = create_monster(
+        "thornet_igneous"
+    )
+
+    target = create_monster(
+        "drake_igneous"
+    )
+
+    telemetry = create_battle_telemetry(
+        [controller, ally],
+        [target]
+    )
+
+    freeze_skill = controller.get_skill(3)
+
+    monkeypatch.setattr(
+        random,
+        "random",
+        lambda: 0.0
+    )
+
+    monkeypatch.setattr(
+        random,
+        "uniform",
+        lambda a, b: 100
+    )
+
+    applied = freeze_skill.try_apply_effect(
+        {
+            "effect_id": "freeze",
+            "chance": 1.0,
+            "turns": 1
+        },
+        controller,
+        target,
+        telemetry=telemetry
+    )
+
+    assert applied is not None
+
+    attack = ally.get_skill(1)
+
+    monkeypatch.setattr(
+        attack,
+        "damage_calc",
+        lambda *args, **kwargs: (
+            100,
+            False
+        )
+    )
+
+    attack.execute(
+        ally,
+        [target],
+        context={
+            "team": [
+                controller,
+                ally
+            ],
+            "opponents": [
+                target
+            ],
+            "telemetry": telemetry
+        }
+    )
+
+    result = serialize_battle_telemetry(
+        telemetry
+    )
+
+    controller_data = (
+        result["team_a"][0]
+    )
+
+    assert controller_data[
+        "freezes_applied"
+    ] == 1
+
+    assert controller_data[
+        "freeze_turns_denied"
+    ] == 0
+
+    assert controller_data[
+        "freezes_broken_before_turn"
+    ] == 1
+
+
+
+def test_freeze_denied_turn_is_tracked_by_type():
+
+    controller = create_monster(
+        "drake_abyssal"
+    )
+
+    target = create_monster(
+        "drake_storm"
+    )
+
+    telemetry = create_battle_telemetry(
+        [controller],
+        [target]
+    )
+
+    freeze = create_status_effect(
+        effect_id="freeze",
+        duration=1,
+        source=controller
+    )
+
+    freeze.denied_turns_since_application = 0
+
+    target.apply_status_effect(
+        freeze
+    )
+
+    turn_context = begin_turn(
+        target,
+        telemetry
+    )
+
+    combat_module.handle_incapacitated_turn(
+        target,
+        turn_context,
+        telemetry
+    )
+
+    result = serialize_battle_telemetry(
+        telemetry
+    )
+
+    controller_data = (
+        result["team_a"][0]
+    )
+
+    assert controller_data[
+        "turns_denied"
+    ] == 1
+
+    assert controller_data[
+        "freeze_turns_denied"
+    ] == 1
+
+    assert controller_data[
+        "stun_turns_denied"
+    ] == 0
