@@ -495,6 +495,7 @@ def analyze_team_swap_balance(
     level=50,
     ascended=True,
     max_turns=200,
+    attribute_targeting=False,
     verbose=True
 ):
 
@@ -623,7 +624,8 @@ def analyze_team_swap_balance(
                 verbose=False,
                 level=level,
                 ascended=ascended,
-                max_turns=max_turns
+                max_turns=max_turns,
+                attribute_targeting=attribute_targeting
             )
 
             side_b = simulate_battles(
@@ -633,7 +635,8 @@ def analyze_team_swap_balance(
                 verbose=False,
                 level=level,
                 ascended=ascended,
-                max_turns=max_turns
+                max_turns=max_turns,
+                attribute_targeting=attribute_targeting
             )
 
             candidate_a = (
@@ -958,6 +961,8 @@ def analyze_team_swap_balance(
             ascended,
         "max_turns":
             max_turns,
+        "attribute_targeting":
+            attribute_targeting,
         "core_team_sets":
             [
                 list(core)
@@ -1012,6 +1017,15 @@ def print_team_swap_report(report):
 
     print(
         f"Ascended: {report['ascended']}"
+    )
+
+    print(
+        "Target AI: "
+        + (
+            "attribute-aware"
+            if report["attribute_targeting"]
+            else "neutral"
+        )
     )
 
     print(
@@ -1205,6 +1219,7 @@ def analyze_drake_triangle_balance(
     level=50,
     ascended=True,
     max_turns=200,
+    attribute_targeting=False,
     verbose=True
 ):
 
@@ -1237,6 +1252,7 @@ def analyze_drake_triangle_balance(
             level=level,
             ascended=ascended,
             max_turns=max_turns,
+            attribute_targeting=attribute_targeting,
             verbose=False
         )
 
@@ -1297,6 +1313,8 @@ def analyze_drake_triangle_balance(
             ascended,
         "max_turns":
             max_turns,
+        "attribute_targeting":
+            attribute_targeting,
         "pair_results":
             pair_results
     }
@@ -1334,6 +1352,15 @@ def print_drake_triangle_report(report):
 
     print(
         f"Ascended: {report['ascended']}"
+    )
+
+    print(
+        "Target AI: "
+        + (
+            "attribute-aware"
+            if report["attribute_targeting"]
+            else "neutral"
+        )
     )
 
     for result in report["pair_results"]:
