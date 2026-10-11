@@ -55,6 +55,7 @@ def analyze_unit_balance(
     benchmark_ids=None,
     level=50,
     ascended=True,
+    max_turns=200,
     verbose=True
 ):
 
@@ -138,7 +139,8 @@ def analyze_unit_balance(
             runs=runs,
             verbose=False,
             level=level,
-            ascended=ascended
+            ascended=ascended,
+            max_turns=max_turns
         )
 
         unit_telemetry = (
@@ -155,6 +157,9 @@ def analyze_unit_balance(
             ],
             "average_turns": simulation[
                 "average_turns"
+            ],
+            "draw_rate": simulation[
+                "draw_rate"
             ],
             "average_remaining_hp_percent":
                 simulation[
@@ -263,6 +268,7 @@ def analyze_unit_balance(
         "runs_per_matchup": runs,
         "level": level,
         "ascended": ascended,
+        "max_turns": max_turns,
         "benchmark_ids": list(
             benchmark_ids
         ),
@@ -420,6 +426,7 @@ def analyze_team_swap_balance(
     core_team_ids=None,
     level=50,
     ascended=True,
+    max_turns=200,
     verbose=True
 ):
 
@@ -520,7 +527,8 @@ def analyze_team_swap_balance(
             runs=runs,
             verbose=False,
             level=level,
-            ascended=ascended
+            ascended=ascended,
+            max_turns=max_turns
         )
 
         side_b = simulate_battles(
@@ -529,7 +537,8 @@ def analyze_team_swap_balance(
             runs=runs,
             verbose=False,
             level=level,
-            ascended=ascended
+            ascended=ascended,
+            max_turns=max_turns
         )
 
         candidate_a_telemetry = (
@@ -551,6 +560,11 @@ def analyze_team_swap_balance(
         combined_win_rate = (
             candidate_a_win_rate
             + candidate_b_win_rate
+        ) / 2
+
+        combined_draw_rate = (
+            side_a["draw_rate"]
+            + side_b["draw_rate"]
         ) / 2
 
         average_turns = (
@@ -629,6 +643,8 @@ def analyze_team_swap_balance(
                 candidate_b_win_rate,
             "combined_win_rate":
                 combined_win_rate,
+            "draw_rate":
+                combined_draw_rate,
             "average_turns":
                 average_turns,
             "average_team_remaining_hp_percent":
@@ -742,6 +758,7 @@ def analyze_team_swap_balance(
         "runs_per_side": runs,
         "level": level,
         "ascended": ascended,
+        "max_turns": max_turns,
         "core_team_ids": list(
             core_team_ids
         ),
@@ -822,6 +839,11 @@ def print_team_swap_report(report):
         print(
             f"  Combined win rate: "
             f"{matchup['combined_win_rate']:.1f}%"
+        )
+
+        print(
+            f"  Draw rate: "
+            f"{matchup['draw_rate']:.1f}%"
         )
 
         print(
