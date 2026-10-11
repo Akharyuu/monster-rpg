@@ -507,12 +507,7 @@ SKILL_DATA = {
         "name": "Scorching Breath: Afterburn",
         "type": SkillType.DAMAGE,
         "multiplier": 3.75,
-        "hits": 3,
-        "hit_multipliers": [
-            1.0, 
-            1.0, 
-            1.2
-        ],
+        "hits": 2,
         "target_type": TargetType.ALL_ENEMIES,
         "cooldown": 4,
 
@@ -523,7 +518,17 @@ SKILL_DATA = {
                 2: 1.16,
                 3: 1.24
             }
-        }
+        },
+
+        "after_skill_handlers": [
+            {
+                "handler": "add_burn_if_target_has_burn",
+                "data": {
+                    "stacks": 1,
+                    "turns": 3
+                }
+            }
+        ]
     },
 
 
@@ -869,7 +874,7 @@ SKILL_DATA = {
             {
                 "handler": "aoe_follow_up_attack",
                 "data": {
-                    "damage_multiplier": 2.75,
+                    "damage_multiplier": 1.75,
                     "effects": [
                         {
                             "effect_id": "stun",
