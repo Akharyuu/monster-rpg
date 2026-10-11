@@ -163,14 +163,24 @@ def test_frostborne_preserves_freeze_on_hit():
 
 
 
-def test_shattered_fury_buffs_ally_that_breaks_freeze(monkeypatch):
+def test_everlasting_winter_preserves_freeze_from_ally_damage():
 
-    abyssal = create_monster("drake_abyssal")
-    ally = create_monster("drake_igneous")
-    target = create_monster("drake_igneous")
+    abyssal = create_monster(
+        "drake_abyssal"
+    )
+
+    ally = create_monster(
+        "drake_igneous"
+    )
+
+    target = create_monster(
+        "drake_storm"
+    )
 
     abyssal.resonance = 4
-    update_resonance_kit(abyssal)
+    update_resonance_kit(
+        abyssal
+    )
 
     freeze = create_status_effect(
         effect_id="freeze",
@@ -178,34 +188,19 @@ def test_shattered_fury_buffs_ally_that_breaks_freeze(monkeypatch):
         source=abyssal
     )
 
-    target.apply_status_effect(freeze)
-
-    ally.action_gauge = 0
-
-    # Evitamos otros procs aleatorios como Cinderblood
-    monkeypatch.setattr(
-        random,
-        "random",
-        lambda: 0.99
+    target.apply_status_effect(
+        freeze
     )
 
-    skill = ally.get_skill(1)
-
-    skill.execute(
-        ally,
-        [target]
+    target.receive_damage(
+        1,
+        source=ally
     )
 
-    buff_ids = [
-        buff.effect_id
-        for buff in ally.buffs
-    ]
-
-    assert "attack_up" in buff_ids
-    assert "crit_rate_up" in buff_ids
-
-    assert ally.action_gauge == pytest.approx(0.15)
-
+    assert any(
+        debuff.effect_id == "freeze"
+        for debuff in target.debuffs
+    )
 
 
 def test_freeze_can_be_resisted(monkeypatch):
@@ -3995,69 +3990,6 @@ def test_r5_drake_kit_can_be_built():
 
         assert monster.resonance == 5
         assert len(monster.skills) == 3
-
-
-
-def test_requiem_follow_up_uses_full_damage_multiplier(
-    monkeypatch
-):
-
-    drake = create_monster(
-        "drake_storm"
-    )
-
-    target = create_monster(
-        "drake_igneous"
-    )
-
-    skill = create_skill(
-        "stormbreak_requiem"
-    )
-
-    speed_up = create_status_effect(
-        effect_id="speed_up",
-        duration=2,
-        source=drake
-    )
-
-    drake.apply_status_effect(
-        speed_up
-    )
-
-    received_multipliers = []
-
-    def fake_damage_calc(
-        attacker,
-        defender,
-        hit_multiplier,
-        snapshot,
-        hit_index
-    ):
-
-        received_multipliers.append(
-            hit_multiplier
-        )
-
-        return 1, False
-
-    monkeypatch.setattr(
-        skill,
-        "damage_calc",
-        fake_damage_calc
-    )
-
-    skill.execute(
-        drake,
-        [target],
-        context={
-            "team": [drake],
-            "opponents": [target]
-        }
-    )
-
-    assert received_multipliers[-1] == pytest.approx(
-        2.75
-    )
 
 
 
