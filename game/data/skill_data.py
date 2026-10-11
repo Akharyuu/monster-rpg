@@ -752,7 +752,7 @@ SKILL_DATA = {
     "lightning_rush": {
         "name": "Lightning Rush",
         "type": SkillType.DAMAGE,
-        "multiplier": 2.15,
+        "multiplier": 1.75,
         "hits": 2,
         "target_type": TargetType.SINGLE_ENEMY,
         "cooldown": 4,
@@ -771,7 +771,7 @@ SKILL_DATA = {
     "lightning_rush_blitz": {
         "name": "Lightning Rush: Blitz",
         "type": SkillType.DAMAGE,
-        "multiplier": 2.15,
+        "multiplier": 1.75,
         "hits": 2,
         "target_type": TargetType.SINGLE_ENEMY,
         "cooldown": 3,
