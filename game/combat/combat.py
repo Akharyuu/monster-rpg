@@ -376,7 +376,12 @@ def enemy_turn(active_enemy, enemies, allies):
 #                      SIMULATE BATTLE
 # =========================================================
 
-def simulate_battle(team_a, team_b, max_turns=200):
+def simulate_battle(
+    team_a,
+    team_b,
+    max_turns=200,
+    attribute_targeting=True
+):
 
     turns = 0
 
@@ -443,7 +448,8 @@ def simulate_battle(team_a, team_b, max_turns=200):
                     active_combatant,
                     team_a,
                     team_b,
-                    telemetry
+                    telemetry,
+                    attribute_targeting
                 )
 
                 team_a_remaining_hp = sum(
@@ -486,7 +492,8 @@ def simulate_battle(team_a, team_b, max_turns=200):
                     active_combatant,
                     team_b,
                     team_a,
-                    telemetry
+                    telemetry,
+                    attribute_targeting
                 )
 
                 team_a_remaining_hp = sum(
@@ -568,7 +575,8 @@ def simulate_battles(
     verbose=True,
     level=1,
     ascended=False,
-    max_turns=200
+    max_turns=200,
+    attribute_targeting=True
 ):
 
     wins_a = 0
@@ -641,7 +649,9 @@ def simulate_battles(
 
             battle_result = simulate_battle(
                 team_a,
-                team_b
+                team_b,
+                max_turns=max_turns,
+                attribute_targeting=attribute_targeting
             )
 
         else:
@@ -654,7 +664,8 @@ def simulate_battles(
                 battle_result = simulate_battle(
                     team_a,
                     team_b,
-                    max_turns=max_turns
+                    max_turns=max_turns,
+                    attribute_targeting=attribute_targeting
                 )
 
         add_team_telemetry(
@@ -812,7 +823,13 @@ def simulate_battles(
 #                       AUTO TURN
 # =========================================================
 
-def auto_turn(active_monster, team, opponents, telemetry=None):
+def auto_turn(
+    active_monster,
+    team,
+    opponents,
+    telemetry=None,
+    attribute_targeting=True
+):
 
     turn_context = begin_turn(
         active_monster,
@@ -850,7 +867,14 @@ def auto_turn(active_monster, team, opponents, telemetry=None):
 
             if monster_skill.target_type == TargetType.SINGLE_ENEMY:
 
-                targets = [choose_enemy_target(active_monster, opponents, monster_skill)]
+                targets = [
+                    choose_enemy_target(
+                        active_monster,
+                        opponents,
+                        monster_skill,
+                        attribute_targeting=attribute_targeting
+                    )
+                ]
 
             elif monster_skill.target_type == TargetType.SINGLE_ALLY:
 
