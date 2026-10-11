@@ -26,6 +26,7 @@ from game.combat.passive_modifiers import (
     get_passive_damage_multiplier,
     get_passive_stat_bonus
 )
+from game.combat.passive_triggers import trigger_passives
 from game.combat.telemetry import (
     create_battle_telemetry,
     serialize_battle_telemetry
@@ -4057,3 +4058,94 @@ def test_requiem_follow_up_uses_full_damage_multiplier(
     assert received_multipliers[-1] == pytest.approx(
         2.75
     )
+
+
+
+def test_everfrost_resets_s3_when_max_scales_are_reached(
+    monkeypatch
+):
+
+    drake = create_monster(
+        "drake_abyssal"
+    )
+
+    drake.passives = [
+        create_passive(
+            "frozen_scales_everfrost"
+        )
+    ]
+
+    drake.skills = [
+        create_skill("draconic_claw"),
+        create_skill("rime_breath_frigid"),
+        create_skill(
+            "glacial_collapse_absolute_zero"
+        )
+    ]
+
+    targets = [
+        create_monster("drake_igneous"),
+        create_monster("drake_storm"),
+        create_monster("griffon_igneous")
+    ]
+
+    for target in targets:
+        slow = create_status_effect(
+            effect_id="speed_break",
+            duration=2,
+            source=drake
+        )
+        target.apply_status_effect(
+            slow
+        )
+
+    monkeypatch.setattr(
+        random,
+        "random",
+        lambda: 0.0
+    )
+
+    monkeypatch.setattr(
+        random,
+        "uniform",
+        lambda a, b: 100
+    )
+
+    s3 = drake.get_skill(3)
+    s3.current_cooldown = 4
+
+    context = {
+        "skill": s3,
+        "targets": targets,
+        "team": [drake],
+        "opponents": targets
+    }
+
+    trigger_passives(
+        "before_skill",
+        drake,
+        context
+    )
+
+    result = s3.execute(
+        drake,
+        targets,
+        context
+    )
+
+    context["skill_result"] = result
+
+    trigger_passives(
+        "after_skill",
+        drake,
+        context
+    )
+
+    assert (
+        drake.get_combat_resource(
+            "frozen_scales"
+        )
+        == 3
+    )
+
+    assert s3.current_cooldown == 0
