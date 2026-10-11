@@ -668,10 +668,20 @@ SKILL_DATA = {
         "target_type": TargetType.ALL_ENEMIES,
         "cooldown": 4,
 
+        "on_hit_handlers": [
+            {
+                "handler": "reduce_action_gauge_if_debuff",
+                "data": {
+                    "effect_id": "speed_break",
+                    "amount": 0.10
+                }
+            }
+        ],
+
         "effects": [
             {
                 "effect_id": "speed_break",
-                "chance": 0.45,
+                "chance": 0.50,
                 "turns": 2,
                 "trigger": "per_hit"
             }
@@ -837,8 +847,12 @@ SKILL_DATA = {
         "hit_distribution": "one_each_then_random",
 
         "repeated_target_damage": {
-            "full_damage_hits": 3,
-            "later_hit_multiplier": 0.25
+            "full_damage_hits": 5,
+            "later_hit_multiplier": 0.25,
+            "first_hit_bonus_if_caster_buff": {
+                "effect_id": "speed_up",
+                "multiplier": 1.50
+            }
         },
 
         "effects": [
