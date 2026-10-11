@@ -56,6 +56,7 @@ def analyze_unit_balance(
     level=50,
     ascended=True,
     max_turns=200,
+    neutral_attributes=False,
     verbose=True
 ):
 
@@ -142,7 +143,8 @@ def analyze_unit_balance(
             verbose=False,
             level=level,
             ascended=ascended,
-            max_turns=max_turns
+            max_turns=max_turns,
+            neutral_all_attributes=neutral_attributes
         )
 
         unit_telemetry = (
@@ -289,6 +291,7 @@ def analyze_unit_balance(
         "level": level,
         "ascended": ascended,
         "max_turns": max_turns,
+        "neutral_attributes": neutral_attributes,
         "benchmark_ids": list(
             benchmark_ids
         ),
@@ -337,6 +340,15 @@ def print_balance_report(report):
 
     print(
         f"Ascended: {report['ascended']}"
+    )
+
+    print(
+        "Attributes: "
+        + (
+            "neutral"
+            if report["neutral_attributes"]
+            else "normal"
+        )
     )
 
     for matchup in report["matchups"]:
