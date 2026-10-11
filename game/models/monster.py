@@ -274,6 +274,22 @@ class Monster:
 
     def get_attribute_modifier(self, defender):
 
+        neutral_all_attributes = (
+            getattr(
+                self,
+                "_neutral_all_attributes",
+                False
+            )
+            or getattr(
+                defender,
+                "_neutral_all_attributes",
+                False
+            )
+        )
+
+        if neutral_all_attributes:
+            return 1
+
         neutral_core_attributes = (
             getattr(
                 self,
