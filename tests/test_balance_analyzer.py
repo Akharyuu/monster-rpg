@@ -3,6 +3,7 @@ import pytest
 import game.combat.balance_analyzer as balance_module
 
 from game.combat.balance_analyzer import (
+    analyze_team_swap_balance,
     analyze_unit_balance,
     get_default_balance_benchmarks
 )
@@ -229,3 +230,183 @@ def test_analyze_passes_requested_level_to_simulator(
 
     assert received["level"] == 40
     assert received["ascended"] is False
+
+
+
+# =========================================================
+#               TEAM SWAP ANALYZER TESTS
+# =========================================================
+
+def test_team_swap_averages_both_sides(
+    monkeypatch
+):
+
+    calls = []
+
+    def fake_simulate_battles(
+        team_a_ids,
+        team_b_ids,
+        runs,
+        verbose=True,
+        level=1,
+        ascended=False
+    ):
+
+        calls.append(
+            (
+                list(team_a_ids),
+                list(team_b_ids)
+            )
+        )
+
+        candidate_is_team_a = (
+            team_a_ids[0]
+            == "drake_storm"
+        )
+
+        if candidate_is_team_a:
+
+            return {
+                "team_a_win_rate": 70,
+                "team_b_win_rate": 30,
+                "average_turns": 12,
+                "minimum_turns": 10,
+                "maximum_turns": 14,
+                "team_a_average_remaining_hp": 100,
+                "team_b_average_remaining_hp": 80,
+                "team_a_average_remaining_hp_percent": 40,
+                "team_b_average_remaining_hp_percent": 20,
+                "team_a_telemetry": [
+                    {
+                        "slot": 0,
+                        "monster_id": "drake_storm",
+                        "direct_damage": 1200,
+                        "dot_damage": 100,
+                        "healing": 50,
+                        "shield_generated": 0,
+                        "shield_absorbed": 0
+                    }
+                ],
+                "team_b_telemetry": [
+                    {
+                        "slot": 0,
+                        "monster_id": "drake_igneous",
+                        "direct_damage": 900,
+                        "dot_damage": 0,
+                        "healing": 0,
+                        "shield_generated": 0,
+                        "shield_absorbed": 0
+                    }
+                ]
+            }
+
+        return {
+            "team_a_win_rate": 45,
+            "team_b_win_rate": 55,
+            "average_turns": 16,
+            "minimum_turns": 14,
+            "maximum_turns": 18,
+            "team_a_average_remaining_hp": 90,
+            "team_b_average_remaining_hp": 120,
+            "team_a_average_remaining_hp_percent": 30,
+            "team_b_average_remaining_hp_percent": 50,
+            "team_a_telemetry": [
+                {
+                    "slot": 0,
+                    "monster_id": "drake_igneous",
+                    "direct_damage": 950,
+                    "dot_damage": 0,
+                    "healing": 0,
+                    "shield_generated": 0,
+                    "shield_absorbed": 0
+                }
+            ],
+            "team_b_telemetry": [
+                {
+                    "slot": 0,
+                    "monster_id": "drake_storm",
+                    "direct_damage": 1000,
+                    "dot_damage": 300,
+                    "healing": 150,
+                    "shield_generated": 0,
+                    "shield_absorbed": 0
+                }
+            ]
+        }
+
+    monkeypatch.setattr(
+        balance_module,
+        "simulate_battles",
+        fake_simulate_battles
+    )
+
+    report = analyze_team_swap_balance(
+        "drake_storm",
+        runs=100,
+        benchmark_ids=[
+            "drake_igneous"
+        ],
+        core_team_ids=[
+            "dryad_storm",
+            "griffon_igneous"
+        ],
+        verbose=False
+    )
+
+    matchup = report["matchups"][0]
+
+    assert matchup[
+        "win_rate_as_team_a"
+    ] == pytest.approx(70)
+
+    assert matchup[
+        "win_rate_as_team_b"
+    ] == pytest.approx(55)
+
+    assert matchup[
+        "combined_win_rate"
+    ] == pytest.approx(62.5)
+
+    assert matchup[
+        "average_turns"
+    ] == pytest.approx(14)
+
+    assert matchup[
+        "average_team_remaining_hp_percent"
+    ] == pytest.approx(45)
+
+    assert matchup[
+        "total_damage"
+    ] == pytest.approx(1300)
+
+    assert len(calls) == 2
+
+    assert calls[0][0] == [
+        "drake_storm",
+        "dryad_storm",
+        "griffon_igneous"
+    ]
+
+    assert calls[1][1] == [
+        "drake_storm",
+        "dryad_storm",
+        "griffon_igneous"
+    ]
+
+
+
+def test_team_swap_rejects_unknown_core_monster():
+
+    with pytest.raises(ValueError):
+
+        analyze_team_swap_balance(
+            "drake_storm",
+            runs=10,
+            benchmark_ids=[
+                "drake_igneous"
+            ],
+            core_team_ids=[
+                "not_a_monster"
+            ],
+            verbose=False
+        )
