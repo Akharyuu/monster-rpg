@@ -874,14 +874,7 @@ SKILL_DATA = {
             {
                 "handler": "aoe_follow_up_attack",
                 "data": {
-                    "damage_multiplier": 1.75,
-                    "effects": [
-                        {
-                            "effect_id": "stun",
-                            "chance": 0.50,
-                            "turns": 1
-                        }
-                    ]
+                    "damage_multiplier": 1.50
                 }
             }
         ]
