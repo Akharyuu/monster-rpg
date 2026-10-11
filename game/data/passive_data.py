@@ -157,6 +157,15 @@ PASSIVE_DATA = {
         "action_gauge": 0.15
     },
 
+    "frostborne_everlasting_winter": {
+        "name": "Frostborne: Everlasting Winter",
+
+        "traits": [
+            "preserve_freeze_on_hit",
+            "preserve_applied_freeze_on_damage"
+        ]
+    },
+
     # =========================================================
     #                      STORM DRAKE
     # =========================================================
