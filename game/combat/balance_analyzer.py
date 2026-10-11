@@ -131,6 +131,7 @@ def analyze_unit_balance(
     total_healing = 0
     total_shield_generated = 0
     total_shield_absorbed = 0
+    total_turns_denied = 0
 
     for benchmark_id in benchmark_ids:
 
@@ -184,6 +185,9 @@ def analyze_unit_balance(
             ],
             "shield_absorbed": unit_telemetry[
                 "shield_absorbed"
+            ],
+            "turns_denied": unit_telemetry[
+                "turns_denied"
             ]
         }
 
@@ -227,6 +231,10 @@ def analyze_unit_balance(
             "shield_absorbed"
         ]
 
+        total_turns_denied += matchup[
+            "turns_denied"
+        ]
+
     matchup_count = len(matchups)
 
     overall = {
@@ -265,6 +273,10 @@ def analyze_unit_balance(
         ),
         "average_shield_absorbed": (
             total_shield_absorbed
+            / matchup_count
+        ),
+        "average_turns_denied": (
+            total_turns_denied
             / matchup_count
         )
     }
@@ -374,6 +386,11 @@ def print_balance_report(report):
             f"{matchup['shield_absorbed']:.1f}"
         )
 
+        print(
+            f"  Enemy turns denied: "
+            f"{matchup['turns_denied']:.2f}"
+        )
+
     overall = report["overall"]
 
     print()
@@ -419,6 +436,11 @@ def print_balance_report(report):
     print(
         f"Average shield absorbed: "
         f"{overall['average_shield_absorbed']:.1f}"
+    )
+
+    print(
+        f"Average enemy turns denied: "
+        f"{overall['average_turns_denied']:.2f}"
     )
 
     print(
@@ -529,6 +551,7 @@ def analyze_team_swap_balance(
     total_healing = 0
     total_shield_generated = 0
     total_shield_absorbed = 0
+    total_turns_denied = 0
 
     for benchmark_id in benchmark_ids:
 
@@ -653,6 +676,15 @@ def analyze_team_swap_balance(
             ]
         ) / 2
 
+        average_turns_denied = (
+            candidate_a_telemetry[
+                "turns_denied"
+            ]
+            + candidate_b_telemetry[
+                "turns_denied"
+            ]
+        ) / 2
+
         benchmark_direct_damage = (
             benchmark_a_telemetry[
                 "direct_damage"
@@ -698,6 +730,15 @@ def analyze_team_swap_balance(
             ]
         ) / 2
 
+        benchmark_turns_denied = (
+            benchmark_a_telemetry[
+                "turns_denied"
+            ]
+            + benchmark_b_telemetry[
+                "turns_denied"
+            ]
+        ) / 2
+
         matchup = {
             "opponent_id": benchmark_id,
             "opponent_name": MONSTER_DATA[
@@ -735,6 +776,8 @@ def analyze_team_swap_balance(
                 average_shield_generated,
             "shield_absorbed":
                 average_shield_absorbed,
+            "turns_denied":
+                average_turns_denied,
             "benchmark_direct_damage":
                 benchmark_direct_damage,
             "benchmark_dot_damage":
@@ -748,7 +791,9 @@ def analyze_team_swap_balance(
             "benchmark_shield_generated":
                 benchmark_shield_generated,
             "benchmark_shield_absorbed":
-                benchmark_shield_absorbed
+                benchmark_shield_absorbed,
+            "benchmark_turns_denied":
+                benchmark_turns_denied
         }
 
         matchups.append(
@@ -791,6 +836,10 @@ def analyze_team_swap_balance(
 
         total_shield_absorbed += (
             matchup["shield_absorbed"]
+        )
+
+        total_turns_denied += (
+            matchup["turns_denied"]
         )
 
     matchup_count = len(matchups)
@@ -837,6 +886,10 @@ def analyze_team_swap_balance(
         ),
         "average_shield_absorbed": (
             total_shield_absorbed
+            / matchup_count
+        ),
+        "average_turns_denied": (
+            total_turns_denied
             / matchup_count
         )
     }
@@ -994,6 +1047,14 @@ def print_team_swap_report(report):
             f"{matchup['benchmark_shield_absorbed']:.1f}"
         )
 
+        print(
+            f"    Enemy turns denied: "
+            f"{report['monster_id']} "
+            f"{matchup['turns_denied']:.2f} | "
+            f"{matchup['opponent_id']} "
+            f"{matchup['benchmark_turns_denied']:.2f}"
+        )
+
     overall = report["overall"]
 
     print()
@@ -1039,6 +1100,11 @@ def print_team_swap_report(report):
     print(
         f"Average unit shield absorbed: "
         f"{overall['average_shield_absorbed']:.1f}"
+    )
+
+    print(
+        f"Average unit enemy turns denied: "
+        f"{overall['average_turns_denied']:.2f}"
     )
 
     print(
