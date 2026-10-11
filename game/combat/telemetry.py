@@ -7,7 +7,8 @@ TELEMETRY_METRICS = (
     "dot_damage",
     "healing",
     "shield_generated",
-    "shield_absorbed"
+    "shield_absorbed",
+    "turns_denied"
 )
 
 
@@ -31,7 +32,8 @@ def create_battle_telemetry(team_a, team_b):
                 "dot_damage": 0,
                 "healing": 0,
                 "shield_generated": 0,
-                "shield_absorbed": 0
+                "shield_absorbed": 0,
+                "turns_denied": 0
             }
 
     return {
