@@ -1,6 +1,8 @@
 import random
 
 from ..combat.ai_conditions import AI_CONDITIONS
+from ..combat.passive_modifiers import get_passive_damage_multiplier
+from ..combat.skill_damage_handlers import DAMAGE_HANDLERS
 from ..data.ai_metadata import SKILL_AI_DATA
 from ..models.enums import (
     SkillType,
@@ -102,16 +104,47 @@ def choose_skill(active_enemy, enemies, allies):
 
         return random.choice(lowest_cooldown_skills)
 
+    # Some skills should be held until their setup is ready.
+    # Kill checks happen first, so a guaranteed lethal can still
+    # be used even when the normal setup is missing.
+    default_skills = []
+
+    for skill in available_skills:
+
+        skill_metadata = SKILL_AI_DATA.get(
+            skill.skill_id,
+            {}
+        )
+
+        hold_until_setup = skill_metadata.get(
+            "hold_until_setup",
+            False
+        )
+
+        if (
+            hold_until_setup
+            and not check_setup_requirements(
+                skill,
+                context
+            )
+        ):
+            continue
+
+        default_skills.append(skill)
+
+    if not default_skills:
+        return base_skill
+
     # Prepare skills whose setup requirements are not ready yet.
     setup_skills = []
 
-    for skill in available_skills:
+    for skill in default_skills:
 
         if check_setup_requirements(skill, context):
             continue
 
         setup_skill = find_setup_skill(
-            available_skills,
+            default_skills,
             skill
         )
 
@@ -122,21 +155,24 @@ def choose_skill(active_enemy, enemies, allies):
         return random.choice(setup_skills)
 
     # Default weighted skill selection.
-    if len(available_skills) == 2:
+    if len(default_skills) == 1:
+        return default_skills[0]
+
+    if len(default_skills) == 2:
 
         selected_skills = random.choices(
-            available_skills,
+            default_skills,
             weights=[20, 80],
             k=1
-        ) 
+        )
 
-    elif len(available_skills) == 3:
+    elif len(default_skills) == 3:
 
         selected_skills = random.choices(
-            available_skills,
+            default_skills,
             weights=[10, 55, 35],
             k=1
-        ) 
+        )
 
     return selected_skills[0]
 
@@ -171,7 +207,38 @@ def choose_enemy_target(
 
     if kill_range_targets:
         return random.choice(kill_range_targets)
-    
+
+    skill_metadata = SKILL_AI_DATA.get(
+        skill.skill_id,
+        {}
+    )
+
+    preferred_debuff = skill_metadata.get(
+        "preferred_target_debuff"
+    )
+
+    if preferred_debuff is not None:
+
+        preferred_targets = []
+
+        for target in alive_targets:
+
+            has_required_stacks = any(
+                debuff.effect_id
+                == preferred_debuff["effect_id"]
+                and debuff.stacks
+                >= preferred_debuff["stacks"]
+                for debuff in target.debuffs
+            )
+
+            if has_required_stacks:
+                preferred_targets.append(
+                    target
+                )
+
+        if preferred_targets:
+            alive_targets = preferred_targets
+
     if attribute_targeting:
 
         great_targets = []
@@ -267,14 +334,67 @@ def estimate_damage(active_enemy, target, skill):
 
     total_damage = 0
 
+    snapshot = skill.get_target_snapshot(
+        target
+    )
+
+    passive_damage_multiplier = (
+        get_passive_damage_multiplier(
+            active_enemy
+        )
+    )
+
     for hit in range(skill.hits):
 
-        multiplier = 1
+        hit_multiplier = 1
 
         if skill.hit_multipliers:
-            multiplier = skill.hit_multipliers[hit]
+            hit_multiplier = (
+                skill.hit_multipliers[hit]
+            )
 
-        total_damage += skill.base_damage_calc(active_enemy, target, multiplier)
+        damage_multiplier = 1
+        ignore_defense = False
+
+        if skill.damage_handler:
+
+            handler = DAMAGE_HANDLERS[
+                skill.damage_handler
+            ]
+
+            damage_data = handler(
+                active_enemy,
+                target,
+                skill,
+                snapshot,
+                hit
+            )
+
+            damage_multiplier = (
+                damage_data.get(
+                    "damage_multiplier",
+                    1
+                )
+            )
+
+            ignore_defense = (
+                damage_data.get(
+                    "ignore_defense",
+                    False
+                )
+            )
+
+        damage_multiplier *= (
+            passive_damage_multiplier
+        )
+
+        total_damage += skill.base_damage_calc(
+            active_enemy,
+            target,
+            hit_multiplier,
+            damage_multiplier,
+            ignore_defense
+        )
 
     return total_damage
 
