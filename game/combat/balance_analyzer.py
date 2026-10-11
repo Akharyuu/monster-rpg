@@ -647,30 +647,33 @@ def analyze_team_swap_balance(
                 benchmark_id
             ] + list(core_team)
 
+            simulation_kwargs = {
+                "runs": runs,
+                "verbose": False,
+                "level": level,
+                "ascended": ascended,
+                "max_turns": max_turns,
+                "attribute_targeting":
+                    attribute_targeting,
+                "neutral_core_attributes":
+                    neutral_core_attributes
+            }
+
+            if resonance > 0:
+                simulation_kwargs[
+                    "primary_resonance"
+                ] = resonance
+
             side_a = simulate_battles(
                 candidate_team,
                 benchmark_team,
-                runs=runs,
-                verbose=False,
-                level=level,
-                ascended=ascended,
-                max_turns=max_turns,
-                attribute_targeting=attribute_targeting,
-                neutral_core_attributes=neutral_core_attributes,
-                primary_resonance=resonance
+                **simulation_kwargs
             )
 
             side_b = simulate_battles(
                 benchmark_team,
                 candidate_team,
-                runs=runs,
-                verbose=False,
-                level=level,
-                ascended=ascended,
-                max_turns=max_turns,
-                attribute_targeting=attribute_targeting,
-                neutral_core_attributes=neutral_core_attributes,
-                primary_resonance=resonance
+                **simulation_kwargs
             )
 
             candidate_a = (
