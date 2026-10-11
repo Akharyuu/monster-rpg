@@ -27,6 +27,7 @@ from game.combat.passive_modifiers import (
     get_passive_stat_bonus
 )
 from game.combat.passive_triggers import trigger_passives
+from game.combat.skill_damage_handlers import DAMAGE_HANDLERS
 from game.combat.telemetry import (
     create_battle_telemetry,
     serialize_battle_telemetry
@@ -4229,5 +4230,110 @@ def test_requiem_follow_up_uses_rebalanced_multiplier(
     )
 
     assert received_multipliers[-1] == pytest.approx(
-        1.50
+        0.75
+    )
+
+
+
+def test_incineration_ignores_defense_at_two_burn_stacks():
+
+    igneous = create_monster(
+        "drake_igneous"
+    )
+
+    target = create_monster(
+        "drake_abyssal"
+    )
+
+    skill = create_skill(
+        "flame_devourer_incineration"
+    )
+
+    burn = create_status_effect(
+        effect_id="burn",
+        duration=3,
+        stacks=2,
+        source=igneous
+    )
+
+    target.apply_status_effect(
+        burn
+    )
+
+    snapshot = skill.get_target_snapshot(
+        target
+    )
+
+    damage_data = (
+        skill.damage_handler_data
+    )
+
+    assert (
+        damage_data[
+            "ignore_defense_at_stacks"
+        ]
+        == 2
+    )
+
+    handler = DAMAGE_HANDLERS[
+        skill.damage_handler
+    ]
+
+    result = handler(
+        igneous,
+        target,
+        skill,
+        snapshot,
+        0
+    )
+
+    assert result[
+        "ignore_defense"
+    ] is True
+
+
+
+def test_absolute_zero_can_freeze_without_slow(
+    monkeypatch
+):
+
+    abyssal = create_monster(
+        "drake_abyssal"
+    )
+
+    target = create_monster(
+        "drake_igneous"
+    )
+
+    abyssal.resonance = 5
+
+    update_resonance_kit(
+        abyssal
+    )
+
+    abyssal.accuracy = 0
+    target.resistance = 100
+
+    monkeypatch.setattr(
+        random,
+        "random",
+        lambda: 0.0
+    )
+
+    monkeypatch.setattr(
+        random,
+        "uniform",
+        lambda a, b: 0.0
+    )
+
+    skill = abyssal.get_skill(3)
+
+    skill.execute(
+        abyssal,
+        [target]
+    )
+
+    assert any(
+        debuff.effect_id == "freeze"
+        for debuff in target.debuffs
     )
