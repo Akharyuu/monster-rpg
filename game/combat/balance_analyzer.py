@@ -668,17 +668,22 @@ def analyze_team_swap_balance(
                 "healing",
                 "shield_generated",
                 "shield_absorbed",
-                "turns_denied"
+                "turns_denied",
+                "stuns_applied",
+                "freezes_applied",
+                "stun_turns_denied",
+                "freeze_turns_denied",
+                "freezes_broken_before_turn"
             ):
 
                 candidate_metrics[metric] = (
-                    candidate_a[metric]
-                    + candidate_b[metric]
+                    candidate_a.get(metric, 0)
+                    + candidate_b.get(metric, 0)
                 ) / 2
 
                 benchmark_metrics[metric] = (
-                    benchmark_a[metric]
-                    + benchmark_b[metric]
+                    benchmark_a.get(metric, 0)
+                    + benchmark_b.get(metric, 0)
                 ) / 2
 
             core_result = {
@@ -886,6 +891,96 @@ def analyze_team_swap_balance(
                         core[
                             "benchmark_metrics"
                         ]["turns_denied"]
+                        for core in core_results
+                    ]
+                ),
+            "stuns_applied":
+                _average_values(
+                    [
+                        core[
+                            "candidate_metrics"
+                        ]["stuns_applied"]
+                        for core in core_results
+                    ]
+                ),
+            "freezes_applied":
+                _average_values(
+                    [
+                        core[
+                            "candidate_metrics"
+                        ]["freezes_applied"]
+                        for core in core_results
+                    ]
+                ),
+            "stun_turns_denied":
+                _average_values(
+                    [
+                        core[
+                            "candidate_metrics"
+                        ]["stun_turns_denied"]
+                        for core in core_results
+                    ]
+                ),
+            "freeze_turns_denied":
+                _average_values(
+                    [
+                        core[
+                            "candidate_metrics"
+                        ]["freeze_turns_denied"]
+                        for core in core_results
+                    ]
+                ),
+            "freezes_broken_before_turn":
+                _average_values(
+                    [
+                        core[
+                            "candidate_metrics"
+                        ]["freezes_broken_before_turn"]
+                        for core in core_results
+                    ]
+                ),
+            "benchmark_stuns_applied":
+                _average_values(
+                    [
+                        core[
+                            "benchmark_metrics"
+                        ]["stuns_applied"]
+                        for core in core_results
+                    ]
+                ),
+            "benchmark_freezes_applied":
+                _average_values(
+                    [
+                        core[
+                            "benchmark_metrics"
+                        ]["freezes_applied"]
+                        for core in core_results
+                    ]
+                ),
+            "benchmark_stun_turns_denied":
+                _average_values(
+                    [
+                        core[
+                            "benchmark_metrics"
+                        ]["stun_turns_denied"]
+                        for core in core_results
+                    ]
+                ),
+            "benchmark_freeze_turns_denied":
+                _average_values(
+                    [
+                        core[
+                            "benchmark_metrics"
+                        ]["freeze_turns_denied"]
+                        for core in core_results
+                    ]
+                ),
+            "benchmark_freezes_broken_before_turn":
+                _average_values(
+                    [
+                        core[
+                            "benchmark_metrics"
+                        ]["freezes_broken_before_turn"]
                         for core in core_results
                     ]
                 )
@@ -1160,6 +1255,46 @@ def print_team_swap_report(report):
             f"{matchup['benchmark_turns_denied']:.2f}"
         )
 
+        print(
+            f"    Stuns applied: "
+            f"{report['monster_id']} "
+            f"{matchup['stuns_applied']:.2f} | "
+            f"{matchup['opponent_id']} "
+            f"{matchup['benchmark_stuns_applied']:.2f}"
+        )
+
+        print(
+            f"    Freezes applied: "
+            f"{report['monster_id']} "
+            f"{matchup['freezes_applied']:.2f} | "
+            f"{matchup['opponent_id']} "
+            f"{matchup['benchmark_freezes_applied']:.2f}"
+        )
+
+        print(
+            f"    Stun turns denied: "
+            f"{report['monster_id']} "
+            f"{matchup['stun_turns_denied']:.2f} | "
+            f"{matchup['opponent_id']} "
+            f"{matchup['benchmark_stun_turns_denied']:.2f}"
+        )
+
+        print(
+            f"    Freeze turns denied: "
+            f"{report['monster_id']} "
+            f"{matchup['freeze_turns_denied']:.2f} | "
+            f"{matchup['opponent_id']} "
+            f"{matchup['benchmark_freeze_turns_denied']:.2f}"
+        )
+
+        print(
+            f"    Freezes broken before turn: "
+            f"{report['monster_id']} "
+            f"{matchup['freezes_broken_before_turn']:.2f} | "
+            f"{matchup['opponent_id']} "
+            f"{matchup['benchmark_freezes_broken_before_turn']:.2f}"
+        )
+
     overall = report["overall"]
 
     print()
@@ -1315,6 +1450,46 @@ def analyze_drake_triangle_balance(
                     matchup[
                         "benchmark_turns_denied"
                     ],
+                "candidate_stuns_applied":
+                    matchup[
+                        "stuns_applied"
+                    ],
+                "benchmark_stuns_applied":
+                    matchup[
+                        "benchmark_stuns_applied"
+                    ],
+                "candidate_freezes_applied":
+                    matchup[
+                        "freezes_applied"
+                    ],
+                "benchmark_freezes_applied":
+                    matchup[
+                        "benchmark_freezes_applied"
+                    ],
+                "candidate_stun_turns_denied":
+                    matchup[
+                        "stun_turns_denied"
+                    ],
+                "benchmark_stun_turns_denied":
+                    matchup[
+                        "benchmark_stun_turns_denied"
+                    ],
+                "candidate_freeze_turns_denied":
+                    matchup[
+                        "freeze_turns_denied"
+                    ],
+                "benchmark_freeze_turns_denied":
+                    matchup[
+                        "benchmark_freeze_turns_denied"
+                    ],
+                "candidate_freezes_broken_before_turn":
+                    matchup[
+                        "freezes_broken_before_turn"
+                    ],
+                "benchmark_freezes_broken_before_turn":
+                    matchup[
+                        "benchmark_freezes_broken_before_turn"
+                    ],
                 "core_results":
                     matchup[
                         "core_results"
@@ -1426,6 +1601,41 @@ def print_drake_triangle_report(report):
             f"{result['candidate_turns_denied']:.2f} "
             f"| "
             f"{result['benchmark_turns_denied']:.2f}"
+        )
+
+        print(
+            f"  Stuns applied: "
+            f"{result['candidate_stuns_applied']:.2f} "
+            f"| "
+            f"{result['benchmark_stuns_applied']:.2f}"
+        )
+
+        print(
+            f"  Freezes applied: "
+            f"{result['candidate_freezes_applied']:.2f} "
+            f"| "
+            f"{result['benchmark_freezes_applied']:.2f}"
+        )
+
+        print(
+            f"  Stun turns denied: "
+            f"{result['candidate_stun_turns_denied']:.2f} "
+            f"| "
+            f"{result['benchmark_stun_turns_denied']:.2f}"
+        )
+
+        print(
+            f"  Freeze turns denied: "
+            f"{result['candidate_freeze_turns_denied']:.2f} "
+            f"| "
+            f"{result['benchmark_freeze_turns_denied']:.2f}"
+        )
+
+        print(
+            f"  Freezes broken before turn: "
+            f"{result['candidate_freezes_broken_before_turn']:.2f} "
+            f"| "
+            f"{result['benchmark_freezes_broken_before_turn']:.2f}"
         )
 
         for index, core in enumerate(
