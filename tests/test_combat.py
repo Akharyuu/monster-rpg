@@ -3662,13 +3662,13 @@ def test_stormbreak_reduces_damage_after_three_hits_on_same_target(
         1.0,
         1.0,
         1.0,
-        0.25,
-        0.25,
-        0.25,
-        0.25,
-        0.25,
-        0.25,
-        0.25
+        0.50,
+        0.50,
+        0.50,
+        0.50,
+        0.50,
+        0.50,
+        0.50
     ]
 
 
@@ -3689,5 +3689,5 @@ def test_stormbreak_keeps_original_base_multiplier():
 
     assert stormbreak.repeated_target_damage == {
         "full_damage_hits": 3,
-        "later_hit_multiplier": 0.25
+        "later_hit_multiplier": 0.50
     }
