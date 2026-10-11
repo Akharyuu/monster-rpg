@@ -39,7 +39,8 @@ def test_analyze_unit_balance_aggregates_matchups(
         runs,
         verbose=True,
         level=1,
-        ascended=False
+        ascended=False,
+        max_turns=200
     ):
 
         opponent_id = team_b_ids[0]
@@ -61,6 +62,7 @@ def test_analyze_unit_balance_aggregates_matchups(
         return {
             "team_a_win_rate": win_rate,
             "team_b_win_rate": 100 - win_rate,
+            "draw_rate": 0,
             "average_turns": turns,
             "minimum_turns": turns,
             "maximum_turns": turns,
@@ -171,7 +173,8 @@ def test_analyze_passes_requested_level_to_simulator(
         runs,
         verbose=True,
         level=1,
-        ascended=False
+        ascended=False,
+        max_turns=200
     ):
 
         received["level"] = level
@@ -249,7 +252,8 @@ def test_team_swap_averages_both_sides(
         runs,
         verbose=True,
         level=1,
-        ascended=False
+        ascended=False,
+        max_turns=200
     ):
 
         calls.append(
@@ -269,6 +273,7 @@ def test_team_swap_averages_both_sides(
             return {
                 "team_a_win_rate": 70,
                 "team_b_win_rate": 30,
+                "draw_rate": 0,
                 "average_turns": 12,
                 "minimum_turns": 10,
                 "maximum_turns": 14,
@@ -303,6 +308,7 @@ def test_team_swap_averages_both_sides(
         return {
             "team_a_win_rate": 45,
             "team_b_win_rate": 55,
+            "draw_rate": 0,
             "average_turns": 16,
             "minimum_turns": 14,
             "maximum_turns": 18,
@@ -410,3 +416,31 @@ def test_team_swap_rejects_unknown_core_monster():
             ],
             verbose=False
         )
+
+
+
+def test_simulate_battle_draws_at_turn_limit():
+
+    from game.combat.combat import simulate_battle
+    from game.factories.monster_factory import create_monster
+
+    team_a = [
+        create_monster(
+            "dryad_storm"
+        )
+    ]
+
+    team_b = [
+        create_monster(
+            "dryad_storm"
+        )
+    ]
+
+    result = simulate_battle(
+        team_a,
+        team_b,
+        max_turns=1
+    )
+
+    assert result["outcome"] == "draw"
+    assert result["turns"] == 1
