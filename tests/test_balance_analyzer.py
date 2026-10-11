@@ -132,6 +132,10 @@ def test_analyze_unit_balance_aggregates_matchups(
         "average_total_damage"
     ] == pytest.approx(1600)
 
+    assert report["overall"][
+        "average_draw_rate"
+    ] == pytest.approx(0)
+
     assert report["level"] == 50
     assert report["ascended"] is True
 
@@ -183,6 +187,7 @@ def test_analyze_passes_requested_level_to_simulator(
         return {
             "team_a_win_rate": 50,
             "team_b_win_rate": 50,
+            "draw_rate": 0,
             "average_turns": 10,
             "minimum_turns": 10,
             "maximum_turns": 10,
@@ -372,6 +377,10 @@ def test_team_swap_averages_both_sides(
     assert matchup[
         "combined_win_rate"
     ] == pytest.approx(62.5)
+
+    assert matchup[
+        "draw_rate"
+    ] == pytest.approx(0)
 
     assert matchup[
         "average_turns"
