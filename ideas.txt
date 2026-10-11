@@ -1,0 +1,32 @@
+Monstruos 3*
+- Scolopendra
+- Centaur
+- Elf
+- Ogre
+- Sireen
+- Golem
+
+Monstruos 4*
+- Succubus
+- Incubus
+- Basilisk
+- Sphinx
+- Manticore
+- Wyvern
+- Roc
+- Lich
+- Vampire
+- Cerberus
+- Valkirie
+
+Monstruos 5*
+- Angel
+- Demon
+- Hydra
+- Phoenix
+- Chimaera
+- Leviathan
+- Djinn
+
+
+Caballos: Pegasus, Unicorn, Nightmare, Hippocamp, Phlegon
