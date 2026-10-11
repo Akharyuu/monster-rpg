@@ -807,8 +807,12 @@ SKILL_DATA = {
         "hit_distribution": "one_each_then_random",
 
         "repeated_target_damage": {
-            "full_damage_hits": 3,
-            "later_hit_multiplier": 0.50
+            "full_damage_hits": 5,
+            "later_hit_multiplier": 0.25,
+            "first_hit_bonus_if_caster_buff": {
+                "effect_id": "speed_up",
+                "multiplier": 1.50
+            }
         },
 
         "effects": [
