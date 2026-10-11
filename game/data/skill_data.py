@@ -635,7 +635,7 @@ SKILL_DATA = {
             {
                 "handler": "reset_cooldown_by_burn_stacks",
                 "data": {
-                    "required_stacks": 3,
+                    "required_stacks": 2,
                     "skill_slot": 2
                 }
             }
