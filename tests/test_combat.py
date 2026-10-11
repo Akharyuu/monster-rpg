@@ -4229,5 +4229,5 @@ def test_requiem_follow_up_uses_rebalanced_multiplier(
     )
 
     assert received_multipliers[-1] == pytest.approx(
-        1.75
+        1.50
     )
