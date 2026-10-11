@@ -10,6 +10,7 @@ from ..combat.enemy_ai import (
 )
 
 from ..factories.monster_factory import create_monster
+from ..systems.resonance import update_resonance_kit
 
 from ..combat.telemetry import (
     add_team_telemetry,
@@ -578,7 +579,8 @@ def simulate_battles(
     max_turns=200,
     attribute_targeting=True,
     neutral_core_attributes=False,
-    neutral_all_attributes=False
+    neutral_all_attributes=False,
+    primary_resonance=0
 ):
 
     wins_a = 0
@@ -635,6 +637,10 @@ def simulate_battles(
             monster.ascended = ascended
             monster.update_level_stats()
 
+            if slot == 0 and primary_resonance > 0:
+                monster.resonance = primary_resonance
+                update_resonance_kit(monster)
+
             team_a.append(monster)
 
 
@@ -659,6 +665,10 @@ def simulate_battles(
             monster.level = level
             monster.ascended = ascended
             monster.update_level_stats()
+
+            if slot == 0 and primary_resonance > 0:
+                monster.resonance = primary_resonance
+                update_resonance_kit(monster)
 
             team_b.append(monster)
 
