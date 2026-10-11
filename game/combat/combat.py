@@ -1,3 +1,5 @@
+import contextlib
+import io
 import math
 import random
 
@@ -540,7 +542,14 @@ def simulate_battle(team_a, team_b):
 
 
 
-def simulate_battles(team_a_ids, team_b_ids, runs):
+def simulate_battles(
+    team_a_ids,
+    team_b_ids,
+    runs,
+    verbose=True,
+    level=1,
+    ascended=False
+):
 
     wins_a = 0
     wins_b = 0
@@ -577,12 +586,20 @@ def simulate_battles(team_a_ids, team_b_ids, runs):
 
             monster = create_monster(monster_id)
 
+            monster.level = level
+            monster.ascended = ascended
+            monster.update_level_stats()
+
             team_a.append(monster)
 
 
         for monster_id in team_b_ids:
 
             monster = create_monster(monster_id)
+
+            monster.level = level
+            monster.ascended = ascended
+            monster.update_level_stats()
 
             team_b.append(monster)
 
@@ -599,7 +616,24 @@ def simulate_battles(team_a_ids, team_b_ids, runs):
         )
 
 
-        battle_result = simulate_battle(team_a, team_b)
+        if verbose:
+
+            battle_result = simulate_battle(
+                team_a,
+                team_b
+            )
+
+        else:
+
+            silent_output = io.StringIO()
+
+            with contextlib.redirect_stdout(
+                silent_output
+            ):
+                battle_result = simulate_battle(
+                    team_a,
+                    team_b
+                )
 
         add_team_telemetry(
             team_a_telemetry_totals,
@@ -700,30 +734,32 @@ def simulate_battles(team_a_ids, team_b_ids, runs):
     )
 
 
-    print(
-        f"Team A win rate: "
-        f"{team_a_win_rate:.1f}%.\n"
+    if verbose:
 
-        f"Team B win rate: "
-        f"{team_b_win_rate:.1f}%.\n"
+        print(
+            f"Team A win rate: "
+            f"{team_a_win_rate:.1f}%.\n"
 
-        f"Average turns: "
-        f"{average_turns:.2f}.\n"
+            f"Team B win rate: "
+            f"{team_b_win_rate:.1f}%.\n"
 
-        f"Minimum turns: "
-        f"{minimum_turns}.\n"
+            f"Average turns: "
+            f"{average_turns:.2f}.\n"
 
-        f"Maximum turns: "
-        f"{maximum_turns}.\n"
+            f"Minimum turns: "
+            f"{minimum_turns}.\n"
 
-        f"Team A average remaining HP: "
-        f"{team_a_average_remaining_hp:.2f} "
-        f"({team_a_average_remaining_hp_percent:.1f}%).\n"
+            f"Maximum turns: "
+            f"{maximum_turns}.\n"
 
-        f"Team B average remaining HP: "
-        f"{team_b_average_remaining_hp:.2f} "
-        f"({team_b_average_remaining_hp_percent:.1f}%)."
-    )
+            f"Team A average remaining HP: "
+            f"{team_a_average_remaining_hp:.2f} "
+            f"({team_a_average_remaining_hp_percent:.1f}%).\n"
+
+            f"Team B average remaining HP: "
+            f"{team_b_average_remaining_hp:.2f} "
+            f"({team_b_average_remaining_hp_percent:.1f}%)."
+        )
 
 
     return {
