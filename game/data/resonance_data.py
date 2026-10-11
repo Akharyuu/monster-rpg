@@ -164,7 +164,7 @@ RESONANCE_DATA = {
             {
                 "action": "replace_passive",
                 "old": "frostborne",
-                "new": "frostborne_shattered_fury"
+                "new": "frostborne_everlasting_winter"
             }
         ],
 
