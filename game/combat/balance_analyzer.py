@@ -49,6 +49,8 @@ def analyze_unit_balance(
     monster_id,
     runs=500,
     benchmark_ids=None,
+    level=50,
+    ascended=True,
     verbose=True
 ):
 
@@ -112,7 +114,9 @@ def analyze_unit_balance(
             [monster_id],
             [benchmark_id],
             runs=runs,
-            verbose=False
+            verbose=False,
+            level=level,
+            ascended=ascended
         )
 
         unit_telemetry = (
@@ -235,6 +239,8 @@ def analyze_unit_balance(
         "monster_name": monster_data["name"],
         "rarity": monster_data["rarity"],
         "runs_per_matchup": runs,
+        "level": level,
+        "ascended": ascended,
         "benchmark_ids": list(
             benchmark_ids
         ),
@@ -275,6 +281,14 @@ def print_balance_report(report):
     print(
         f"Runs per matchup: "
         f"{report['runs_per_matchup']}"
+    )
+
+    print(
+        f"Level: {report['level']}"
+    )
+
+    print(
+        f"Ascended: {report['ascended']}"
     )
 
     for matchup in report["matchups"]:
