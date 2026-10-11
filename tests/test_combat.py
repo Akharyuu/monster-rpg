@@ -4385,3 +4385,160 @@ def test_incineration_resets_s2_at_two_burn_stacks():
     )
 
     assert s2.current_cooldown == 0
+
+
+
+def test_incineration_ai_waits_for_two_burn_stacks(
+    monkeypatch
+):
+
+    igneous = create_monster(
+        "drake_igneous"
+    )
+
+    igneous.resonance = 5
+    update_resonance_kit(
+        igneous
+    )
+
+    target = create_monster(
+        "drake_abyssal"
+    )
+
+    # Ensure no skill is treated as a guaranteed kill.
+    monkeypatch.setattr(
+        "game.combat.enemy_ai.sees_kill",
+        lambda *args, **kwargs: False
+    )
+
+    selected_skill = choose_skill(
+        igneous,
+        [igneous],
+        [target]
+    )
+
+    assert (
+        selected_skill.skill_id
+        != "flame_devourer_incineration"
+    )
+
+    burn = create_status_effect(
+        effect_id="burn",
+        duration=3,
+        stacks=2,
+        source=igneous
+    )
+
+    target.apply_status_effect(
+        burn
+    )
+
+    # Make the weighted selection deterministic toward S3.
+    monkeypatch.setattr(
+        random,
+        "choices",
+        lambda population, weights, k: [
+            population[-1]
+        ]
+    )
+
+    selected_skill = choose_skill(
+        igneous,
+        [igneous],
+        [target]
+    )
+
+    assert (
+        selected_skill.skill_id
+        == "flame_devourer_incineration"
+    )
+
+
+
+def test_estimate_damage_applies_incineration_ignore_defense():
+
+    igneous = create_monster(
+        "drake_igneous"
+    )
+
+    target = create_monster(
+        "drake_storm"
+    )
+
+    skill = create_skill(
+        "flame_devourer_incineration"
+    )
+
+    burn = create_status_effect(
+        effect_id="burn",
+        duration=3,
+        stacks=2,
+        source=igneous
+    )
+
+    target.apply_status_effect(
+        burn
+    )
+
+    estimated_damage = estimate_damage(
+        igneous,
+        target,
+        skill
+    )
+
+    expected_damage = (
+        skill.base_damage_calc(
+            igneous,
+            target,
+            1,
+            1.30,
+            True
+        )
+    )
+
+    assert estimated_damage == pytest.approx(
+        expected_damage
+    )
+
+
+
+def test_incineration_targeting_prefers_two_burn_target():
+
+    igneous = create_monster(
+        "drake_igneous"
+    )
+
+    skill = create_skill(
+        "flame_devourer_incineration"
+    )
+
+    burned_target = create_monster(
+        "drake_storm"
+    )
+
+    unburned_target = create_monster(
+        "drake_abyssal"
+    )
+
+    burn = create_status_effect(
+        effect_id="burn",
+        duration=3,
+        stacks=2,
+        source=igneous
+    )
+
+    burned_target.apply_status_effect(
+        burn
+    )
+
+    target = choose_enemy_target(
+        igneous,
+        [
+            unburned_target,
+            burned_target
+        ],
+        skill,
+        attribute_targeting=False
+    )
+
+    assert target is burned_target
