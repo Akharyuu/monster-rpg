@@ -1,5 +1,9 @@
 from ..combat.combat import simulate_battles
 from ..data.monster_data import MONSTER_DATA
+from ..data.stat_growth_data import (
+    ASCENDED_STAT_MULTIPLIER,
+    LEVEL_STAT_MULTIPLIER
+)
 
 
 # =========================================================
@@ -62,6 +66,24 @@ def analyze_unit_balance(
     if runs <= 0:
         raise ValueError(
             "runs must be greater than 0"
+        )
+
+    valid_levels = (
+        ASCENDED_STAT_MULTIPLIER
+        if ascended
+        else LEVEL_STAT_MULTIPLIER
+    )
+
+    if level not in valid_levels:
+        state_name = (
+            "ascended"
+            if ascended
+            else "non-ascended"
+        )
+
+        raise ValueError(
+            f"Level {level} is not valid for "
+            f"a {state_name} monster."
         )
 
     if benchmark_ids is None:
