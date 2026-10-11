@@ -4540,3 +4540,47 @@ def test_incineration_targeting_prefers_two_burn_target():
     )
 
     assert target is burned_target
+
+
+
+def test_absolute_zero_ai_does_not_require_slow(
+    monkeypatch
+):
+
+    abyssal = create_monster(
+        "drake_abyssal"
+    )
+
+    abyssal.resonance = 5
+
+    update_resonance_kit(
+        abyssal
+    )
+
+    target = create_monster(
+        "drake_storm"
+    )
+
+    monkeypatch.setattr(
+        "game.combat.enemy_ai.sees_kill",
+        lambda *args, **kwargs: False
+    )
+
+    monkeypatch.setattr(
+        random,
+        "choices",
+        lambda population, weights, k: [
+            population[-1]
+        ]
+    )
+
+    selected_skill = choose_skill(
+        abyssal,
+        [abyssal],
+        [target]
+    )
+
+    assert (
+        selected_skill.skill_id
+        == "glacial_collapse_absolute_zero"
+    )
