@@ -1040,6 +1040,28 @@ def handle_incapacitated_turn(
             1
         )
 
+        metric = (
+            "stun_turns_denied"
+            if control_effect.effect_id == "stun"
+            else "freeze_turns_denied"
+        )
+
+        record_telemetry(
+            telemetry,
+            control_effect.source,
+            metric,
+            1
+        )
+
+        control_effect.denied_turns_since_application = (
+            getattr(
+                control_effect,
+                "denied_turns_since_application",
+                0
+            )
+            + 1
+        )
+
     end_turn(
         monster,
         turn_context
