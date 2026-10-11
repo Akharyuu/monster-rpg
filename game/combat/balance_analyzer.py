@@ -1185,3 +1185,204 @@ def print_team_swap_report(report):
     print(
         "========================================"
     )
+
+
+
+# =========================================================
+#                DRAKE TRIANGLE ANALYZER
+# =========================================================
+
+DRAKE_TRIANGLE_IDS = [
+    "drake_igneous",
+    "drake_abyssal",
+    "drake_storm"
+]
+
+
+def analyze_drake_triangle_balance(
+    runs=500,
+    core_team_sets=None,
+    level=50,
+    ascended=True,
+    max_turns=200,
+    verbose=True
+):
+
+    pairings = [
+        (
+            "drake_igneous",
+            "drake_abyssal"
+        ),
+        (
+            "drake_abyssal",
+            "drake_storm"
+        ),
+        (
+            "drake_storm",
+            "drake_igneous"
+        )
+    ]
+
+    pair_results = []
+
+    for candidate_id, benchmark_id in pairings:
+
+        report = analyze_team_swap_balance(
+            candidate_id,
+            runs=runs,
+            benchmark_ids=[
+                benchmark_id
+            ],
+            core_team_sets=core_team_sets,
+            level=level,
+            ascended=ascended,
+            max_turns=max_turns,
+            verbose=False
+        )
+
+        matchup = report["matchups"][0]
+
+        pair_results.append(
+            {
+                "candidate_id":
+                    candidate_id,
+                "benchmark_id":
+                    benchmark_id,
+                "candidate_win_rate":
+                    matchup[
+                        "combined_win_rate"
+                    ],
+                "benchmark_win_rate": (
+                    100
+                    - matchup[
+                        "combined_win_rate"
+                    ]
+                    - matchup[
+                        "draw_rate"
+                    ]
+                ),
+                "draw_rate":
+                    matchup[
+                        "draw_rate"
+                    ],
+                "candidate_damage":
+                    matchup[
+                        "total_damage"
+                    ],
+                "benchmark_damage":
+                    matchup[
+                        "benchmark_total_damage"
+                    ],
+                "candidate_turns_denied":
+                    matchup[
+                        "turns_denied"
+                    ],
+                "benchmark_turns_denied":
+                    matchup[
+                        "benchmark_turns_denied"
+                    ],
+                "core_results":
+                    matchup[
+                        "core_results"
+                    ]
+            }
+        )
+
+    report = {
+        "runs_per_side_core":
+            runs,
+        "level":
+            level,
+        "ascended":
+            ascended,
+        "max_turns":
+            max_turns,
+        "pair_results":
+            pair_results
+    }
+
+    if verbose:
+        print_drake_triangle_report(
+            report
+        )
+
+    return report
+
+
+
+def print_drake_triangle_report(report):
+
+    print()
+    print(
+        "========================================"
+    )
+    print(
+        "        DRAKE TRIANGLE BALANCE"
+    )
+    print(
+        "========================================"
+    )
+
+    print(
+        f"Runs per side/core: "
+        f"{report['runs_per_side_core']}"
+    )
+
+    print(
+        f"Level: {report['level']}"
+    )
+
+    print(
+        f"Ascended: {report['ascended']}"
+    )
+
+    for result in report["pair_results"]:
+
+        print()
+        print(
+            f"{result['candidate_id']} "
+            f"vs {result['benchmark_id']}"
+        )
+
+        print(
+            f"  Win rate: "
+            f"{result['candidate_win_rate']:.1f}% "
+            f"| "
+            f"{result['benchmark_win_rate']:.1f}%"
+        )
+
+        print(
+            f"  Draw rate: "
+            f"{result['draw_rate']:.1f}%"
+        )
+
+        print(
+            f"  Damage: "
+            f"{result['candidate_damage']:.1f} "
+            f"| "
+            f"{result['benchmark_damage']:.1f}"
+        )
+
+        print(
+            f"  Enemy turns denied: "
+            f"{result['candidate_turns_denied']:.2f} "
+            f"| "
+            f"{result['benchmark_turns_denied']:.2f}"
+        )
+
+        for index, core in enumerate(
+            result["core_results"],
+            start=1
+        ):
+
+            print(
+                f"    Core {index}: "
+                f"{core['combined_win_rate']:.1f}% "
+                f"(draws "
+                f"{core['draw_rate']:.1f}%)"
+            )
+
+    print()
+    print(
+        "========================================"
+    )
