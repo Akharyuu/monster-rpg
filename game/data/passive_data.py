@@ -112,7 +112,7 @@ PASSIVE_DATA = {
         "max_scales": 3,
         "required_scales": 3,
 
-        "reset_cooldown_at_max": 3,
+        "reset_cooldown_skill_slot": 3,
 
         "buffs": [
             {
