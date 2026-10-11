@@ -618,7 +618,7 @@ SKILL_DATA = {
                 2: 1.30,
                 3: 1.45
             },
-            "ignore_defense_at_stacks": 2
+            "ignore_defense_at_stacks": 3
         },
 
         "after_skill_handlers": [
@@ -635,7 +635,7 @@ SKILL_DATA = {
             {
                 "handler": "reset_cooldown_by_burn_stacks",
                 "data": {
-                    "required_stacks": 2,
+                    "required_stacks": 3,
                     "skill_slot": 2
                 }
             }
@@ -750,7 +750,22 @@ SKILL_DATA = {
                 "chance": 1,
                 "turns": 1,
                 "trigger": "per_hit",
-                "ignore_resistance": True
+                "ignore_resistance": True,
+                "condition": {
+                    "type": "target_has_debuff",
+                    "effect_id": "speed_break"
+                }
+            },
+            {
+                "effect_id": "freeze",
+                "chance": 0.50,
+                "turns": 1,
+                "trigger": "per_hit",
+                "ignore_resistance": True,
+                "condition": {
+                    "type": "target_lacks_debuff",
+                    "effect_id": "speed_break"
+                }
             }
         ]
     },
