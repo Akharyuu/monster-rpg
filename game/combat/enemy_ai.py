@@ -145,7 +145,12 @@ def choose_skill(active_enemy, enemies, allies):
 #                    TARGET SELECTION
 # =========================================================
 
-def choose_enemy_target(active_enemy, allies, skill):
+def choose_enemy_target(
+    active_enemy,
+    allies,
+    skill,
+    attribute_targeting=True
+):
 
     alive_targets = []
 
@@ -167,31 +172,42 @@ def choose_enemy_target(active_enemy, allies, skill):
     if kill_range_targets:
         return random.choice(kill_range_targets)
     
-    great_targets = []
-    normal_targets = []
-    bad_targets = []
+    if attribute_targeting:
 
-    for target in alive_targets:
+        great_targets = []
+        normal_targets = []
+        bad_targets = []
 
-        modifier = active_enemy.get_attribute_modifier(target)
+        for target in alive_targets:
 
-        if modifier == 1.2:
-            great_targets.append(target)
+            modifier = (
+                active_enemy
+                .get_attribute_modifier(target)
+            )
 
-        elif modifier == 1:
-            normal_targets.append(target)
+            if modifier == 1.2:
+                great_targets.append(target)
+
+            elif modifier == 1:
+                normal_targets.append(target)
+
+            else:
+                bad_targets.append(target)
+
+        if great_targets:
+            target_pool = great_targets
+
+        elif normal_targets:
+            target_pool = normal_targets
 
         else:
-            bad_targets.append(target)
+            target_pool = bad_targets
 
-    if great_targets:
-        target_pool = great_targets
-
-    elif normal_targets:
-        target_pool = normal_targets
-
-    elif bad_targets:
-        target_pool = bad_targets
+    else:
+        # Balance-analysis mode:
+        # keep kill priority and HP logic, but do not
+        # prefer targets because of their attribute.
+        target_pool = alive_targets
 
     if len(target_pool) == 1:
         return target_pool[0]
