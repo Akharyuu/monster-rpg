@@ -4240,7 +4240,7 @@ def test_requiem_follow_up_uses_rebalanced_multiplier(
 
 
 
-def test_incineration_ignores_defense_at_two_burn_stacks():
+def test_incineration_ignores_defense_at_three_burn_stacks():
 
     igneous = create_monster(
         "drake_igneous"
@@ -4257,7 +4257,7 @@ def test_incineration_ignores_defense_at_two_burn_stacks():
     burn = create_status_effect(
         effect_id="burn",
         duration=3,
-        stacks=2,
+        stacks=3,
         source=igneous
     )
 
@@ -4277,7 +4277,7 @@ def test_incineration_ignores_defense_at_two_burn_stacks():
         damage_data[
             "ignore_defense_at_stacks"
         ]
-        == 2
+        == 3
     )
 
     handler = DAMAGE_HANDLERS[
@@ -4345,7 +4345,7 @@ def test_absolute_zero_can_freeze_without_slow(
 
 
 
-def test_incineration_resets_s2_at_two_burn_stacks():
+def test_incineration_resets_s2_at_three_burn_stacks():
 
     igneous = create_monster(
         "drake_igneous"
@@ -4364,7 +4364,7 @@ def test_incineration_resets_s2_at_two_burn_stacks():
     burn = create_status_effect(
         effect_id="burn",
         duration=3,
-        stacks=2,
+        stacks=3,
         source=igneous
     )
 
@@ -4386,7 +4386,7 @@ def test_incineration_resets_s2_at_two_burn_stacks():
 
 
 
-def test_incineration_ai_waits_for_two_burn_stacks(
+def test_incineration_ai_waits_for_three_burn_stacks(
     monkeypatch
 ):
 
@@ -4423,7 +4423,7 @@ def test_incineration_ai_waits_for_two_burn_stacks(
     burn = create_status_effect(
         effect_id="burn",
         duration=3,
-        stacks=2,
+        stacks=3,
         source=igneous
     )
 
@@ -4470,7 +4470,7 @@ def test_estimate_damage_applies_incineration_ignore_defense():
     burn = create_status_effect(
         effect_id="burn",
         duration=3,
-        stacks=2,
+        stacks=3,
         source=igneous
     )
 
@@ -4489,7 +4489,7 @@ def test_estimate_damage_applies_incineration_ignore_defense():
             igneous,
             target,
             1,
-            1.30,
+            1.45,
             True
         )
     )
@@ -4500,7 +4500,7 @@ def test_estimate_damage_applies_incineration_ignore_defense():
 
 
 
-def test_incineration_targeting_prefers_two_burn_target():
+def test_incineration_targeting_prefers_three_burn_target():
 
     igneous = create_monster(
         "drake_igneous"
@@ -4583,4 +4583,90 @@ def test_absolute_zero_ai_does_not_require_slow(
     assert (
         selected_skill.skill_id
         == "glacial_collapse_absolute_zero"
+    )
+
+
+
+def test_absolute_zero_without_slow_uses_fifty_percent_freeze(
+    monkeypatch
+):
+
+    abyssal = create_monster(
+        "drake_abyssal"
+    )
+
+    target = create_monster(
+        "drake_storm"
+    )
+
+    abyssal.resonance = 5
+
+    update_resonance_kit(
+        abyssal
+    )
+
+    monkeypatch.setattr(
+        random,
+        "random",
+        lambda: 0.75
+    )
+
+    skill = abyssal.get_skill(3)
+
+    skill.execute(
+        abyssal,
+        [target]
+    )
+
+    assert not any(
+        debuff.effect_id == "freeze"
+        for debuff in target.debuffs
+    )
+
+
+
+def test_absolute_zero_with_slow_guarantees_freeze(
+    monkeypatch
+):
+
+    abyssal = create_monster(
+        "drake_abyssal"
+    )
+
+    target = create_monster(
+        "drake_storm"
+    )
+
+    abyssal.resonance = 5
+
+    update_resonance_kit(
+        abyssal
+    )
+
+    slow = create_status_effect(
+        effect_id="speed_break",
+        duration=2,
+        source=abyssal
+    )
+
+    target.apply_status_effect(
+        slow
+    )
+
+    monkeypatch.setattr(
+        random,
+        "random",
+        lambda: 0.99
+    )
+
+    skill = abyssal.get_skill(3)
+
+    skill.execute(
+        abyssal,
+        [target]
+    )
+
+    assert any(
+        debuff.effect_id == "freeze"
+        for debuff in target.debuffs
     )
