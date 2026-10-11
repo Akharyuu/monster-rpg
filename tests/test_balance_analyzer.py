@@ -80,7 +80,8 @@ def test_analyze_unit_balance_aggregates_matchups(
                     "dot_damage": 100,
                     "healing": 200,
                     "shield_generated": 300,
-                    "shield_absorbed": 250
+                    "shield_absorbed": 250,
+                    "turns_denied": 2
                 }
             ],
             "team_b_telemetry": [
@@ -91,7 +92,8 @@ def test_analyze_unit_balance_aggregates_matchups(
                     "dot_damage": 0,
                     "healing": 0,
                     "shield_generated": 0,
-                    "shield_absorbed": 0
+                    "shield_absorbed": 0,
+                    "turns_denied": 0
                 }
             ]
         }
@@ -203,7 +205,8 @@ def test_analyze_passes_requested_level_to_simulator(
                     "dot_damage": 0,
                     "healing": 0,
                     "shield_generated": 0,
-                    "shield_absorbed": 0
+                    "shield_absorbed": 0,
+                    "turns_denied": 0
                 }
             ],
             "team_b_telemetry": [
@@ -214,7 +217,8 @@ def test_analyze_passes_requested_level_to_simulator(
                     "dot_damage": 0,
                     "healing": 0,
                     "shield_generated": 0,
-                    "shield_absorbed": 0
+                    "shield_absorbed": 0,
+                    "turns_denied": 0
                 }
             ]
         }
@@ -294,7 +298,8 @@ def test_team_swap_averages_both_sides(
                         "dot_damage": 100,
                         "healing": 50,
                         "shield_generated": 0,
-                        "shield_absorbed": 0
+                        "shield_absorbed": 0,
+                    "turns_denied": 0
                     }
                 ],
                 "team_b_telemetry": [
@@ -305,7 +310,8 @@ def test_team_swap_averages_both_sides(
                         "dot_damage": 0,
                         "healing": 0,
                         "shield_generated": 0,
-                        "shield_absorbed": 0
+                        "shield_absorbed": 0,
+                    "turns_denied": 0
                     }
                 ]
             }
@@ -329,7 +335,8 @@ def test_team_swap_averages_both_sides(
                     "dot_damage": 0,
                     "healing": 0,
                     "shield_generated": 0,
-                    "shield_absorbed": 0
+                    "shield_absorbed": 0,
+                    "turns_denied": 0
                 }
             ],
             "team_b_telemetry": [
@@ -340,7 +347,8 @@ def test_team_swap_averages_both_sides(
                     "dot_damage": 300,
                     "healing": 150,
                     "shield_generated": 0,
-                    "shield_absorbed": 0
+                    "shield_absorbed": 0,
+                    "turns_denied": 0
                 }
             ]
         }
@@ -400,6 +408,14 @@ def test_team_swap_averages_both_sides(
 
     assert matchup[
         "benchmark_dot_damage"
+    ] == pytest.approx(0)
+
+    assert matchup[
+        "turns_denied"
+    ] == pytest.approx(0)
+
+    assert matchup[
+        "benchmark_turns_denied"
     ] == pytest.approx(0)
 
     assert len(calls) == 2
