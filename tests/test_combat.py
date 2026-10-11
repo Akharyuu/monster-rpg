@@ -4121,6 +4121,13 @@ def test_afterburn_adds_one_burn_to_burning_target(
         )
     )
 
+    # Prevent Cinderblood from adding random Burn stacks.
+    monkeypatch.setattr(
+        random,
+        "random",
+        lambda: 0.99
+    )
+
     skill.execute(
         drake,
         [target],
