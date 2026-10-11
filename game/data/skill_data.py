@@ -487,7 +487,7 @@ SKILL_DATA = {
     "scorching_breath": {
         "name": "Scorching Breath",
         "type": SkillType.DAMAGE,
-        "multiplier": 3.75,
+        "multiplier": 3.00,
         "hits": 2,
         "target_type": TargetType.ALL_ENEMIES,
         "cooldown": 4,
@@ -506,7 +506,7 @@ SKILL_DATA = {
     "scorching_breath_afterburn": {
         "name": "Scorching Breath: Afterburn",
         "type": SkillType.DAMAGE,
-        "multiplier": 3.75,
+        "multiplier": 3.00,
         "hits": 3,
         "hit_multipliers": [
             1.0, 
@@ -645,7 +645,7 @@ SKILL_DATA = {
     "rime_breath": {
         "name": "Rime Breath",
         "type": SkillType.DAMAGE,
-        "multiplier": 3.15,
+        "multiplier": 2.75,
         "hits": 2,
         "target_type": TargetType.ALL_ENEMIES,
         "cooldown": 4,
@@ -663,7 +663,7 @@ SKILL_DATA = {
     "rime_breath_frigid": {
         "name": "Rime Breath: Frigid",
         "type": SkillType.DAMAGE,
-        "multiplier": 3.15,
+        "multiplier": 2.75,
         "hits": 2,
         "target_type": TargetType.ALL_ENEMIES,
         "cooldown": 4,
@@ -684,7 +684,7 @@ SKILL_DATA = {
     "glacial_collapse": {
         "name": "Glacial Collapse",
         "type": SkillType.DAMAGE,
-        "multiplier": 4.1,
+        "multiplier": 3.50,
         "hits": 1,
         "target_type": TargetType.ALL_ENEMIES,
         "cooldown": 5,
@@ -715,7 +715,7 @@ SKILL_DATA = {
     "glacial_collapse_absolute_zero": {
         "name": "Glacial Collapse: Absolute Zero",
         "type": SkillType.DAMAGE,
-        "multiplier": 4.1,
+        "multiplier": 3.50,
         "hits": 1,
         "target_type": TargetType.ALL_ENEMIES,
         "cooldown": 5,
@@ -799,7 +799,7 @@ SKILL_DATA = {
     "stormbreak": {
         "name": "Stormbreak",
         "type": SkillType.DAMAGE,
-        "multiplier": 1.6,
+        "multiplier": 0.70,
         "hits": 10,
         "target_type": TargetType.RANDOM_ENEMIES,
         "cooldown": 6,
@@ -820,7 +820,7 @@ SKILL_DATA = {
     "stormbreak_requiem": {
         "name": "Stormbreak: Requiem",
         "type": SkillType.DAMAGE,
-        "multiplier": 1.60,
+        "multiplier": 0.70,
         "hits": 10,
         "target_type": TargetType.RANDOM_ENEMIES,
         "cooldown": 6,
