@@ -557,6 +557,33 @@ class DamageSkill(Skill):
             target_result["hit_results"]
         )
 
+        first_hit_bonus = (
+            self.repeated_target_damage.get(
+                "first_hit_bonus_if_caster_buff"
+            )
+        )
+
+        if (
+            first_hit_bonus is not None
+            and hits_already_received == 0
+        ):
+            required_buff = (
+                first_hit_bonus["effect_id"]
+            )
+
+            has_required_buff = any(
+                buff.effect_id == required_buff
+                for buff in caster.buffs
+            )
+
+            if has_required_buff:
+                hit_multiplier *= (
+                    first_hit_bonus.get(
+                        "multiplier",
+                        1
+                    )
+                )
+
         if (
             full_damage_hits is not None
             and hits_already_received
