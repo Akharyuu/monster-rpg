@@ -732,7 +732,8 @@ class DamageSkill(Skill):
                             effect,
                             caster,
                             target,
-                            target_result["snapshot"]
+                            target_result["snapshot"],
+                            target_result.get("telemetry")
                         )
 
                         if applied_effect is not None:
