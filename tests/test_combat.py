@@ -4149,3 +4149,153 @@ def test_everfrost_resets_s3_when_max_scales_are_reached(
     )
 
     assert s3.current_cooldown == 0
+
+
+
+def test_afterburn_adds_one_burn_to_burning_target(
+    monkeypatch
+):
+
+    drake = create_monster(
+        "drake_igneous"
+    )
+
+    target = create_monster(
+        "drake_abyssal"
+    )
+
+    burn = create_status_effect(
+        effect_id="burn",
+        duration=3,
+        stacks=1,
+        source=drake
+    )
+
+    target.apply_status_effect(
+        burn
+    )
+
+    skill = create_skill(
+        "scorching_breath_afterburn"
+    )
+
+    monkeypatch.setattr(
+        skill,
+        "damage_calc",
+        lambda *args, **kwargs: (
+            1,
+            False
+        )
+    )
+
+    skill.execute(
+        drake,
+        [target],
+        context={
+            "team": [drake],
+            "opponents": [target]
+        }
+    )
+
+    active_burn = next(
+        debuff
+        for debuff in target.debuffs
+        if debuff.effect_id == "burn"
+    )
+
+    assert active_burn.stacks == 2
+
+
+
+def test_everlasting_winter_preserves_abyssal_freeze_from_ally_damage():
+
+    abyssal = create_monster(
+        "drake_abyssal"
+    )
+
+    abyssal.passives = [
+        create_passive(
+            "frostborne_everlasting_winter"
+        )
+    ]
+
+    ally = create_monster(
+        "drake_igneous"
+    )
+
+    target = create_monster(
+        "drake_storm"
+    )
+
+    freeze = create_status_effect(
+        effect_id="freeze",
+        duration=1,
+        source=abyssal
+    )
+
+    target.apply_status_effect(
+        freeze
+    )
+
+    target.receive_damage(
+        1,
+        source=ally
+    )
+
+    assert any(
+        debuff.effect_id == "freeze"
+        for debuff in target.debuffs
+    )
+
+
+
+def test_requiem_follow_up_uses_rebalanced_multiplier(
+    monkeypatch
+):
+
+    drake = create_monster(
+        "drake_storm"
+    )
+
+    target = create_monster(
+        "drake_igneous"
+    )
+
+    skill = create_skill(
+        "stormbreak_requiem"
+    )
+
+    received_multipliers = []
+
+    def fake_damage_calc(
+        attacker,
+        defender,
+        hit_multiplier,
+        snapshot,
+        hit_index
+    ):
+
+        received_multipliers.append(
+            hit_multiplier
+        )
+
+        return 1, False
+
+    monkeypatch.setattr(
+        skill,
+        "damage_calc",
+        fake_damage_calc
+    )
+
+    skill.execute(
+        drake,
+        [target],
+        context={
+            "team": [drake],
+            "opponents": [target]
+        }
+    )
+
+    assert received_multipliers[-1] == pytest.approx(
+        1.75
+    )
