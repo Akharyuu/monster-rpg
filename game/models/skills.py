@@ -375,7 +375,14 @@ class DamageSkill(Skill):
     #                     STATUS EFFECTS
     # =========================================================
 
-    def try_apply_effect(self, effect, caster, target, snapshot=None):
+    def try_apply_effect(
+        self,
+        effect,
+        caster,
+        target,
+        snapshot=None,
+        telemetry=None
+    ):
 
         # CONDITION
         condition = effect.get("condition")
@@ -435,6 +442,26 @@ class DamageSkill(Skill):
 
         # Trigger passives only when the effect was actually applied.
         if applied_effect is not None:
+
+            if applied_effect.effect_id in (
+                "stun",
+                "freeze"
+            ):
+
+                applied_effect.denied_turns_since_application = 0
+
+                metric = (
+                    "stuns_applied"
+                    if applied_effect.effect_id == "stun"
+                    else "freezes_applied"
+                )
+
+                record_telemetry(
+                    telemetry,
+                    caster,
+                    metric,
+                    1
+                )
 
             if applied_effect.effect_id == "stun":
 
@@ -568,6 +595,25 @@ class DamageSkill(Skill):
             actual_health_damage
         )
 
+        for broken_effect in broken_effects:
+
+            if (
+                broken_effect.effect_id == "freeze"
+                and broken_effect.source is not None
+                and getattr(
+                    broken_effect,
+                    "denied_turns_since_application",
+                    0
+                ) == 0
+            ):
+
+                record_telemetry(
+                    target_result.get("telemetry"),
+                    broken_effect.source,
+                    "freezes_broken_before_turn",
+                    1
+                )
+
         # A broken Freeze can trigger passives belonging to the monster
         # that originally applied that Freeze.
         for broken_effect in broken_effects:
@@ -623,7 +669,8 @@ class DamageSkill(Skill):
                         effect,
                         caster,
                         target,
-                        target_result["snapshot"]
+                        target_result["snapshot"],
+                        target_result.get("telemetry")
                     )
 
                     if applied_effect is not None:
@@ -660,7 +707,8 @@ class DamageSkill(Skill):
                         effect,
                         caster,
                         target,
-                        target_result["snapshot"]
+                        target_result["snapshot"],
+                        target_result.get("telemetry")
                     )
 
                     if applied_effect is not None:
