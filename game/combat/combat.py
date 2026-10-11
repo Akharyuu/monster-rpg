@@ -580,8 +580,20 @@ def simulate_battles(
     attribute_targeting=True,
     neutral_core_attributes=False,
     neutral_all_attributes=False,
-    primary_resonance=0
+    primary_resonance=0,
+    team_a_primary_resonance=None,
+    team_b_primary_resonance=None
 ):
+
+    if team_a_primary_resonance is None:
+        team_a_primary_resonance = (
+            primary_resonance
+        )
+
+    if team_b_primary_resonance is None:
+        team_b_primary_resonance = (
+            primary_resonance
+        )
 
     wins_a = 0
     wins_b = 0
@@ -637,8 +649,13 @@ def simulate_battles(
             monster.ascended = ascended
             monster.update_level_stats()
 
-            if slot == 0 and primary_resonance > 0:
-                monster.resonance = primary_resonance
+            if (
+                slot == 0
+                and team_a_primary_resonance > 0
+            ):
+                monster.resonance = (
+                    team_a_primary_resonance
+                )
                 update_resonance_kit(monster)
 
             team_a.append(monster)
@@ -666,8 +683,13 @@ def simulate_battles(
             monster.ascended = ascended
             monster.update_level_stats()
 
-            if slot == 0 and primary_resonance > 0:
-                monster.resonance = primary_resonance
+            if (
+                slot == 0
+                and team_b_primary_resonance > 0
+            ):
+                monster.resonance = (
+                    team_b_primary_resonance
+                )
                 update_resonance_kit(monster)
 
             team_b.append(monster)
