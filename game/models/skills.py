@@ -521,7 +521,16 @@ class DamageSkill(Skill):
     #                      HIT RESOLUTION
     # =========================================================
 
-    def resolve_hit(self, caster, target, hit_index, target_result, gameplay_active=True, hit_multiplier_override=None):
+    def resolve_hit(
+        self,
+        caster,
+        target,
+        hit_index,
+        target_result,
+        gameplay_active=True,
+        hit_multiplier_override=None,
+        apply_repeated_target_damage=True
+    ):
     
         # Resolves one complete hit against one target.
         # This centralizes all mechanics that must happen every time a hit lands,
@@ -540,58 +549,60 @@ class DamageSkill(Skill):
         elif self.hit_multipliers:
             hit_multiplier = self.hit_multipliers[hit_index]
 
-        full_damage_hits = (
-            self.repeated_target_damage.get(
-                "full_damage_hits"
-            )
-        )
+        if apply_repeated_target_damage:
 
-        repeated_hit_multiplier = (
-            self.repeated_target_damage.get(
-                "later_hit_multiplier",
-                1
-            )
-        )
-
-        hits_already_received = len(
-            target_result["hit_results"]
-        )
-
-        first_hit_bonus = (
-            self.repeated_target_damage.get(
-                "first_hit_bonus_if_caster_buff"
-            )
-        )
-
-        if (
-            first_hit_bonus is not None
-            and hits_already_received == 0
-        ):
-            required_buff = (
-                first_hit_bonus["effect_id"]
+            full_damage_hits = (
+                self.repeated_target_damage.get(
+                    "full_damage_hits"
+                )
             )
 
-            has_required_buff = any(
-                buff.effect_id == required_buff
-                for buff in caster.buffs
+            repeated_hit_multiplier = (
+                self.repeated_target_damage.get(
+                    "later_hit_multiplier",
+                    1
+                )
             )
 
-            if has_required_buff:
-                hit_multiplier *= (
-                    first_hit_bonus.get(
-                        "multiplier",
-                        1
-                    )
+            hits_already_received = len(
+                target_result["hit_results"]
+            )
+
+            first_hit_bonus = (
+                self.repeated_target_damage.get(
+                    "first_hit_bonus_if_caster_buff"
+                )
+            )
+
+            if (
+                first_hit_bonus is not None
+                and hits_already_received == 0
+            ):
+                required_buff = (
+                    first_hit_bonus["effect_id"]
                 )
 
-        if (
-            full_damage_hits is not None
-            and hits_already_received
-            >= full_damage_hits
-        ):
-            hit_multiplier *= (
-                repeated_hit_multiplier
-            )
+                has_required_buff = any(
+                    buff.effect_id == required_buff
+                    for buff in caster.buffs
+                )
+
+                if has_required_buff:
+                    hit_multiplier *= (
+                        first_hit_bonus.get(
+                            "multiplier",
+                            1
+                        )
+                    )
+
+            if (
+                full_damage_hits is not None
+                and hits_already_received
+                >= full_damage_hits
+            ):
+                hit_multiplier *= (
+                    repeated_hit_multiplier
+                )
 
         damage, critical = self.damage_calc(
             caster,
