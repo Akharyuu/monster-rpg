@@ -57,6 +57,7 @@ def analyze_unit_balance(
     ascended=True,
     max_turns=200,
     neutral_attributes=False,
+    resonance=0,
     verbose=True
 ):
 
@@ -136,15 +137,25 @@ def analyze_unit_balance(
 
     for benchmark_id in benchmark_ids:
 
+        simulation_kwargs = {
+            "runs": runs,
+            "verbose": False,
+            "level": level,
+            "ascended": ascended,
+            "max_turns": max_turns,
+            "neutral_all_attributes":
+                neutral_attributes
+        }
+
+        if resonance > 0:
+            simulation_kwargs[
+                "primary_resonance"
+            ] = resonance
+
         simulation = simulate_battles(
             [monster_id],
             [benchmark_id],
-            runs=runs,
-            verbose=False,
-            level=level,
-            ascended=ascended,
-            max_turns=max_turns,
-            neutral_all_attributes=neutral_attributes
+            **simulation_kwargs
         )
 
         unit_telemetry = (
@@ -292,6 +303,7 @@ def analyze_unit_balance(
         "ascended": ascended,
         "max_turns": max_turns,
         "neutral_attributes": neutral_attributes,
+        "resonance": resonance,
         "benchmark_ids": list(
             benchmark_ids
         ),
@@ -349,6 +361,10 @@ def print_balance_report(report):
             if report["neutral_attributes"]
             else "normal"
         )
+    )
+
+    print(
+        f"Resonance: R{report['resonance']}"
     )
 
     for matchup in report["matchups"]:
@@ -509,6 +525,7 @@ def analyze_team_swap_balance(
     max_turns=200,
     attribute_targeting=False,
     neutral_core_attributes=True,
+    resonance=0,
     verbose=True
 ):
 
@@ -639,7 +656,8 @@ def analyze_team_swap_balance(
                 ascended=ascended,
                 max_turns=max_turns,
                 attribute_targeting=attribute_targeting,
-                neutral_core_attributes=neutral_core_attributes
+                neutral_core_attributes=neutral_core_attributes,
+                primary_resonance=resonance
             )
 
             side_b = simulate_battles(
@@ -651,7 +669,8 @@ def analyze_team_swap_balance(
                 ascended=ascended,
                 max_turns=max_turns,
                 attribute_targeting=attribute_targeting,
-                neutral_core_attributes=neutral_core_attributes
+                neutral_core_attributes=neutral_core_attributes,
+                primary_resonance=resonance
             )
 
             candidate_a = (
@@ -1384,6 +1403,7 @@ def analyze_drake_triangle_balance(
     max_turns=200,
     attribute_targeting=False,
     neutral_core_attributes=True,
+    resonance=0,
     verbose=True
 ):
 
@@ -1418,6 +1438,7 @@ def analyze_drake_triangle_balance(
             max_turns=max_turns,
             attribute_targeting=attribute_targeting,
             neutral_core_attributes=neutral_core_attributes,
+            resonance=resonance,
             verbose=False
         )
 
@@ -1522,6 +1543,8 @@ def analyze_drake_triangle_balance(
             attribute_targeting,
         "neutral_core_attributes":
             neutral_core_attributes,
+        "resonance":
+            resonance,
         "pair_results":
             pair_results
     }
@@ -1579,6 +1602,10 @@ def print_drake_triangle_report(report):
             ]
             else "normal"
         )
+    )
+
+    print(
+        f"Resonance: R{report['resonance']}"
     )
 
     for result in report["pair_results"]:
