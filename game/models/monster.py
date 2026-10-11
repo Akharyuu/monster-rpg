@@ -273,18 +273,78 @@ class Monster:
 
 
     def get_attribute_modifier(self, defender):
-        if ((self.attribute == Attribute.IGNEOUS and defender.attribute == Attribute.ABYSSAL) or 
-            (self.attribute == Attribute.ABYSSAL and defender.attribute == Attribute.STORM) or
-            (self.attribute == Attribute.STORM and defender.attribute == Attribute.IGNEOUS)):
+
+        neutral_core_attributes = (
+            getattr(
+                self,
+                "_neutral_core_attributes",
+                False
+            )
+            or getattr(
+                defender,
+                "_neutral_core_attributes",
+                False
+            )
+        )
+
+        both_primary = (
+            getattr(
+                self,
+                "_balance_primary",
+                False
+            )
+            and getattr(
+                defender,
+                "_balance_primary",
+                False
+            )
+        )
+
+        if (
+            neutral_core_attributes
+            and not both_primary
+        ):
+            return 1
+
+        if (
+            (
+                self.attribute == Attribute.IGNEOUS
+                and defender.attribute
+                == Attribute.ABYSSAL
+            )
+            or (
+                self.attribute == Attribute.ABYSSAL
+                and defender.attribute
+                == Attribute.STORM
+            )
+            or (
+                self.attribute == Attribute.STORM
+                and defender.attribute
+                == Attribute.IGNEOUS
+            )
+        ):
             return 0.8
 
-        elif ((self.attribute == Attribute.IGNEOUS and defender.attribute == Attribute.STORM) or 
-            (self.attribute == Attribute.ABYSSAL and defender.attribute == Attribute.IGNEOUS) or
-            (self.attribute == Attribute.STORM and defender.attribute == Attribute.ABYSSAL)):
+        elif (
+            (
+                self.attribute == Attribute.IGNEOUS
+                and defender.attribute
+                == Attribute.STORM
+            )
+            or (
+                self.attribute == Attribute.ABYSSAL
+                and defender.attribute
+                == Attribute.IGNEOUS
+            )
+            or (
+                self.attribute == Attribute.STORM
+                and defender.attribute
+                == Attribute.ABYSSAL
+            )
+        ):
             return 1.2
 
-        else:
-            return 1
+        return 1
 
 
     # =========================================================
