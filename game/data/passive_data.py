@@ -190,7 +190,8 @@ PASSIVE_DATA = {
             "required_buff": "speed_up",
             "allowed_skill_ids": [
                 "draconic_claw",
-                "lightning_rush"
+                "lightning_rush",
+                "lightning_rush_blitz"
             ],
             "chance": 0.10,
             "turns": 1
