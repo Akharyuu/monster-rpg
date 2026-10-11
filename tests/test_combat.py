@@ -3844,3 +3844,153 @@ def test_stormbreak_has_no_first_hit_bonus_without_speed_up(
     )
 
     assert received_multipliers[0] == 1.0
+
+
+
+# =========================================================
+#                 DRAKE RESONANCE REGRESSION
+# =========================================================
+
+def test_frigid_reduces_action_gauge_against_slowed_target(
+    monkeypatch
+):
+
+    drake = create_monster(
+        "drake_abyssal"
+    )
+
+    target = create_monster(
+        "drake_igneous"
+    )
+
+    skill = create_skill(
+        "rime_breath_frigid"
+    )
+
+    slow = create_status_effect(
+        effect_id="speed_break",
+        duration=2,
+        source=drake
+    )
+
+    target.apply_status_effect(
+        slow
+    )
+
+    target.action_gauge = 1.0
+
+    monkeypatch.setattr(
+        skill,
+        "damage_calc",
+        lambda *args, **kwargs: (
+            1,
+            False
+        )
+    )
+
+    skill.execute(
+        drake,
+        [target],
+        context={
+            "team": [drake],
+            "opponents": [target]
+        }
+    )
+
+    assert target.action_gauge == pytest.approx(
+        0.80
+    )
+
+
+
+def test_short_circuit_still_works_with_blitz(
+    monkeypatch
+):
+
+    drake = create_monster(
+        "drake_storm"
+    )
+
+    target = create_monster(
+        "drake_igneous"
+    )
+
+    drake.passives = [
+        create_passive(
+            "short_circuit"
+        )
+    ]
+
+    speed_up = create_status_effect(
+        effect_id="speed_up",
+        duration=2,
+        source=drake
+    )
+
+    drake.apply_status_effect(
+        speed_up
+    )
+
+    skill = create_skill(
+        "lightning_rush_blitz"
+    )
+
+    monkeypatch.setattr(
+        random,
+        "random",
+        lambda: 0.0
+    )
+
+    skill.execute(
+        drake,
+        [target],
+        context={
+            "team": [drake],
+            "opponents": [target]
+        }
+    )
+
+    assert any(
+        debuff.effect_id == "stun"
+        for debuff in target.debuffs
+    )
+
+
+
+def test_requiem_keeps_current_stormbreak_target_scaling():
+
+    skill = create_skill(
+        "stormbreak_requiem"
+    )
+
+    assert skill.repeated_target_damage == {
+        "full_damage_hits": 5,
+        "later_hit_multiplier": 0.25,
+        "first_hit_bonus_if_caster_buff": {
+            "effect_id": "speed_up",
+            "multiplier": 1.50
+        }
+    }
+
+
+
+def test_r5_drake_kit_can_be_built():
+
+    for monster_id in (
+        "drake_igneous",
+        "drake_abyssal",
+        "drake_storm"
+    ):
+
+        monster = create_monster(
+            monster_id
+        )
+
+        monster.resonance = 5
+
+        update_resonance_kit(
+            monster
+        )
+
+        assert monster.resonance == 5
+        assert len(monster.skills) == 3
