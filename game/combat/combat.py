@@ -577,7 +577,8 @@ def simulate_battles(
     ascended=False,
     max_turns=200,
     attribute_targeting=True,
-    neutral_core_attributes=False
+    neutral_core_attributes=False,
+    neutral_all_attributes=False
 ):
 
     wins_a = 0
@@ -626,6 +627,10 @@ def simulate_battles(
                 neutral_core_attributes
             )
 
+            monster._neutral_all_attributes = (
+                neutral_all_attributes
+            )
+
             monster.level = level
             monster.ascended = ascended
             monster.update_level_stats()
@@ -645,6 +650,10 @@ def simulate_battles(
 
             monster._neutral_core_attributes = (
                 neutral_core_attributes
+            )
+
+            monster._neutral_all_attributes = (
+                neutral_all_attributes
             )
 
             monster.level = level
