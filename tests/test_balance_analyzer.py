@@ -42,7 +42,8 @@ def test_analyze_unit_balance_aggregates_matchups(
         ascended=False,
         max_turns=200,
         attribute_targeting=True,
-        neutral_core_attributes=False
+        neutral_core_attributes=False,
+        neutral_all_attributes=False
     ):
 
         opponent_id = team_b_ids[0]
@@ -184,7 +185,8 @@ def test_analyze_passes_requested_level_to_simulator(
         ascended=False,
         max_turns=200,
         attribute_targeting=True,
-        neutral_core_attributes=False
+        neutral_core_attributes=False,
+        neutral_all_attributes=False
     ):
 
         received["level"] = level
@@ -249,6 +251,87 @@ def test_analyze_passes_requested_level_to_simulator(
 
 
 
+
+
+
+def test_analyze_unit_balance_can_neutralize_attributes(
+    monkeypatch
+):
+
+    received = []
+
+    def fake_simulate_battles(
+        team_a_ids,
+        team_b_ids,
+        runs,
+        verbose=True,
+        level=1,
+        ascended=False,
+        max_turns=200,
+        attribute_targeting=True,
+        neutral_core_attributes=False,
+        neutral_all_attributes=False
+    ):
+
+        received.append(
+            neutral_all_attributes
+        )
+
+        entry_a = {
+            "slot": 0,
+            "monster_id": team_a_ids[0],
+            "direct_damage": 0,
+            "dot_damage": 0,
+            "healing": 0,
+            "shield_generated": 0,
+            "shield_absorbed": 0,
+            "turns_denied": 0
+        }
+
+        entry_b = {
+            "slot": 0,
+            "monster_id": team_b_ids[0],
+            "direct_damage": 0,
+            "dot_damage": 0,
+            "healing": 0,
+            "shield_generated": 0,
+            "shield_absorbed": 0,
+            "turns_denied": 0
+        }
+
+        return {
+            "team_a_win_rate": 50,
+            "team_b_win_rate": 50,
+            "draw_rate": 0,
+            "average_turns": 10,
+            "minimum_turns": 10,
+            "maximum_turns": 10,
+            "team_a_average_remaining_hp": 100,
+            "team_b_average_remaining_hp": 100,
+            "team_a_average_remaining_hp_percent": 25,
+            "team_b_average_remaining_hp_percent": 25,
+            "team_a_telemetry": [entry_a],
+            "team_b_telemetry": [entry_b]
+        }
+
+    monkeypatch.setattr(
+        balance_module,
+        "simulate_battles",
+        fake_simulate_battles
+    )
+
+    report = analyze_unit_balance(
+        "drake_storm",
+        runs=1,
+        benchmark_ids=[
+            "drake_igneous"
+        ],
+        neutral_attributes=True,
+        verbose=False
+    )
+
+    assert received == [True]
+    assert report["neutral_attributes"] is True
 # =========================================================
 #               TEAM SWAP ANALYZER TESTS
 # =========================================================
