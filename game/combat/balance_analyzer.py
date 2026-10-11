@@ -496,6 +496,7 @@ def analyze_team_swap_balance(
     ascended=True,
     max_turns=200,
     attribute_targeting=False,
+    neutral_core_attributes=True,
     verbose=True
 ):
 
@@ -625,7 +626,8 @@ def analyze_team_swap_balance(
                 level=level,
                 ascended=ascended,
                 max_turns=max_turns,
-                attribute_targeting=attribute_targeting
+                attribute_targeting=attribute_targeting,
+                neutral_core_attributes=neutral_core_attributes
             )
 
             side_b = simulate_battles(
@@ -636,7 +638,8 @@ def analyze_team_swap_balance(
                 level=level,
                 ascended=ascended,
                 max_turns=max_turns,
-                attribute_targeting=attribute_targeting
+                attribute_targeting=attribute_targeting,
+                neutral_core_attributes=neutral_core_attributes
             )
 
             candidate_a = (
@@ -963,6 +966,8 @@ def analyze_team_swap_balance(
             max_turns,
         "attribute_targeting":
             attribute_targeting,
+        "neutral_core_attributes":
+            neutral_core_attributes,
         "core_team_sets":
             [
                 list(core)
@@ -1025,6 +1030,17 @@ def print_team_swap_report(report):
             "attribute-aware"
             if report["attribute_targeting"]
             else "neutral"
+        )
+    )
+
+    print(
+        "Core attributes: "
+        + (
+            "neutral"
+            if report[
+                "neutral_core_attributes"
+            ]
+            else "normal"
         )
     )
 
@@ -1220,6 +1236,7 @@ def analyze_drake_triangle_balance(
     ascended=True,
     max_turns=200,
     attribute_targeting=False,
+    neutral_core_attributes=True,
     verbose=True
 ):
 
@@ -1253,6 +1270,7 @@ def analyze_drake_triangle_balance(
             ascended=ascended,
             max_turns=max_turns,
             attribute_targeting=attribute_targeting,
+            neutral_core_attributes=neutral_core_attributes,
             verbose=False
         )
 
@@ -1315,6 +1333,8 @@ def analyze_drake_triangle_balance(
             max_turns,
         "attribute_targeting":
             attribute_targeting,
+        "neutral_core_attributes":
+            neutral_core_attributes,
         "pair_results":
             pair_results
     }
@@ -1360,6 +1380,17 @@ def print_drake_triangle_report(report):
             "attribute-aware"
             if report["attribute_targeting"]
             else "neutral"
+        )
+    )
+
+    print(
+        "Core attributes: "
+        + (
+            "neutral"
+            if report[
+                "neutral_core_attributes"
+            ]
+            else "normal"
         )
     )
 
