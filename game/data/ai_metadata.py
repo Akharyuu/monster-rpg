@@ -9,14 +9,14 @@ SKILL_AI_DATA = {
             {
                 "condition": "target_debuff_stacks",
                 "effect_id": "burn",
-                "stacks": 2,
+                "stacks": 3,
                 "scope": "any_enemy"
             }
         ],
         "hold_until_setup": True,
         "preferred_target_debuff": {
             "effect_id": "burn",
-            "stacks": 2
+            "stacks": 3
         }
     },
 
