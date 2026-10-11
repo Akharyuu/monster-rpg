@@ -148,51 +148,6 @@ def analyze_unit_balance(
             simulation["team_a_telemetry"][0]
         )
 
-        benchmark_direct_damage = (
-            benchmark_a_telemetry[
-                "direct_damage"
-            ]
-            + benchmark_b_telemetry[
-                "direct_damage"
-            ]
-        ) / 2
-
-        benchmark_dot_damage = (
-            benchmark_a_telemetry[
-                "dot_damage"
-            ]
-            + benchmark_b_telemetry[
-                "dot_damage"
-            ]
-        ) / 2
-
-        benchmark_healing = (
-            benchmark_a_telemetry[
-                "healing"
-            ]
-            + benchmark_b_telemetry[
-                "healing"
-            ]
-        ) / 2
-
-        benchmark_shield_generated = (
-            benchmark_a_telemetry[
-                "shield_generated"
-            ]
-            + benchmark_b_telemetry[
-                "shield_generated"
-            ]
-        ) / 2
-
-        benchmark_shield_absorbed = (
-            benchmark_a_telemetry[
-                "shield_absorbed"
-            ]
-            + benchmark_b_telemetry[
-                "shield_absorbed"
-            ]
-        ) / 2
-
         matchup = {
             "opponent_id": benchmark_id,
             "opponent_name": MONSTER_DATA[
@@ -694,6 +649,51 @@ def analyze_team_swap_balance(
                 "shield_absorbed"
             ]
             + candidate_b_telemetry[
+                "shield_absorbed"
+            ]
+        ) / 2
+
+        benchmark_direct_damage = (
+            benchmark_a_telemetry[
+                "direct_damage"
+            ]
+            + benchmark_b_telemetry[
+                "direct_damage"
+            ]
+        ) / 2
+
+        benchmark_dot_damage = (
+            benchmark_a_telemetry[
+                "dot_damage"
+            ]
+            + benchmark_b_telemetry[
+                "dot_damage"
+            ]
+        ) / 2
+
+        benchmark_healing = (
+            benchmark_a_telemetry[
+                "healing"
+            ]
+            + benchmark_b_telemetry[
+                "healing"
+            ]
+        ) / 2
+
+        benchmark_shield_generated = (
+            benchmark_a_telemetry[
+                "shield_generated"
+            ]
+            + benchmark_b_telemetry[
+                "shield_generated"
+            ]
+        ) / 2
+
+        benchmark_shield_absorbed = (
+            benchmark_a_telemetry[
+                "shield_absorbed"
+            ]
+            + benchmark_b_telemetry[
                 "shield_absorbed"
             ]
         ) / 2
