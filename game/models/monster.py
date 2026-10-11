@@ -560,16 +560,34 @@ class Monster:
 
         broken_effects = []
 
-        preserve_freeze = (
+        preserve_freeze_from_attacker = (
             source is not None
-            and source.has_passive_trait("preserve_freeze_on_hit")
+            and source.has_passive_trait(
+                "preserve_freeze_on_hit"
+            )
         )
 
         new_debuffs = []
 
         for debuff in self.debuffs:
 
-            if debuff.effect_id == "freeze" and not preserve_freeze:
+            preserve_freeze_from_source = (
+                debuff.effect_id == "freeze"
+                and debuff.source is not None
+                and debuff.source.has_passive_trait(
+                    "preserve_applied_freeze_on_damage"
+                )
+            )
+
+            preserve_freeze = (
+                preserve_freeze_from_attacker
+                or preserve_freeze_from_source
+            )
+
+            if (
+                debuff.effect_id == "freeze"
+                and not preserve_freeze
+            ):
                 broken_effects.append(debuff)
                 continue
 
