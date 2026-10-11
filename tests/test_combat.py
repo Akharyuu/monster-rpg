@@ -3399,3 +3399,54 @@ def test_denied_turn_is_credited_to_control_source():
         result["team_b"][0]["turns_denied"]
         == 0
     )
+
+
+
+def test_neutral_targeting_ignores_attribute_priority(
+    monkeypatch
+):
+
+    attacker = create_monster(
+        "drake_igneous"
+    )
+
+    advantaged_target = create_monster(
+        "drake_storm"
+    )
+
+    neutral_target = create_monster(
+        "drake_igneous"
+    )
+
+    skill = attacker.get_skill(1)
+
+    monkeypatch.setattr(
+        random,
+        "choices",
+        lambda population, weights, k: [
+            population[-1]
+        ]
+    )
+
+    attribute_target = choose_enemy_target(
+        attacker,
+        [
+            advantaged_target,
+            neutral_target
+        ],
+        skill,
+        attribute_targeting=True
+    )
+
+    neutral_ai_target = choose_enemy_target(
+        attacker,
+        [
+            advantaged_target,
+            neutral_target
+        ],
+        skill,
+        attribute_targeting=False
+    )
+
+    assert attribute_target is advantaged_target
+    assert neutral_ai_target is neutral_target
