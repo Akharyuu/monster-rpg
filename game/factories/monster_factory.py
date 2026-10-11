@@ -93,6 +93,9 @@ def create_skill(skill_id):
             hit_multipliers=skill.get("hit_multipliers", []),
             target_type=skill["target_type"],
             hit_distribution=skill.get("hit_distribution"),
+            repeated_target_damage=skill.get(
+                "repeated_target_damage"
+            ),
             scaling_stat=skill.get("scaling_stat", "attack"),
             cooldown=skill["cooldown"],
             damage_handler=skill.get("damage_handler"),
