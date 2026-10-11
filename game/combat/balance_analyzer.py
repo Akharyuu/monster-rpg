@@ -148,6 +148,51 @@ def analyze_unit_balance(
             simulation["team_a_telemetry"][0]
         )
 
+        benchmark_direct_damage = (
+            benchmark_a_telemetry[
+                "direct_damage"
+            ]
+            + benchmark_b_telemetry[
+                "direct_damage"
+            ]
+        ) / 2
+
+        benchmark_dot_damage = (
+            benchmark_a_telemetry[
+                "dot_damage"
+            ]
+            + benchmark_b_telemetry[
+                "dot_damage"
+            ]
+        ) / 2
+
+        benchmark_healing = (
+            benchmark_a_telemetry[
+                "healing"
+            ]
+            + benchmark_b_telemetry[
+                "healing"
+            ]
+        ) / 2
+
+        benchmark_shield_generated = (
+            benchmark_a_telemetry[
+                "shield_generated"
+            ]
+            + benchmark_b_telemetry[
+                "shield_generated"
+            ]
+        ) / 2
+
+        benchmark_shield_absorbed = (
+            benchmark_a_telemetry[
+                "shield_absorbed"
+            ]
+            + benchmark_b_telemetry[
+                "shield_absorbed"
+            ]
+        ) / 2
+
         matchup = {
             "opponent_id": benchmark_id,
             "opponent_name": MONSTER_DATA[
@@ -568,6 +613,14 @@ def analyze_team_swap_balance(
             side_b["team_b_telemetry"][0]
         )
 
+        benchmark_a_telemetry = (
+            side_a["team_b_telemetry"][0]
+        )
+
+        benchmark_b_telemetry = (
+            side_b["team_a_telemetry"][0]
+        )
+
         candidate_a_win_rate = (
             side_a["team_a_win_rate"]
         )
@@ -681,7 +734,21 @@ def analyze_team_swap_balance(
             "shield_generated":
                 average_shield_generated,
             "shield_absorbed":
-                average_shield_absorbed
+                average_shield_absorbed,
+            "benchmark_direct_damage":
+                benchmark_direct_damage,
+            "benchmark_dot_damage":
+                benchmark_dot_damage,
+            "benchmark_total_damage": (
+                benchmark_direct_damage
+                + benchmark_dot_damage
+            ),
+            "benchmark_healing":
+                benchmark_healing,
+            "benchmark_shield_generated":
+                benchmark_shield_generated,
+            "benchmark_shield_absorbed":
+                benchmark_shield_absorbed
         }
 
         matchups.append(
@@ -884,23 +951,47 @@ def print_team_swap_report(report):
         )
 
         print(
-            f"  Unit damage: "
-            f"{matchup['total_damage']:.1f}"
+            "  Contribution comparison:"
         )
 
         print(
-            f"  Unit healing: "
-            f"{matchup['healing']:.1f}"
+            f"    Damage: "
+            f"{report['monster_id']} "
+            f"{matchup['total_damage']:.1f} | "
+            f"{matchup['opponent_id']} "
+            f"{matchup['benchmark_total_damage']:.1f}"
         )
 
         print(
-            f"  Unit shield generated: "
-            f"{matchup['shield_generated']:.1f}"
+            f"    DoT damage: "
+            f"{report['monster_id']} "
+            f"{matchup['dot_damage']:.1f} | "
+            f"{matchup['opponent_id']} "
+            f"{matchup['benchmark_dot_damage']:.1f}"
         )
 
         print(
-            f"  Unit shield absorbed: "
-            f"{matchup['shield_absorbed']:.1f}"
+            f"    Healing: "
+            f"{report['monster_id']} "
+            f"{matchup['healing']:.1f} | "
+            f"{matchup['opponent_id']} "
+            f"{matchup['benchmark_healing']:.1f}"
+        )
+
+        print(
+            f"    Shield generated: "
+            f"{report['monster_id']} "
+            f"{matchup['shield_generated']:.1f} | "
+            f"{matchup['opponent_id']} "
+            f"{matchup['benchmark_shield_generated']:.1f}"
+        )
+
+        print(
+            f"    Shield absorbed: "
+            f"{report['monster_id']} "
+            f"{matchup['shield_absorbed']:.1f} | "
+            f"{matchup['opponent_id']} "
+            f"{matchup['benchmark_shield_absorbed']:.1f}"
         )
 
     overall = report["overall"]
