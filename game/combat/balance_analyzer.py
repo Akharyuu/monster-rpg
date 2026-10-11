@@ -122,6 +122,7 @@ def analyze_unit_balance(
     matchups = []
 
     total_win_rate = 0
+    total_draw_rate = 0
     total_turns = 0
     total_remaining_hp_percent = 0
 
@@ -194,6 +195,10 @@ def analyze_unit_balance(
             "win_rate"
         ]
 
+        total_draw_rate += matchup[
+            "draw_rate"
+        ]
+
         total_turns += matchup[
             "average_turns"
         ]
@@ -227,6 +232,9 @@ def analyze_unit_balance(
     overall = {
         "average_win_rate": (
             total_win_rate / matchup_count
+        ),
+        "average_draw_rate": (
+            total_draw_rate / matchup_count
         ),
         "average_turns": (
             total_turns / matchup_count
@@ -332,6 +340,11 @@ def print_balance_report(report):
         )
 
         print(
+            f"  Draw rate: "
+            f"{matchup['draw_rate']:.1f}%"
+        )
+
+        print(
             f"  Remaining HP: "
             f"{matchup['average_remaining_hp_percent']:.1f}%"
         )
@@ -371,6 +384,11 @@ def print_balance_report(report):
     print(
         f"Average win rate: "
         f"{overall['average_win_rate']:.1f}%"
+    )
+
+    print(
+        f"Average draw rate: "
+        f"{overall['average_draw_rate']:.1f}%"
     )
 
     print(
@@ -502,6 +520,7 @@ def analyze_team_swap_balance(
     matchups = []
 
     total_combined_win_rate = 0
+    total_draw_rate = 0
     total_turns = 0
     total_team_remaining_hp_percent = 0
 
@@ -673,6 +692,10 @@ def analyze_team_swap_balance(
             matchup["combined_win_rate"]
         )
 
+        total_draw_rate += (
+            matchup["draw_rate"]
+        )
+
         total_turns += (
             matchup["average_turns"]
         )
@@ -708,6 +731,10 @@ def analyze_team_swap_balance(
     overall = {
         "average_win_rate": (
             total_combined_win_rate
+            / matchup_count
+        ),
+        "average_draw_rate": (
+            total_draw_rate
             / matchup_count
         ),
         "average_turns": (
@@ -886,6 +913,11 @@ def print_team_swap_report(report):
     print(
         f"Average win rate: "
         f"{overall['average_win_rate']:.1f}%"
+    )
+
+    print(
+        f"Average draw rate: "
+        f"{overall['average_draw_rate']:.1f}%"
     )
 
     print(
