@@ -394,6 +394,14 @@ def test_team_swap_averages_both_sides(
         "total_damage"
     ] == pytest.approx(1300)
 
+    assert matchup[
+        "benchmark_total_damage"
+    ] == pytest.approx(925)
+
+    assert matchup[
+        "benchmark_dot_damage"
+    ] == pytest.approx(0)
+
     assert len(calls) == 2
 
     assert calls[0][0] == [
