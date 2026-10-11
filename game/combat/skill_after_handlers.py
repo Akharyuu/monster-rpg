@@ -1,3 +1,5 @@
+from ..factories.status_effect_factory import create_status_effect
+
 # =========================================================
 #                      BURN HANDLERS
 # =========================================================
@@ -60,11 +62,51 @@ def reset_cooldown_by_burn_stacks(caster, target, skill, data, context):
 
     
 # =========================================================
+#                    BURN EXTENSION
+# =========================================================
+
+def add_burn_if_target_has_burn(
+    caster,
+    target,
+    skill,
+    data,
+    context
+):
+
+    if not target.is_alive:
+        return
+
+    burn_effect = None
+
+    for debuff in target.debuffs:
+        if debuff.effect_id == "burn":
+            burn_effect = debuff
+            break
+
+    if burn_effect is None:
+        return
+
+    extra_burn = create_status_effect(
+        effect_id="burn",
+        duration=data.get("turns", 3),
+        stacks=data.get("stacks", 1),
+        source=caster
+    )
+
+    target.apply_status_effect(
+        extra_burn
+    )
+
+
+# =========================================================
 #                      HANDLER REGISTRY
 # =========================================================
 
 AFTER_SKILL_HANDLERS = {
     "consume_burn_and_heal": consume_burn_and_heal,
-    "reset_cooldown_by_burn_stacks": reset_cooldown_by_burn_stacks
+    "reset_cooldown_by_burn_stacks":
+        reset_cooldown_by_burn_stacks,
+    "add_burn_if_target_has_burn":
+        add_burn_if_target_has_burn
 }
 
