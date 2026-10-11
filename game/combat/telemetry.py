@@ -8,7 +8,12 @@ TELEMETRY_METRICS = (
     "healing",
     "shield_generated",
     "shield_absorbed",
-    "turns_denied"
+    "turns_denied",
+    "stuns_applied",
+    "freezes_applied",
+    "stun_turns_denied",
+    "freeze_turns_denied",
+    "freezes_broken_before_turn"
 )
 
 
@@ -33,7 +38,12 @@ def create_battle_telemetry(team_a, team_b):
                 "healing": 0,
                 "shield_generated": 0,
                 "shield_absorbed": 0,
-                "turns_denied": 0
+                "turns_denied": 0,
+                "stuns_applied": 0,
+                "freezes_applied": 0,
+                "stun_turns_denied": 0,
+                "freeze_turns_denied": 0,
+                "freezes_broken_before_turn": 0
             }
 
     return {
