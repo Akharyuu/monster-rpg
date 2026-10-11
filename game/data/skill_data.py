@@ -653,7 +653,7 @@ SKILL_DATA = {
         "effects": [
             {
                 "effect_id": "speed_break",
-                "chance": 0.30,
+                "chance": 0.50,
                 "turns": 2,
                 "trigger": "per_hit"
             }
@@ -701,7 +701,7 @@ SKILL_DATA = {
         "effects": [
             {
                 "effect_id": "freeze",
-                "chance": 0.50,
+                "chance": 1.00,
                 "turns": 1,
                 "trigger": "per_hit",
                 "condition": {
