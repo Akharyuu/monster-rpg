@@ -3606,3 +3606,88 @@ def test_freeze_denied_turn_is_tracked_by_type():
     assert controller_data[
         "stun_turns_denied"
     ] == 0
+
+
+
+def test_stormbreak_reduces_damage_after_three_hits_on_same_target(
+    monkeypatch
+):
+
+    storm = create_monster(
+        "drake_storm"
+    )
+
+    target = create_monster(
+        "drake_abyssal"
+    )
+
+    stormbreak = next(
+        skill
+        for skill in storm.skills
+        if skill.skill_id == "stormbreak"
+    )
+
+    received_multipliers = []
+
+    def fake_damage_calc(
+        attacker,
+        defender,
+        hit_multiplier,
+        snapshot,
+        hit_index
+    ):
+
+        received_multipliers.append(
+            hit_multiplier
+        )
+
+        return 1, False
+
+    monkeypatch.setattr(
+        stormbreak,
+        "damage_calc",
+        fake_damage_calc
+    )
+
+    stormbreak.execute(
+        storm,
+        [target],
+        context={
+            "team": [storm],
+            "opponents": [target]
+        }
+    )
+
+    assert received_multipliers == [
+        1.0,
+        1.0,
+        1.0,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25
+    ]
+
+
+
+def test_stormbreak_keeps_original_base_multiplier():
+
+    storm = create_monster(
+        "drake_storm"
+    )
+
+    stormbreak = next(
+        skill
+        for skill in storm.skills
+        if skill.skill_id == "stormbreak"
+    )
+
+    assert stormbreak.multiplier == 1.60
+
+    assert stormbreak.repeated_target_damage == {
+        "full_damage_hits": 3,
+        "later_hit_multiplier": 0.25
+    }
