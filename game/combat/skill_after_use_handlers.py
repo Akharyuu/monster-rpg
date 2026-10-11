@@ -208,7 +208,12 @@ def aoe_follow_up_attack(caster, skill, data, context, skill_result):
             caster,
             target,
             skill.hits,
-            target_result
+            target_result,
+            hit_multiplier_override=data.get(
+                "damage_multiplier",
+                1
+            ),
+            apply_repeated_target_damage=False
         )
 
         if target.is_alive:
