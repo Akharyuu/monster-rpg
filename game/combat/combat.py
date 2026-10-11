@@ -576,7 +576,8 @@ def simulate_battles(
     level=1,
     ascended=False,
     max_turns=200,
-    attribute_targeting=True
+    attribute_targeting=True,
+    neutral_core_attributes=False
 ):
 
     wins_a = 0
@@ -611,9 +612,19 @@ def simulate_battles(
         team_a = []
         team_b = []
 
-        for monster_id in team_a_ids:
+        for slot, monster_id in enumerate(
+            team_a_ids
+        ):
 
             monster = create_monster(monster_id)
+
+            monster._balance_primary = (
+                slot == 0
+            )
+
+            monster._neutral_core_attributes = (
+                neutral_core_attributes
+            )
 
             monster.level = level
             monster.ascended = ascended
@@ -622,9 +633,19 @@ def simulate_battles(
             team_a.append(monster)
 
 
-        for monster_id in team_b_ids:
+        for slot, monster_id in enumerate(
+            team_b_ids
+        ):
 
             monster = create_monster(monster_id)
+
+            monster._balance_primary = (
+                slot == 0
+            )
+
+            monster._neutral_core_attributes = (
+                neutral_core_attributes
+            )
 
             monster.level = level
             monster.ascended = ascended
