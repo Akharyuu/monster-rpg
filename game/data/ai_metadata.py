@@ -1,6 +1,26 @@
 SKILL_AI_DATA = {
 
     # =========================================================
+    #                     IGNEOUS DRAKE
+    # =========================================================
+
+    "flame_devourer_incineration": {
+        "setup_requirements": [
+            {
+                "condition": "target_debuff_stacks",
+                "effect_id": "burn",
+                "stacks": 2,
+                "scope": "any_enemy"
+            }
+        ],
+        "hold_until_setup": True,
+        "preferred_target_debuff": {
+            "effect_id": "burn",
+            "stacks": 2
+        }
+    },
+
+    # =========================================================
     #                     ABYSSAL DRAKE
     # =========================================================
 
