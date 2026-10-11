@@ -36,7 +36,9 @@ def test_analyze_unit_balance_aggregates_matchups(
         team_a_ids,
         team_b_ids,
         runs,
-        verbose=True
+        verbose=True,
+        level=1,
+        ascended=False
     ):
 
         opponent_id = team_b_ids[0]
@@ -127,6 +129,9 @@ def test_analyze_unit_balance_aggregates_matchups(
         "average_total_damage"
     ] == pytest.approx(1600)
 
+    assert report["level"] == 50
+    assert report["ascended"] is True
+
 
 
 def test_analyze_requires_manual_benchmarks_when_none_exist():
@@ -150,3 +155,77 @@ def test_analyze_rejects_non_positive_runs():
             runs=0,
             verbose=False
         )
+
+
+
+def test_analyze_passes_requested_level_to_simulator(
+    monkeypatch
+):
+
+    received = {}
+
+    def fake_simulate_battles(
+        team_a_ids,
+        team_b_ids,
+        runs,
+        verbose=True,
+        level=1,
+        ascended=False
+    ):
+
+        received["level"] = level
+        received["ascended"] = ascended
+
+        return {
+            "team_a_win_rate": 50,
+            "team_b_win_rate": 50,
+            "average_turns": 10,
+            "minimum_turns": 10,
+            "maximum_turns": 10,
+            "team_a_average_remaining_hp": 100,
+            "team_b_average_remaining_hp": 100,
+            "team_a_average_remaining_hp_percent": 25,
+            "team_b_average_remaining_hp_percent": 25,
+            "team_a_telemetry": [
+                {
+                    "slot": 0,
+                    "monster_id": team_a_ids[0],
+                    "direct_damage": 1000,
+                    "dot_damage": 0,
+                    "healing": 0,
+                    "shield_generated": 0,
+                    "shield_absorbed": 0
+                }
+            ],
+            "team_b_telemetry": [
+                {
+                    "slot": 0,
+                    "monster_id": team_b_ids[0],
+                    "direct_damage": 1000,
+                    "dot_damage": 0,
+                    "healing": 0,
+                    "shield_generated": 0,
+                    "shield_absorbed": 0
+                }
+            ]
+        }
+
+    monkeypatch.setattr(
+        balance_module,
+        "simulate_battles",
+        fake_simulate_battles
+    )
+
+    analyze_unit_balance(
+        "drake_storm",
+        runs=10,
+        benchmark_ids=[
+            "drake_igneous"
+        ],
+        level=40,
+        ascended=False,
+        verbose=False
+    )
+
+    assert received["level"] == 40
+    assert received["ascended"] is False
