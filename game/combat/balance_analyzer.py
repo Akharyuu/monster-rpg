@@ -526,8 +526,16 @@ def analyze_team_swap_balance(
     attribute_targeting=False,
     neutral_core_attributes=True,
     resonance=0,
+    candidate_resonance=None,
+    benchmark_resonance=None,
     verbose=True
 ):
+
+    if candidate_resonance is None:
+        candidate_resonance = resonance
+
+    if benchmark_resonance is None:
+        benchmark_resonance = resonance
 
     if monster_id not in MONSTER_DATA:
         raise ValueError(
@@ -659,20 +667,23 @@ def analyze_team_swap_balance(
                     neutral_core_attributes
             }
 
-            if resonance > 0:
-                simulation_kwargs[
-                    "primary_resonance"
-                ] = resonance
-
             side_a = simulate_battles(
                 candidate_team,
                 benchmark_team,
+                team_a_primary_resonance=
+                    candidate_resonance,
+                team_b_primary_resonance=
+                    benchmark_resonance,
                 **simulation_kwargs
             )
 
             side_b = simulate_battles(
                 benchmark_team,
                 candidate_team,
+                team_a_primary_resonance=
+                    benchmark_resonance,
+                team_b_primary_resonance=
+                    candidate_resonance,
                 **simulation_kwargs
             )
 
@@ -1097,6 +1108,10 @@ def analyze_team_swap_balance(
             attribute_targeting,
         "neutral_core_attributes":
             neutral_core_attributes,
+        "candidate_resonance":
+            candidate_resonance,
+        "benchmark_resonance":
+            benchmark_resonance,
         "core_team_sets":
             [
                 list(core)
@@ -1171,6 +1186,13 @@ def print_team_swap_report(report):
             ]
             else "normal"
         )
+    )
+
+    print(
+        "Resonance: "
+        f"R{report['candidate_resonance']} "
+        "vs "
+        f"R{report['benchmark_resonance']}"
     )
 
     print(
