@@ -4337,3 +4337,44 @@ def test_absolute_zero_can_freeze_without_slow(
         debuff.effect_id == "freeze"
         for debuff in target.debuffs
     )
+
+
+
+def test_incineration_resets_s2_at_two_burn_stacks():
+
+    igneous = create_monster(
+        "drake_igneous"
+    )
+
+    igneous.resonance = 5
+
+    update_resonance_kit(
+        igneous
+    )
+
+    target = create_monster(
+        "drake_abyssal"
+    )
+
+    burn = create_status_effect(
+        effect_id="burn",
+        duration=3,
+        stacks=2,
+        source=igneous
+    )
+
+    target.apply_status_effect(
+        burn
+    )
+
+    s2 = igneous.get_skill(2)
+    s3 = igneous.get_skill(3)
+
+    s2.current_cooldown = 3
+
+    s3.execute(
+        igneous,
+        [target]
+    )
+
+    assert s2.current_cooldown == 0
