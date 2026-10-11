@@ -3994,3 +3994,66 @@ def test_r5_drake_kit_can_be_built():
 
         assert monster.resonance == 5
         assert len(monster.skills) == 3
+
+
+
+def test_requiem_follow_up_uses_full_damage_multiplier(
+    monkeypatch
+):
+
+    drake = create_monster(
+        "drake_storm"
+    )
+
+    target = create_monster(
+        "drake_igneous"
+    )
+
+    skill = create_skill(
+        "stormbreak_requiem"
+    )
+
+    speed_up = create_status_effect(
+        effect_id="speed_up",
+        duration=2,
+        source=drake
+    )
+
+    drake.apply_status_effect(
+        speed_up
+    )
+
+    received_multipliers = []
+
+    def fake_damage_calc(
+        attacker,
+        defender,
+        hit_multiplier,
+        snapshot,
+        hit_index
+    ):
+
+        received_multipliers.append(
+            hit_multiplier
+        )
+
+        return 1, False
+
+    monkeypatch.setattr(
+        skill,
+        "damage_calc",
+        fake_damage_calc
+    )
+
+    skill.execute(
+        drake,
+        [target],
+        context={
+            "team": [drake],
+            "opponents": [target]
+        }
+    )
+
+    assert received_multipliers[-1] == pytest.approx(
+        2.75
+    )
