@@ -81,7 +81,7 @@ class DamageSkill(Skill):
     #                       INITIALIZATION
     # =========================================================
 
-    def __init__(self, skill_id, name, multiplier, hits, hit_multipliers, target_type, hit_distribution= None, scaling_stat="attack", cooldown=0, 
+    def __init__(self, skill_id, name, multiplier, hits, hit_multipliers, target_type, hit_distribution=None, repeated_target_damage=None, scaling_stat="attack", cooldown=0,
                  damage_handler=None, damage_handler_data=None, on_hit_handlers=None, after_skill_handlers=None, after_use_handlers=None,
                  effects=None):
         super().__init__(skill_id, name, target_type, cooldown)
@@ -92,6 +92,11 @@ class DamageSkill(Skill):
         self.hits = hits
         self.hit_multipliers = hit_multipliers
         self.hit_distribution = hit_distribution
+        self.repeated_target_damage = (
+            repeated_target_damage
+            if repeated_target_damage is not None
+            else {}
+        )
 
         if self.hit_multipliers and len(self.hit_multipliers) != self.hits:
             raise ValueError(
@@ -534,6 +539,32 @@ class DamageSkill(Skill):
 
         elif self.hit_multipliers:
             hit_multiplier = self.hit_multipliers[hit_index]
+
+        full_damage_hits = (
+            self.repeated_target_damage.get(
+                "full_damage_hits"
+            )
+        )
+
+        repeated_hit_multiplier = (
+            self.repeated_target_damage.get(
+                "later_hit_multiplier",
+                1
+            )
+        )
+
+        hits_already_received = len(
+            target_result["hit_results"]
+        )
+
+        if (
+            full_damage_hits is not None
+            and hits_already_received
+            >= full_damage_hits
+        ):
+            hit_multiplier *= (
+                repeated_hit_multiplier
+            )
 
         damage, critical = self.damage_calc(
             caster,
