@@ -808,7 +808,7 @@ SKILL_DATA = {
 
         "repeated_target_damage": {
             "full_damage_hits": 3,
-            "later_hit_multiplier": 0.25
+            "later_hit_multiplier": 0.50
         },
 
         "effects": [
