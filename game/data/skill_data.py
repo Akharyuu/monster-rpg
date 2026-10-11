@@ -618,7 +618,7 @@ SKILL_DATA = {
                 2: 1.30,
                 3: 1.45
             },
-            "ignore_defense_at_stacks": 3
+            "ignore_defense_at_stacks": 2
         },
 
         "after_skill_handlers": [
@@ -750,11 +750,7 @@ SKILL_DATA = {
                 "chance": 1,
                 "turns": 1,
                 "trigger": "per_hit",
-                "ignore_resistance": True,
-                "condition": {
-                    "type": "target_has_debuff",
-                    "effect_id": "speed_break"
-                }
+                "ignore_resistance": True
             }
         ]
     },
@@ -874,7 +870,7 @@ SKILL_DATA = {
             {
                 "handler": "aoe_follow_up_attack",
                 "data": {
-                    "damage_multiplier": 1.50
+                    "damage_multiplier": 0.75
                 }
             }
         ]
