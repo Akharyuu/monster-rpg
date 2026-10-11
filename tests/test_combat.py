@@ -1217,6 +1217,12 @@ def test_numbing_sting_can_stun_if_it_applies_new_poison(
         lambda: 0.0
     )
 
+    monkeypatch.setattr(
+        random,
+        "uniform",
+        lambda a, b: 100
+    )
+
     skill.execute(
         thornet,
         [target]
