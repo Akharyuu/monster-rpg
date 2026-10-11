@@ -453,10 +453,37 @@ def print_balance_report(report):
 #                 TEAM SWAP BALANCE ANALYZER
 # =========================================================
 
-DEFAULT_TEAM_CORE = [
-    "dryad_storm",
-    "griffon_igneous"
+DEFAULT_NEUTRAL_CORE_SETS = [
+    [
+        "thornet_igneous",
+        "thornet_abyssal"
+    ],
+    [
+        "thornet_abyssal",
+        "thornet_storm"
+    ],
+    [
+        "thornet_storm",
+        "thornet_igneous"
+    ]
 ]
+
+
+def _average_values(values):
+
+    return sum(values) / len(values)
+
+
+
+def _average_metric(entries, metric):
+
+    return _average_values(
+        [
+            entry[metric]
+            for entry in entries
+        ]
+    )
+
 
 
 def analyze_team_swap_balance(
@@ -464,6 +491,7 @@ def analyze_team_swap_balance(
     runs=500,
     benchmark_ids=None,
     core_team_ids=None,
+    core_team_sets=None,
     level=50,
     ascended=True,
     max_turns=200,
@@ -512,18 +540,51 @@ def analyze_team_swap_balance(
             f"Pass benchmark_ids manually."
         )
 
-    if core_team_ids is None:
-        core_team_ids = list(
-            DEFAULT_TEAM_CORE
+    if (
+        core_team_ids is not None
+        and core_team_sets is not None
+    ):
+        raise ValueError(
+            "Pass either core_team_ids or "
+            "core_team_sets, not both."
         )
 
-    for core_id in core_team_ids:
+    if core_team_ids is not None:
+        core_team_sets = [
+            list(core_team_ids)
+        ]
 
-        if core_id not in MONSTER_DATA:
+    elif core_team_sets is None:
+        core_team_sets = [
+            list(core)
+            for core in DEFAULT_NEUTRAL_CORE_SETS
+        ]
+
+    else:
+        core_team_sets = [
+            list(core)
+            for core in core_team_sets
+        ]
+
+    if not core_team_sets:
+        raise ValueError(
+            "At least one core team is required."
+        )
+
+    for core_team in core_team_sets:
+
+        if not core_team:
             raise ValueError(
-                f"Unknown core team monster_id: "
-                f"{core_id}"
+                "Core teams cannot be empty."
             )
+
+        for core_id in core_team:
+
+            if core_id not in MONSTER_DATA:
+                raise ValueError(
+                    f"Unknown core team monster_id: "
+                    f"{core_id}"
+                )
 
     for benchmark_id in benchmark_ids:
 
@@ -541,243 +602,243 @@ def analyze_team_swap_balance(
 
     matchups = []
 
-    total_combined_win_rate = 0
-    total_draw_rate = 0
-    total_turns = 0
-    total_team_remaining_hp_percent = 0
-
-    total_direct_damage = 0
-    total_dot_damage = 0
-    total_healing = 0
-    total_shield_generated = 0
-    total_shield_absorbed = 0
-    total_turns_denied = 0
-
     for benchmark_id in benchmark_ids:
 
-        candidate_team = [
-            monster_id
-        ] + list(core_team_ids)
+        core_results = []
 
-        benchmark_team = [
-            benchmark_id
-        ] + list(core_team_ids)
+        for core_team in core_team_sets:
 
-        side_a = simulate_battles(
-            candidate_team,
-            benchmark_team,
-            runs=runs,
-            verbose=False,
-            level=level,
-            ascended=ascended,
-            max_turns=max_turns
-        )
+            candidate_team = [
+                monster_id
+            ] + list(core_team)
 
-        side_b = simulate_battles(
-            benchmark_team,
-            candidate_team,
-            runs=runs,
-            verbose=False,
-            level=level,
-            ascended=ascended,
-            max_turns=max_turns
-        )
+            benchmark_team = [
+                benchmark_id
+            ] + list(core_team)
 
-        candidate_a_telemetry = (
-            side_a["team_a_telemetry"][0]
-        )
+            side_a = simulate_battles(
+                candidate_team,
+                benchmark_team,
+                runs=runs,
+                verbose=False,
+                level=level,
+                ascended=ascended,
+                max_turns=max_turns
+            )
 
-        candidate_b_telemetry = (
-            side_b["team_b_telemetry"][0]
-        )
+            side_b = simulate_battles(
+                benchmark_team,
+                candidate_team,
+                runs=runs,
+                verbose=False,
+                level=level,
+                ascended=ascended,
+                max_turns=max_turns
+            )
 
-        benchmark_a_telemetry = (
-            side_a["team_b_telemetry"][0]
-        )
+            candidate_a = (
+                side_a["team_a_telemetry"][0]
+            )
 
-        benchmark_b_telemetry = (
-            side_b["team_a_telemetry"][0]
-        )
+            candidate_b = (
+                side_b["team_b_telemetry"][0]
+            )
 
-        candidate_a_win_rate = (
-            side_a["team_a_win_rate"]
-        )
+            benchmark_a = (
+                side_a["team_b_telemetry"][0]
+            )
 
-        candidate_b_win_rate = (
-            side_b["team_b_win_rate"]
-        )
+            benchmark_b = (
+                side_b["team_a_telemetry"][0]
+            )
 
-        combined_win_rate = (
-            candidate_a_win_rate
-            + candidate_b_win_rate
-        ) / 2
+            candidate_metrics = {}
 
-        combined_draw_rate = (
-            side_a["draw_rate"]
-            + side_b["draw_rate"]
-        ) / 2
+            benchmark_metrics = {}
 
-        average_turns = (
-            side_a["average_turns"]
-            + side_b["average_turns"]
-        ) / 2
-
-        average_team_remaining_hp_percent = (
-            side_a[
-                "team_a_average_remaining_hp_percent"
-            ]
-            + side_b[
-                "team_b_average_remaining_hp_percent"
-            ]
-        ) / 2
-
-        average_direct_damage = (
-            candidate_a_telemetry[
-                "direct_damage"
-            ]
-            + candidate_b_telemetry[
-                "direct_damage"
-            ]
-        ) / 2
-
-        average_dot_damage = (
-            candidate_a_telemetry[
-                "dot_damage"
-            ]
-            + candidate_b_telemetry[
-                "dot_damage"
-            ]
-        ) / 2
-
-        average_healing = (
-            candidate_a_telemetry[
-                "healing"
-            ]
-            + candidate_b_telemetry[
-                "healing"
-            ]
-        ) / 2
-
-        average_shield_generated = (
-            candidate_a_telemetry[
-                "shield_generated"
-            ]
-            + candidate_b_telemetry[
-                "shield_generated"
-            ]
-        ) / 2
-
-        average_shield_absorbed = (
-            candidate_a_telemetry[
-                "shield_absorbed"
-            ]
-            + candidate_b_telemetry[
-                "shield_absorbed"
-            ]
-        ) / 2
-
-        average_turns_denied = (
-            candidate_a_telemetry[
+            for metric in (
+                "direct_damage",
+                "dot_damage",
+                "healing",
+                "shield_generated",
+                "shield_absorbed",
                 "turns_denied"
-            ]
-            + candidate_b_telemetry[
-                "turns_denied"
-            ]
-        ) / 2
+            ):
+
+                candidate_metrics[metric] = (
+                    candidate_a[metric]
+                    + candidate_b[metric]
+                ) / 2
+
+                benchmark_metrics[metric] = (
+                    benchmark_a[metric]
+                    + benchmark_b[metric]
+                ) / 2
+
+            core_result = {
+                "core_team_ids":
+                    list(core_team),
+                "win_rate_as_team_a":
+                    side_a["team_a_win_rate"],
+                "win_rate_as_team_b":
+                    side_b["team_b_win_rate"],
+                "combined_win_rate": (
+                    side_a["team_a_win_rate"]
+                    + side_b["team_b_win_rate"]
+                ) / 2,
+                "draw_rate": (
+                    side_a["draw_rate"]
+                    + side_b["draw_rate"]
+                ) / 2,
+                "average_turns": (
+                    side_a["average_turns"]
+                    + side_b["average_turns"]
+                ) / 2,
+                "average_team_remaining_hp_percent": (
+                    side_a[
+                        "team_a_average_remaining_hp_percent"
+                    ]
+                    + side_b[
+                        "team_b_average_remaining_hp_percent"
+                    ]
+                ) / 2,
+                "candidate_metrics":
+                    candidate_metrics,
+                "benchmark_metrics":
+                    benchmark_metrics
+            }
+
+            core_results.append(
+                core_result
+            )
+
+        candidate_direct_damage = (
+            _average_values(
+                [
+                    core[
+                        "candidate_metrics"
+                    ]["direct_damage"]
+                    for core in core_results
+                ]
+            )
+        )
+
+        candidate_dot_damage = (
+            _average_values(
+                [
+                    core[
+                        "candidate_metrics"
+                    ]["dot_damage"]
+                    for core in core_results
+                ]
+            )
+        )
 
         benchmark_direct_damage = (
-            benchmark_a_telemetry[
-                "direct_damage"
-            ]
-            + benchmark_b_telemetry[
-                "direct_damage"
-            ]
-        ) / 2
+            _average_values(
+                [
+                    core[
+                        "benchmark_metrics"
+                    ]["direct_damage"]
+                    for core in core_results
+                ]
+            )
+        )
 
         benchmark_dot_damage = (
-            benchmark_a_telemetry[
-                "dot_damage"
-            ]
-            + benchmark_b_telemetry[
-                "dot_damage"
-            ]
-        ) / 2
-
-        benchmark_healing = (
-            benchmark_a_telemetry[
-                "healing"
-            ]
-            + benchmark_b_telemetry[
-                "healing"
-            ]
-        ) / 2
-
-        benchmark_shield_generated = (
-            benchmark_a_telemetry[
-                "shield_generated"
-            ]
-            + benchmark_b_telemetry[
-                "shield_generated"
-            ]
-        ) / 2
-
-        benchmark_shield_absorbed = (
-            benchmark_a_telemetry[
-                "shield_absorbed"
-            ]
-            + benchmark_b_telemetry[
-                "shield_absorbed"
-            ]
-        ) / 2
-
-        benchmark_turns_denied = (
-            benchmark_a_telemetry[
-                "turns_denied"
-            ]
-            + benchmark_b_telemetry[
-                "turns_denied"
-            ]
-        ) / 2
+            _average_values(
+                [
+                    core[
+                        "benchmark_metrics"
+                    ]["dot_damage"]
+                    for core in core_results
+                ]
+            )
+        )
 
         matchup = {
-            "opponent_id": benchmark_id,
-            "opponent_name": MONSTER_DATA[
-                benchmark_id
-            ]["name"],
-            "candidate_team": list(
-                candidate_team
-            ),
-            "benchmark_team": list(
-                benchmark_team
-            ),
+            "opponent_id":
+                benchmark_id,
+            "opponent_name":
+                MONSTER_DATA[
+                    benchmark_id
+                ]["name"],
+            "core_results":
+                core_results,
             "win_rate_as_team_a":
-                candidate_a_win_rate,
+                _average_metric(
+                    core_results,
+                    "win_rate_as_team_a"
+                ),
             "win_rate_as_team_b":
-                candidate_b_win_rate,
+                _average_metric(
+                    core_results,
+                    "win_rate_as_team_b"
+                ),
             "combined_win_rate":
-                combined_win_rate,
+                _average_metric(
+                    core_results,
+                    "combined_win_rate"
+                ),
             "draw_rate":
-                combined_draw_rate,
+                _average_metric(
+                    core_results,
+                    "draw_rate"
+                ),
             "average_turns":
-                average_turns,
+                _average_metric(
+                    core_results,
+                    "average_turns"
+                ),
             "average_team_remaining_hp_percent":
-                average_team_remaining_hp_percent,
+                _average_metric(
+                    core_results,
+                    "average_team_remaining_hp_percent"
+                ),
             "direct_damage":
-                average_direct_damage,
+                candidate_direct_damage,
             "dot_damage":
-                average_dot_damage,
+                candidate_dot_damage,
             "total_damage": (
-                average_direct_damage
-                + average_dot_damage
+                candidate_direct_damage
+                + candidate_dot_damage
             ),
             "healing":
-                average_healing,
+                _average_values(
+                    [
+                        core[
+                            "candidate_metrics"
+                        ]["healing"]
+                        for core in core_results
+                    ]
+                ),
             "shield_generated":
-                average_shield_generated,
+                _average_values(
+                    [
+                        core[
+                            "candidate_metrics"
+                        ]["shield_generated"]
+                        for core in core_results
+                    ]
+                ),
             "shield_absorbed":
-                average_shield_absorbed,
+                _average_values(
+                    [
+                        core[
+                            "candidate_metrics"
+                        ]["shield_absorbed"]
+                        for core in core_results
+                    ]
+                ),
             "turns_denied":
-                average_turns_denied,
+                _average_values(
+                    [
+                        core[
+                            "candidate_metrics"
+                        ]["turns_denied"]
+                        for core in core_results
+                    ]
+                ),
             "benchmark_direct_damage":
                 benchmark_direct_damage,
             "benchmark_dot_damage":
@@ -787,133 +848,127 @@ def analyze_team_swap_balance(
                 + benchmark_dot_damage
             ),
             "benchmark_healing":
-                benchmark_healing,
+                _average_values(
+                    [
+                        core[
+                            "benchmark_metrics"
+                        ]["healing"]
+                        for core in core_results
+                    ]
+                ),
             "benchmark_shield_generated":
-                benchmark_shield_generated,
+                _average_values(
+                    [
+                        core[
+                            "benchmark_metrics"
+                        ]["shield_generated"]
+                        for core in core_results
+                    ]
+                ),
             "benchmark_shield_absorbed":
-                benchmark_shield_absorbed,
+                _average_values(
+                    [
+                        core[
+                            "benchmark_metrics"
+                        ]["shield_absorbed"]
+                        for core in core_results
+                    ]
+                ),
             "benchmark_turns_denied":
-                benchmark_turns_denied
+                _average_values(
+                    [
+                        core[
+                            "benchmark_metrics"
+                        ]["turns_denied"]
+                        for core in core_results
+                    ]
+                )
         }
 
         matchups.append(
             matchup
         )
 
-        total_combined_win_rate += (
-            matchup["combined_win_rate"]
-        )
-
-        total_draw_rate += (
-            matchup["draw_rate"]
-        )
-
-        total_turns += (
-            matchup["average_turns"]
-        )
-
-        total_team_remaining_hp_percent += (
-            matchup[
-                "average_team_remaining_hp_percent"
-            ]
-        )
-
-        total_direct_damage += (
-            matchup["direct_damage"]
-        )
-
-        total_dot_damage += (
-            matchup["dot_damage"]
-        )
-
-        total_healing += (
-            matchup["healing"]
-        )
-
-        total_shield_generated += (
-            matchup["shield_generated"]
-        )
-
-        total_shield_absorbed += (
-            matchup["shield_absorbed"]
-        )
-
-        total_turns_denied += (
-            matchup["turns_denied"]
-        )
-
     matchup_count = len(matchups)
 
     overall = {
-        "average_win_rate": (
-            total_combined_win_rate
-            / matchup_count
-        ),
-        "average_draw_rate": (
-            total_draw_rate
-            / matchup_count
-        ),
-        "average_turns": (
-            total_turns
-            / matchup_count
-        ),
-        "average_team_remaining_hp_percent": (
-            total_team_remaining_hp_percent
-            / matchup_count
-        ),
-        "average_direct_damage": (
-            total_direct_damage
-            / matchup_count
-        ),
-        "average_dot_damage": (
-            total_dot_damage
-            / matchup_count
-        ),
-        "average_total_damage": (
-            (
-                total_direct_damage
-                + total_dot_damage
+        "average_win_rate":
+            _average_metric(
+                matchups,
+                "combined_win_rate"
+            ),
+        "average_draw_rate":
+            _average_metric(
+                matchups,
+                "draw_rate"
+            ),
+        "average_turns":
+            _average_metric(
+                matchups,
+                "average_turns"
+            ),
+        "average_team_remaining_hp_percent":
+            _average_metric(
+                matchups,
+                "average_team_remaining_hp_percent"
+            ),
+        "average_total_damage":
+            _average_metric(
+                matchups,
+                "total_damage"
+            ),
+        "average_healing":
+            _average_metric(
+                matchups,
+                "healing"
+            ),
+        "average_shield_generated":
+            _average_metric(
+                matchups,
+                "shield_generated"
+            ),
+        "average_shield_absorbed":
+            _average_metric(
+                matchups,
+                "shield_absorbed"
+            ),
+        "average_turns_denied":
+            _average_metric(
+                matchups,
+                "turns_denied"
             )
-            / matchup_count
-        ),
-        "average_healing": (
-            total_healing
-            / matchup_count
-        ),
-        "average_shield_generated": (
-            total_shield_generated
-            / matchup_count
-        ),
-        "average_shield_absorbed": (
-            total_shield_absorbed
-            / matchup_count
-        ),
-        "average_turns_denied": (
-            total_turns_denied
-            / matchup_count
-        )
     }
 
     report = {
-        "monster_id": monster_id,
-        "monster_name": MONSTER_DATA[
-            monster_id
-        ]["name"],
-        "rarity": MONSTER_DATA[
-            monster_id
-        ]["rarity"],
-        "runs_per_side": runs,
-        "level": level,
-        "ascended": ascended,
-        "max_turns": max_turns,
-        "core_team_ids": list(
-            core_team_ids
-        ),
-        "benchmark_ids": list(
-            benchmark_ids
-        ),
-        "matchups": matchups,
-        "overall": overall
+        "monster_id":
+            monster_id,
+        "monster_name":
+            MONSTER_DATA[
+                monster_id
+            ]["name"],
+        "rarity":
+            MONSTER_DATA[
+                monster_id
+            ]["rarity"],
+        "runs_per_side":
+            runs,
+        "level":
+            level,
+        "ascended":
+            ascended,
+        "max_turns":
+            max_turns,
+        "core_team_sets":
+            [
+                list(core)
+                for core in core_team_sets
+            ],
+        "benchmark_ids":
+            list(benchmark_ids),
+        "matchups":
+            matchups,
+        "overall":
+            overall
     }
 
     if verbose:
@@ -947,7 +1002,7 @@ def print_team_swap_report(report):
     )
 
     print(
-        f"Runs per side: "
+        f"Runs per side/core: "
         f"{report['runs_per_side']}"
     )
 
@@ -960,17 +1015,42 @@ def print_team_swap_report(report):
     )
 
     print(
-        "Core team: "
-        + ", ".join(
-            report["core_team_ids"]
-        )
+        f"Neutral cores: "
+        f"{len(report['core_team_sets'])}"
     )
+
+    for index, core in enumerate(
+        report["core_team_sets"],
+        start=1
+    ):
+
+        print(
+            f"  Core {index}: "
+            + ", ".join(core)
+        )
 
     for matchup in report["matchups"]:
 
         print()
         print(
             f"vs {matchup['opponent_id']}"
+        )
+
+        for index, core_result in enumerate(
+            matchup["core_results"],
+            start=1
+        ):
+
+            print(
+                f"  Core {index} win rate: "
+                f"{core_result['combined_win_rate']:.1f}% "
+                f"(draws "
+                f"{core_result['draw_rate']:.1f}%)"
+            )
+
+        print(
+            f"  Average win rate: "
+            f"{matchup['combined_win_rate']:.1f}%"
         )
 
         print(
@@ -981,11 +1061,6 @@ def print_team_swap_report(report):
         print(
             f"  Win rate as Team B: "
             f"{matchup['win_rate_as_team_b']:.1f}%"
-        )
-
-        print(
-            f"  Combined win rate: "
-            f"{matchup['combined_win_rate']:.1f}%"
         )
 
         print(
