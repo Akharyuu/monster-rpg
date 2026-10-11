@@ -16,6 +16,7 @@ from ..combat.telemetry import (
     average_team_telemetry,
     create_battle_telemetry,
     create_team_telemetry_totals,
+    record_telemetry,
     serialize_battle_telemetry
 )
 
@@ -825,7 +826,11 @@ def auto_turn(active_monster, team, opponents, telemetry=None):
 
         return None
 
-    if handle_incapacitated_turn(active_monster, turn_context):
+    if handle_incapacitated_turn(
+        active_monster,
+        turn_context,
+        telemetry
+    ):
         return None
 
     monster_skill = choose_skill(active_monster, team, opponents)
@@ -935,7 +940,11 @@ def end_turn(monster, turn_context):
 
 
 
-def handle_incapacitated_turn(monster, turn_context):
+def handle_incapacitated_turn(
+    monster,
+    turn_context,
+    telemetry=None
+):
 
     # Ends the turn immediately if the monster cannot act.
     # Returns True when the turn was consumed.
@@ -943,16 +952,47 @@ def handle_incapacitated_turn(monster, turn_context):
     if not monster.cannot_act:
         return False
 
+    control_effect = None
+
     if monster.is_stunned:
+
+        control_effect = next(
+            (
+                debuff
+                for debuff in monster.debuffs
+                if debuff.effect_id == "stun"
+            ),
+            None
+        )
+
         print(
             f"{monster.display_name} "
             f"is stunned and loses the turn."
         )
 
     elif monster.is_frozen:
+
+        control_effect = next(
+            (
+                debuff
+                for debuff in monster.debuffs
+                if debuff.effect_id == "freeze"
+            ),
+            None
+        )
+
         print(
             f"{monster.display_name} "
             f"is frozen and loses the turn."
+        )
+
+    if control_effect is not None:
+
+        record_telemetry(
+            telemetry,
+            control_effect.source,
+            "turns_denied",
+            1
         )
 
     end_turn(
