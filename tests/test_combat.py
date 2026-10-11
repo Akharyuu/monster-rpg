@@ -3333,3 +3333,63 @@ def test_simulate_battles_returns_average_telemetry():
         ["direct_damage"]
         >= 0
     )
+
+
+
+# =========================================================
+#                 CONTROL TELEMETRY TESTS
+# =========================================================
+
+def test_denied_turn_is_credited_to_control_source():
+
+    controller = create_monster(
+        "drake_abyssal"
+    )
+
+    target = create_monster(
+        "drake_storm"
+    )
+
+    telemetry = create_battle_telemetry(
+        [controller],
+        [target]
+    )
+
+    stun = create_status_effect(
+        effect_id="stun",
+        duration=1,
+        source=controller
+    )
+
+    target.apply_status_effect(
+        stun
+    )
+
+    turn_context = begin_turn(
+        target,
+        telemetry
+    )
+
+    was_denied = (
+        combat_module.handle_incapacitated_turn(
+            target,
+            turn_context,
+            telemetry
+        )
+    )
+
+    result = serialize_battle_telemetry(
+        telemetry
+    )
+
+    assert was_denied is True
+
+    assert (
+        result["team_a"][0]["turns_denied"]
+        == 1
+    )
+
+    assert (
+        result["team_b"][0]["turns_denied"]
+        == 0
+    )
