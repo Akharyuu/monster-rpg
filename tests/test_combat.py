@@ -3609,7 +3609,7 @@ def test_freeze_denied_turn_is_tracked_by_type():
 
 
 
-def test_stormbreak_reduces_damage_after_three_hits_on_same_target(
+def test_stormbreak_reduces_damage_after_five_hits_on_same_target(
     monkeypatch
 ):
 
@@ -3662,13 +3662,13 @@ def test_stormbreak_reduces_damage_after_three_hits_on_same_target(
         1.0,
         1.0,
         1.0,
-        0.50,
-        0.50,
-        0.50,
-        0.50,
-        0.50,
-        0.50,
-        0.50
+        1.0,
+        1.0,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25
     ]
 
 
@@ -3688,6 +3688,159 @@ def test_stormbreak_keeps_original_base_multiplier():
     assert stormbreak.multiplier == 1.60
 
     assert stormbreak.repeated_target_damage == {
-        "full_damage_hits": 3,
-        "later_hit_multiplier": 0.50
+        "full_damage_hits": 5,
+        "later_hit_multiplier": 0.25,
+        "first_hit_bonus_if_caster_buff": {
+            "effect_id": "speed_up",
+            "multiplier": 1.50
+        }
     }
+
+
+
+def test_stormbreak_first_hit_per_target_is_boosted_by_speed_up(
+    monkeypatch
+):
+
+    storm = create_monster(
+        "drake_storm"
+    )
+
+    target_1 = create_monster(
+        "drake_abyssal"
+    )
+
+    target_2 = create_monster(
+        "drake_igneous"
+    )
+
+    target_3 = create_monster(
+        "drake_storm"
+    )
+
+    stormbreak = next(
+        skill
+        for skill in storm.skills
+        if skill.skill_id == "stormbreak"
+    )
+
+    speed_up = create_status_effect(
+        effect_id="speed_up",
+        duration=2,
+        source=storm
+    )
+
+    storm.apply_status_effect(
+        speed_up
+    )
+
+    received = {}
+
+    def fake_damage_calc(
+        attacker,
+        defender,
+        hit_multiplier,
+        snapshot,
+        hit_index
+    ):
+
+        received.setdefault(
+            defender,
+            []
+        ).append(
+            hit_multiplier
+        )
+
+        return 1, False
+
+    monkeypatch.setattr(
+        stormbreak,
+        "damage_calc",
+        fake_damage_calc
+    )
+
+    monkeypatch.setattr(
+        random,
+        "choice",
+        lambda population: population[0]
+    )
+
+    monkeypatch.setattr(
+        random,
+        "shuffle",
+        lambda values: None
+    )
+
+    stormbreak.execute(
+        storm,
+        [
+            target_1,
+            target_2,
+            target_3
+        ],
+        context={
+            "team": [storm],
+            "opponents": [
+                target_1,
+                target_2,
+                target_3
+            ]
+        }
+    )
+
+    assert received[target_1][0] == 1.50
+    assert received[target_2][0] == 1.50
+    assert received[target_3][0] == 1.50
+
+
+
+def test_stormbreak_has_no_first_hit_bonus_without_speed_up(
+    monkeypatch
+):
+
+    storm = create_monster(
+        "drake_storm"
+    )
+
+    target = create_monster(
+        "drake_abyssal"
+    )
+
+    stormbreak = next(
+        skill
+        for skill in storm.skills
+        if skill.skill_id == "stormbreak"
+    )
+
+    received_multipliers = []
+
+    def fake_damage_calc(
+        attacker,
+        defender,
+        hit_multiplier,
+        snapshot,
+        hit_index
+    ):
+
+        received_multipliers.append(
+            hit_multiplier
+        )
+
+        return 1, False
+
+    monkeypatch.setattr(
+        stormbreak,
+        "damage_calc",
+        fake_damage_calc
+    )
+
+    stormbreak.execute(
+        storm,
+        [target],
+        context={
+            "team": [storm],
+            "opponents": [target]
+        }
+    )
+
+    assert received_multipliers[0] == 1.0
