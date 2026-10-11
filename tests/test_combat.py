@@ -663,7 +663,7 @@ def test_estimate_damage_ignores_critical_hits():
 
 
 
-def test_estimate_damage_ignores_damage_handler():
+def test_estimate_damage_applies_damage_handler():
 
     attacker = create_monster("drake_igneous")
     target = create_monster("drake_abyssal")
@@ -691,9 +691,7 @@ def test_estimate_damage_ignores_damage_handler():
         skill
     )
 
-    assert damage_with_burn == pytest.approx(
-        damage_without_burn
-    )
+    assert damage_with_burn > damage_without_burn
 
 
 
