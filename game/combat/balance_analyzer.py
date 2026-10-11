@@ -667,25 +667,49 @@ def analyze_team_swap_balance(
                     neutral_core_attributes
             }
 
-            side_a = simulate_battles(
-                candidate_team,
-                benchmark_team,
-                team_a_primary_resonance=
-                    candidate_resonance,
-                team_b_primary_resonance=
-                    benchmark_resonance,
-                **simulation_kwargs
-            )
+            if (
+                candidate_resonance
+                == benchmark_resonance
+            ):
 
-            side_b = simulate_battles(
-                benchmark_team,
-                candidate_team,
-                team_a_primary_resonance=
-                    benchmark_resonance,
-                team_b_primary_resonance=
-                    candidate_resonance,
-                **simulation_kwargs
-            )
+                if candidate_resonance > 0:
+                    simulation_kwargs[
+                        "primary_resonance"
+                    ] = candidate_resonance
+
+                side_a = simulate_battles(
+                    candidate_team,
+                    benchmark_team,
+                    **simulation_kwargs
+                )
+
+                side_b = simulate_battles(
+                    benchmark_team,
+                    candidate_team,
+                    **simulation_kwargs
+                )
+
+            else:
+
+                side_a = simulate_battles(
+                    candidate_team,
+                    benchmark_team,
+                    team_a_primary_resonance=
+                        candidate_resonance,
+                    team_b_primary_resonance=
+                        benchmark_resonance,
+                    **simulation_kwargs
+                )
+
+                side_b = simulate_battles(
+                    benchmark_team,
+                    candidate_team,
+                    team_a_primary_resonance=
+                        benchmark_resonance,
+                    team_b_primary_resonance=
+                        candidate_resonance,
+                    **simulation_kwargs
+                )
 
             candidate_a = (
                 side_a["team_a_telemetry"][0]
