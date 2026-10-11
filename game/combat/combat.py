@@ -375,7 +375,7 @@ def enemy_turn(active_enemy, enemies, allies):
 #                      SIMULATE BATTLE
 # =========================================================
 
-def simulate_battle(team_a, team_b):
+def simulate_battle(team_a, team_b, max_turns=200):
 
     turns = 0
 
@@ -394,6 +394,24 @@ def simulate_battle(team_a, team_b):
             any(monster_a.is_alive for monster_a in team_a)
             and any(monster_b.is_alive for monster_b in team_b)
         ):
+
+            if turns >= max_turns:
+
+                return {
+                    "outcome": "draw",
+                    "turns": turns,
+                    "team_a_remaining_hp": sum(
+                        monster.health
+                        for monster in team_a
+                    ),
+                    "team_b_remaining_hp": sum(
+                        monster.health
+                        for monster in team_b
+                    ),
+                    "telemetry": serialize_battle_telemetry(
+                        telemetry
+                    )
+                }
 
             living_team_a = [
                 monster for monster in team_a
@@ -548,11 +566,13 @@ def simulate_battles(
     runs,
     verbose=True,
     level=1,
-    ascended=False
+    ascended=False,
+    max_turns=200
 ):
 
     wins_a = 0
     wins_b = 0
+    draws = 0
 
     total_turns = 0
     minimum_turns = None
@@ -632,7 +652,8 @@ def simulate_battles(
             ):
                 battle_result = simulate_battle(
                     team_a,
-                    team_b
+                    team_b,
+                    max_turns=max_turns
                 )
 
         add_team_telemetry(
@@ -653,8 +674,11 @@ def simulate_battles(
         if battle_result["outcome"] == "team_a_wins":
             wins_a += 1
 
-        else:
+        elif battle_result["outcome"] == "team_b_wins":
             wins_b += 1
+
+        else:
+            draws += 1
 
 
         # =========================================================
@@ -707,6 +731,8 @@ def simulate_battles(
 
     team_b_win_rate = ( wins_b / runs * 100 )
 
+    draw_rate = ( draws / runs * 100 )
+
 
     average_turns = ( total_turns / runs )
 
@@ -743,6 +769,9 @@ def simulate_battles(
             f"Team B win rate: "
             f"{team_b_win_rate:.1f}%.\n"
 
+            f"Draw rate: "
+            f"{draw_rate:.1f}%.\n"
+
             f"Average turns: "
             f"{average_turns:.2f}.\n"
 
@@ -765,6 +794,7 @@ def simulate_battles(
     return {
         "team_a_win_rate": team_a_win_rate,
         "team_b_win_rate": team_b_win_rate,
+        "draw_rate": draw_rate,
         "average_turns": average_turns,
         "minimum_turns": minimum_turns,
         "maximum_turns": maximum_turns,
