@@ -758,7 +758,7 @@ SKILL_DATA = {
             },
             {
                 "effect_id": "freeze",
-                "chance": 0.50,
+                "chance": 0.75,
                 "turns": 1,
                 "trigger": "per_hit",
                 "ignore_resistance": True,
