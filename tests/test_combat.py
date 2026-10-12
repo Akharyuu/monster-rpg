@@ -4146,6 +4146,62 @@ def test_afterburn_adds_one_burn_to_burning_target(
 
 
 
+def test_afterburn_does_not_self_enable_from_burn_gained_during_skill(
+    monkeypatch
+):
+
+    drake = create_monster(
+        "drake_igneous"
+    )
+
+    drake.resonance = 2
+    update_resonance_kit(
+        drake
+    )
+
+    target = create_monster(
+        "drake_abyssal"
+    )
+
+    skill = drake.get_skill(2)
+
+    monkeypatch.setattr(
+        skill,
+        "damage_calc",
+        lambda *args, **kwargs: (
+            1,
+            False
+        )
+    )
+
+    # Force Cinderblood: Ignite to apply Burn on both hits.
+    monkeypatch.setattr(
+        random,
+        "random",
+        lambda: 0.0
+    )
+
+    skill.execute(
+        drake,
+        [target],
+        context={
+            "team": [drake],
+            "opponents": [target]
+        }
+    )
+
+    active_burn = next(
+        debuff
+        for debuff in target.debuffs
+        if debuff.effect_id == "burn"
+    )
+
+    # Two Burns come from the two Cinderblood procs.
+    # Afterburn must not add a third stack because the target
+    # did not have Burn when the skill started.
+    assert active_burn.stacks == 2
+
+
 def test_everlasting_winter_preserves_abyssal_freeze_from_ally_damage():
 
     abyssal = create_monster(
