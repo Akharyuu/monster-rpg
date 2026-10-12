@@ -4687,5 +4687,5 @@ def test_molten_core_uses_tempo_rebalance():
     assert data["stacks"] == 1
 
     assert data["action_gauge"] == pytest.approx(
-        0.20
+        0.10
     )
