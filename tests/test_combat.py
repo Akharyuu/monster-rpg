@@ -1,5 +1,6 @@
 import random
 import pytest
+from game.combat.combat import simulate_battles
 
 from game.factories.monster_factory import create_monster, create_passive, create_skill
 from game.factories.status_effect_factory import create_status_effect
@@ -4800,3 +4801,93 @@ def test_molten_core_uses_tempo_rebalance():
     assert data[
         "action_gauge_once_per_skill"
     ] is True
+
+
+def test_simulate_battles_accepts_resonance_per_team_slot(
+    monkeypatch
+):
+
+    captured = {}
+
+    def fake_simulate_battle(
+        team_a,
+        team_b,
+        max_turns=200,
+        attribute_targeting=True
+    ):
+
+        captured["team_a"] = [
+            monster.resonance
+            for monster in team_a
+        ]
+
+        captured["team_b"] = [
+            monster.resonance
+            for monster in team_b
+        ]
+
+        return {
+            "outcome": "draw",
+            "turns": 1,
+            "team_a_remaining_hp": sum(
+                monster.health
+                for monster in team_a
+            ),
+            "team_b_remaining_hp": sum(
+                monster.health
+                for monster in team_b
+            ),
+            "telemetry": {
+                "team_a": {},
+                "team_b": {}
+            }
+        }
+
+    monkeypatch.setattr(
+        "game.combat.combat.simulate_battle",
+        fake_simulate_battle
+    )
+
+    monkeypatch.setattr(
+        "game.combat.combat.add_team_telemetry",
+        lambda *args, **kwargs: None
+    )
+
+    simulate_battles(
+        [
+            "drake_igneous",
+            "drake_storm"
+        ],
+        [
+            "drake_igneous",
+            "drake_abyssal"
+        ],
+        runs=1,
+        verbose=False,
+        level=50,
+        ascended=True,
+        team_a_resonances=[5, 5],
+        team_b_resonances=[5, 5]
+    )
+
+    assert captured["team_a"] == [5, 5]
+    assert captured["team_b"] == [5, 5]
+
+
+def test_simulate_battles_rejects_wrong_resonance_list_length():
+
+    with pytest.raises(ValueError):
+
+        simulate_battles(
+            [
+                "drake_igneous",
+                "drake_storm"
+            ],
+            [
+                "drake_igneous",
+                "drake_abyssal"
+            ],
+            runs=1,
+            team_a_resonances=[5],
+            team_b_resonances=[5, 5]
+        )
