@@ -72,12 +72,13 @@ PASSIVE_DATA = {
 
     "cinderblood_molten_core": {
         "name": "Cinderblood: Molten Core",
-        "trigger": "on_hit",
+        "trigger": ["before_skill", "on_hit"],
         "handler": "apply_burn",
         "chance": 0.65,
         "stacks": 1,
         "turns": 2,
-        "action_gauge": 0.00
+        "action_gauge": 0.10,
+        "action_gauge_once_per_skill": True
     },
 
     # =========================================================
