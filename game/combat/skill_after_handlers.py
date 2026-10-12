@@ -65,25 +65,23 @@ def reset_cooldown_by_burn_stacks(caster, target, skill, data, context):
 #                    BURN EXTENSION
 # =========================================================
 
-def add_burn_if_target_has_burn(
+def add_burn_if_target_started_with_burn(
     caster,
     target,
     skill,
     data,
-    context
+    snapshot
 ):
 
     if not target.is_alive:
         return
 
-    burn_effect = None
+    starting_debuffs = snapshot.get(
+        "debuffs",
+        {}
+    )
 
-    for debuff in target.debuffs:
-        if debuff.effect_id == "burn":
-            burn_effect = debuff
-            break
-
-    if burn_effect is None:
+    if "burn" not in starting_debuffs:
         return
 
     extra_burn = create_status_effect(
@@ -106,7 +104,7 @@ AFTER_SKILL_HANDLERS = {
     "consume_burn_and_heal": consume_burn_and_heal,
     "reset_cooldown_by_burn_stacks":
         reset_cooldown_by_burn_stacks,
-    "add_burn_if_target_has_burn":
-        add_burn_if_target_has_burn
+    "add_burn_if_target_started_with_burn":
+        add_burn_if_target_started_with_burn
 }
 
