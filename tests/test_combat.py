@@ -3,6 +3,7 @@ import pytest
 
 from game.factories.monster_factory import create_monster, create_passive, create_skill
 from game.factories.status_effect_factory import create_status_effect
+from game.data.passive_data import PASSIVE_DATA
 from game.systems.resonance import update_resonance_kit
 from game.combat.ai_conditions import (
     target_has_debuff,
@@ -4675,16 +4676,16 @@ def test_absolute_zero_with_slow_guarantees_freeze(
 
 def test_molten_core_uses_tempo_rebalance():
 
-    passive = create_passive(
+    data = PASSIVE_DATA[
         "cinderblood_molten_core"
-    )
+    ]
 
-    assert passive.chance == pytest.approx(
+    assert data["chance"] == pytest.approx(
         0.65
     )
 
-    assert passive.stacks == 1
+    assert data["stacks"] == 1
 
-    assert passive.action_gauge == pytest.approx(
+    assert data["action_gauge"] == pytest.approx(
         0.20
     )
