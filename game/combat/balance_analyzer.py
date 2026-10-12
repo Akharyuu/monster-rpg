@@ -1742,3 +1742,203 @@ def print_drake_triangle_report(report):
     print(
         "========================================"
     )
+
+
+# =========================================================
+#                DIRECT TEAM MATCHUP ANALYZER
+# =========================================================
+
+def analyze_team_matchup_balance(
+    team_a_ids,
+    team_b_ids,
+    runs=500,
+    team_a_resonances=None,
+    team_b_resonances=None,
+    level=50,
+    ascended=True,
+    max_turns=200,
+    attribute_targeting=False,
+    neutral_all_attributes=False,
+    verbose=True
+):
+
+    side_a = simulate_battles(
+        team_a_ids,
+        team_b_ids,
+        runs=runs,
+        verbose=False,
+        level=level,
+        ascended=ascended,
+        max_turns=max_turns,
+        attribute_targeting=attribute_targeting,
+        neutral_all_attributes=neutral_all_attributes,
+        team_a_resonances=team_a_resonances,
+        team_b_resonances=team_b_resonances
+    )
+
+    side_b = simulate_battles(
+        team_b_ids,
+        team_a_ids,
+        runs=runs,
+        verbose=False,
+        level=level,
+        ascended=ascended,
+        max_turns=max_turns,
+        attribute_targeting=attribute_targeting,
+        neutral_all_attributes=neutral_all_attributes,
+        team_a_resonances=team_b_resonances,
+        team_b_resonances=team_a_resonances
+    )
+
+    team_a_win_rate = (
+        side_a["team_a_win_rate"]
+        + side_b["team_b_win_rate"]
+    ) / 2
+
+    team_b_win_rate = (
+        side_a["team_b_win_rate"]
+        + side_b["team_a_win_rate"]
+    ) / 2
+
+    draw_rate = (
+        side_a["draw_rate"]
+        + side_b["draw_rate"]
+    ) / 2
+
+    average_turns = (
+        side_a["average_turns"]
+        + side_b["average_turns"]
+    ) / 2
+
+    team_a_remaining_hp = (
+        side_a[
+            "team_a_average_remaining_hp_percent"
+        ]
+        + side_b[
+            "team_b_average_remaining_hp_percent"
+        ]
+    ) / 2
+
+    team_b_remaining_hp = (
+        side_a[
+            "team_b_average_remaining_hp_percent"
+        ]
+        + side_b[
+            "team_a_average_remaining_hp_percent"
+        ]
+    ) / 2
+
+    report = {
+        "team_a_ids": list(team_a_ids),
+        "team_b_ids": list(team_b_ids),
+        "team_a_resonances": (
+            list(team_a_resonances)
+            if team_a_resonances is not None
+            else None
+        ),
+        "team_b_resonances": (
+            list(team_b_resonances)
+            if team_b_resonances is not None
+            else None
+        ),
+        "runs_per_side": runs,
+        "level": level,
+        "ascended": ascended,
+        "attribute_targeting": attribute_targeting,
+        "neutral_all_attributes": neutral_all_attributes,
+        "team_a_win_rate": team_a_win_rate,
+        "team_b_win_rate": team_b_win_rate,
+        "draw_rate": draw_rate,
+        "average_turns": average_turns,
+        "team_a_average_remaining_hp_percent":
+            team_a_remaining_hp,
+        "team_b_average_remaining_hp_percent":
+            team_b_remaining_hp
+    }
+
+    if verbose:
+        print_team_matchup_report(
+            report
+        )
+
+    return report
+
+
+
+def print_team_matchup_report(report):
+
+    print()
+    print(
+        "========================================"
+    )
+    print(
+        "          TEAM MATCHUP REPORT"
+    )
+    print(
+        "========================================"
+    )
+
+    print(
+        "Team A: "
+        + ", ".join(report["team_a_ids"])
+    )
+
+    print(
+        "Team B: "
+        + ", ".join(report["team_b_ids"])
+    )
+
+    if report["team_a_resonances"] is not None:
+        print(
+            "Team A Resonances: "
+            + ", ".join(
+                f"R{value}"
+                for value in report[
+                    "team_a_resonances"
+                ]
+            )
+        )
+
+    if report["team_b_resonances"] is not None:
+        print(
+            "Team B Resonances: "
+            + ", ".join(
+                f"R{value}"
+                for value in report[
+                    "team_b_resonances"
+                ]
+            )
+        )
+
+    print(
+        f"Runs per side: "
+        f"{report['runs_per_side']}"
+    )
+
+    print(
+        f"Win rate: "
+        f"{report['team_a_win_rate']:.1f}% "
+        f"| "
+        f"{report['team_b_win_rate']:.1f}%"
+    )
+
+    print(
+        f"Draw rate: "
+        f"{report['draw_rate']:.1f}%"
+    )
+
+    print(
+        f"Average turns: "
+        f"{report['average_turns']:.2f}"
+    )
+
+    print(
+        f"Remaining HP: "
+        f"{report['team_a_average_remaining_hp_percent']:.1f}% "
+        f"| "
+        f"{report['team_b_average_remaining_hp_percent']:.1f}%"
+    )
+
+    print(
+        "========================================"
+    )
