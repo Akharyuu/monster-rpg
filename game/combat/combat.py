@@ -582,7 +582,9 @@ def simulate_battles(
     neutral_all_attributes=False,
     primary_resonance=0,
     team_a_primary_resonance=None,
-    team_b_primary_resonance=None
+    team_b_primary_resonance=None,
+    team_a_resonances=None,
+    team_b_resonances=None
 ):
 
     if team_a_primary_resonance is None:
@@ -594,6 +596,37 @@ def simulate_battles(
         team_b_primary_resonance = (
             primary_resonance
         )
+
+    if team_a_resonances is None:
+        team_a_resonances = [
+            team_a_primary_resonance
+        ] + [0] * (len(team_a_ids) - 1)
+
+    if team_b_resonances is None:
+        team_b_resonances = [
+            team_b_primary_resonance
+        ] + [0] * (len(team_b_ids) - 1)
+
+    if len(team_a_resonances) != len(team_a_ids):
+        raise ValueError(
+            "team_a_resonances must have one value "
+            "for each monster in team_a_ids."
+        )
+
+    if len(team_b_resonances) != len(team_b_ids):
+        raise ValueError(
+            "team_b_resonances must have one value "
+            "for each monster in team_b_ids."
+        )
+
+    for resonance in (
+        list(team_a_resonances)
+        + list(team_b_resonances)
+    ):
+        if resonance < 0 or resonance > 5:
+            raise ValueError(
+                "Resonance values must be between 0 and 5."
+            )
 
     wins_a = 0
     wins_b = 0
@@ -649,13 +682,12 @@ def simulate_battles(
             monster.ascended = ascended
             monster.update_level_stats()
 
-            if (
-                slot == 0
-                and team_a_primary_resonance > 0
-            ):
-                monster.resonance = (
-                    team_a_primary_resonance
-                )
+            resonance = team_a_resonances[
+                slot
+            ]
+
+            if resonance > 0:
+                monster.resonance = resonance
                 update_resonance_kit(monster)
 
             team_a.append(monster)
@@ -683,13 +715,12 @@ def simulate_battles(
             monster.ascended = ascended
             monster.update_level_stats()
 
-            if (
-                slot == 0
-                and team_b_primary_resonance > 0
-            ):
-                monster.resonance = (
-                    team_b_primary_resonance
-                )
+            resonance = team_b_resonances[
+                slot
+            ]
+
+            if resonance > 0:
+                monster.resonance = resonance
                 update_resonance_kit(monster)
 
             team_b.append(monster)
