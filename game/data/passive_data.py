@@ -77,7 +77,7 @@ PASSIVE_DATA = {
         "chance": 0.65,
         "stacks": 1,
         "turns": 2,
-        "action_gauge": 0.20
+        "action_gauge": 0.10
     },
 
     # =========================================================
