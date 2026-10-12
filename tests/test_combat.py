@@ -4084,6 +4084,57 @@ def test_everfrost_resets_s3_when_max_scales_are_reached(
 
 
 
+def test_molten_core_gains_action_gauge_only_once_per_skill(
+    monkeypatch
+):
+
+    drake = create_monster(
+        "drake_igneous"
+    )
+
+    drake.resonance = 4
+    update_resonance_kit(
+        drake
+    )
+
+    targets = [
+        create_monster("thornet_igneous"),
+        create_monster("thornet_abyssal"),
+        create_monster("thornet_storm")
+    ]
+
+    skill = drake.get_skill(2)
+
+    monkeypatch.setattr(
+        skill,
+        "damage_calc",
+        lambda *args, **kwargs: (
+            1,
+            False
+        )
+    )
+
+    # Force every Cinderblood proc to succeed.
+    monkeypatch.setattr(
+        random,
+        "random",
+        lambda: 0.0
+    )
+
+    drake.use_skill(
+        targets,
+        skill,
+        combat_context={
+            "team": [drake],
+            "opponents": targets
+        }
+    )
+
+    assert drake.action_gauge == pytest.approx(
+        0.10
+    )
+
+
 def test_afterburn_adds_one_burn_to_burning_target(
     monkeypatch
 ):
@@ -4743,5 +4794,9 @@ def test_molten_core_uses_tempo_rebalance():
     assert data["stacks"] == 1
 
     assert data["action_gauge"] == pytest.approx(
-        0.00
+        0.10
     )
+
+    assert data[
+        "action_gauge_once_per_skill"
+    ] is True
