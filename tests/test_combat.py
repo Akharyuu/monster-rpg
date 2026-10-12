@@ -4670,3 +4670,21 @@ def test_absolute_zero_with_slow_guarantees_freeze(
         debuff.effect_id == "freeze"
         for debuff in target.debuffs
     )
+
+
+
+def test_molten_core_uses_tempo_rebalance():
+
+    passive = create_passive(
+        "cinderblood_molten_core"
+    )
+
+    assert passive.chance == pytest.approx(
+        0.65
+    )
+
+    assert passive.stacks == 1
+
+    assert passive.action_gauge == pytest.approx(
+        0.20
+    )
