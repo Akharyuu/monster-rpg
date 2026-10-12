@@ -3,6 +3,7 @@ import pytest
 import game.combat.balance_analyzer as balance_module
 
 from game.combat.balance_analyzer import (
+    analyze_team_matchup_balance,
     analyze_team_swap_balance,
     analyze_unit_balance,
     get_default_balance_benchmarks
@@ -942,3 +943,111 @@ def test_team_swap_can_use_independent_primary_resonances(
     assert report[
         "benchmark_resonance"
     ] == 4
+
+
+def test_team_matchup_balance_averages_both_sides(
+    monkeypatch
+):
+
+    calls = []
+
+    def fake_simulate_battles(
+        team_a_ids,
+        team_b_ids,
+        runs,
+        verbose=True,
+        level=1,
+        ascended=False,
+        max_turns=200,
+        attribute_targeting=True,
+        neutral_core_attributes=False,
+        neutral_all_attributes=False,
+        primary_resonance=0,
+        team_a_primary_resonance=None,
+        team_b_primary_resonance=None,
+        team_a_resonances=None,
+        team_b_resonances=None
+    ):
+
+        calls.append(
+            (
+                list(team_a_ids),
+                list(team_b_ids)
+            )
+        )
+
+        first_order = (
+            team_a_ids[1]
+            == "drake_storm"
+        )
+
+        if first_order:
+            return {
+                "team_a_win_rate": 40,
+                "team_b_win_rate": 60,
+                "draw_rate": 0,
+                "average_turns": 10,
+                "team_a_average_remaining_hp_percent": 15,
+                "team_b_average_remaining_hp_percent": 25
+            }
+
+        return {
+            "team_a_win_rate": 55,
+            "team_b_win_rate": 45,
+            "draw_rate": 0,
+            "average_turns": 12,
+            "team_a_average_remaining_hp_percent": 22,
+            "team_b_average_remaining_hp_percent": 18
+        }
+
+    monkeypatch.setattr(
+        balance_module,
+        "simulate_battles",
+        fake_simulate_battles
+    )
+
+    report = analyze_team_matchup_balance(
+        [
+            "drake_igneous",
+            "drake_storm"
+        ],
+        [
+            "drake_igneous",
+            "drake_abyssal"
+        ],
+        runs=10,
+        team_a_resonances=[5, 5],
+        team_b_resonances=[5, 5],
+        verbose=False
+    )
+
+    assert calls == [
+        (
+            [
+                "drake_igneous",
+                "drake_storm"
+            ],
+            [
+                "drake_igneous",
+                "drake_abyssal"
+            ]
+        ),
+        (
+            [
+                "drake_igneous",
+                "drake_abyssal"
+            ],
+            [
+                "drake_igneous",
+                "drake_storm"
+            ]
+        )
+    ]
+
+    assert report["team_a_win_rate"] == pytest.approx(
+        42.5
+    )
+
+    assert report["team_b_win_rate"] == pytest.approx(
+        57.5
+    )
