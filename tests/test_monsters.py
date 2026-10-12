@@ -246,3 +246,59 @@ def test_battle_exp_can_level_up_monster():
 
     assert monster.level == 2
     assert monster.attack > 0
+
+
+def test_attribute_advantage_damage_modifier_is_1_15():
+
+    igneous = create_monster(
+        "drake_igneous"
+    )
+
+    storm = create_monster(
+        "drake_storm"
+    )
+
+    assert (
+        igneous.get_attribute_modifier(
+            storm
+        )
+        == pytest.approx(1.15)
+    )
+
+
+
+def test_attribute_disadvantage_damage_modifier_is_0_85():
+
+    igneous = create_monster(
+        "drake_igneous"
+    )
+
+    abyssal = create_monster(
+        "drake_abyssal"
+    )
+
+    assert (
+        igneous.get_attribute_modifier(
+            abyssal
+        )
+        == pytest.approx(0.85)
+    )
+
+
+
+def test_same_attribute_damage_modifier_is_neutral():
+
+    igneous_a = create_monster(
+        "drake_igneous"
+    )
+
+    igneous_b = create_monster(
+        "drake_igneous"
+    )
+
+    assert (
+        igneous_a.get_attribute_modifier(
+            igneous_b
+        )
+        == pytest.approx(1.0)
+    )
