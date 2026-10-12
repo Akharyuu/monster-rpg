@@ -4587,7 +4587,7 @@ def test_absolute_zero_ai_does_not_require_slow(
 
 
 
-def test_absolute_zero_without_slow_uses_fifty_percent_freeze(
+def test_absolute_zero_without_slow_uses_seventy_five_percent_freeze(
     monkeypatch
 ):
 
@@ -4608,7 +4608,7 @@ def test_absolute_zero_without_slow_uses_fifty_percent_freeze(
     monkeypatch.setattr(
         random,
         "random",
-        lambda: 0.75
+        lambda: 0.80
     )
 
     skill = abyssal.get_skill(3)
