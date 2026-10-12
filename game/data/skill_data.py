@@ -522,7 +522,7 @@ SKILL_DATA = {
 
         "after_skill_handlers": [
             {
-                "handler": "add_burn_if_target_has_burn",
+                "handler": "add_burn_if_target_started_with_burn",
                 "data": {
                     "stacks": 1,
                     "turns": 3
