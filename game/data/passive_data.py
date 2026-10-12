@@ -74,10 +74,10 @@ PASSIVE_DATA = {
         "name": "Cinderblood: Molten Core",
         "trigger": "on_hit",
         "handler": "apply_burn",
-        "chance": 0.50,
-        "stacks": 2,
+        "chance": 0.65,
+        "stacks": 1,
         "turns": 2,
-        "action_gauge": 0.10
+        "action_gauge": 0.20
     },
 
     # =========================================================
