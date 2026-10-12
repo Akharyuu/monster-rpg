@@ -252,7 +252,7 @@ def choose_enemy_target(
                 .get_attribute_modifier(target)
             )
 
-            if modifier == 1.2:
+            if modifier > 1:
                 great_targets.append(target)
 
             elif modifier == 1:
