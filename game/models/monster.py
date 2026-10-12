@@ -339,7 +339,7 @@ class Monster:
                 == Attribute.IGNEOUS
             )
         ):
-            return 0.8
+            return 0.85
 
         elif (
             (
@@ -358,7 +358,7 @@ class Monster:
                 == Attribute.ABYSSAL
             )
         ):
-            return 1.2
+            return 1.15
 
         return 1
 
