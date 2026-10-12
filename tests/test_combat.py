@@ -4521,7 +4521,7 @@ def test_incineration_targeting_prefers_three_burn_target():
     burn = create_status_effect(
         effect_id="burn",
         duration=3,
-        stacks=2,
+        stacks=3,
         source=igneous
     )
 
