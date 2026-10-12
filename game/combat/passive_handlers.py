@@ -32,11 +32,24 @@ def apply_self_buff(owner, context, passive):
 # =========================================================
 
 def apply_burn(owner, context, passive):
+
+    data = PASSIVE_DATA[passive.skill_id]
+
+    # Some passives can grant Action Gauge only once during a skill use.
+    # before_skill resets that temporary flag for the new action.
+    if context.get("trigger") == "before_skill":
+
+        if data.get(
+            "action_gauge_once_per_skill",
+            False
+        ):
+            passive.action_gauge_granted_this_skill = False
+
+        return
+
     target = context["target"]
 
     chance = random.random()
-
-    data = PASSIVE_DATA[passive.skill_id]
 
     if chance <= data["chance"]:
 
@@ -50,10 +63,37 @@ def apply_burn(owner, context, passive):
         applied_effect = target.apply_status_effect(burn)
 
         if applied_effect:
-            action_gauge_gain = data.get("action_gauge", 0)
+            action_gauge_gain = data.get(
+                "action_gauge",
+                0
+            )
 
-            if action_gauge_gain > 0:
-                owner.increase_action_gauge(action_gauge_gain)
+            once_per_skill = data.get(
+                "action_gauge_once_per_skill",
+                False
+            )
+
+            already_granted = getattr(
+                passive,
+                "action_gauge_granted_this_skill",
+                False
+            )
+
+            can_gain_gauge = (
+                action_gauge_gain > 0
+                and (
+                    not once_per_skill
+                    or not already_granted
+                )
+            )
+
+            if can_gain_gauge:
+                owner.increase_action_gauge(
+                    action_gauge_gain
+                )
+
+                if once_per_skill:
+                    passive.action_gauge_granted_this_skill = True
 
 
 # =========================================================
