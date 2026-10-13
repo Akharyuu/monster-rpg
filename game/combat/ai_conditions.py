@@ -65,6 +65,28 @@ def ally_dead_exists(requirement, context):
     )
 
 
+def target_has_buff(requirement, context):
+
+    opponents = context["opponents"]
+
+    scope = requirement.get(
+        "scope",
+        "any_enemy"
+    )
+
+    if scope == "any_enemy":
+
+        return any(
+            opponent.buffs
+            for opponent in opponents
+            if opponent.is_alive
+        )
+
+    raise ValueError(
+        f"Unsupported AI scope: {scope}"
+    )
+
+
 # =========================================================
 #                    CONDITION REGISTRY
 # =========================================================
@@ -72,5 +94,6 @@ def ally_dead_exists(requirement, context):
 AI_CONDITIONS = {
     "target_has_debuff": target_has_debuff,
     "target_debuff_stacks": target_debuff_stacks,
+    "target_has_buff": target_has_buff,
     "ally_dead_exists": ally_dead_exists
 }
