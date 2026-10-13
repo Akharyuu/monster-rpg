@@ -154,7 +154,10 @@ def apply_self_buff(caster, skill, data, context, skill_result):
         source=caster
     )
 
-    caster.apply_status_effect(status_effect)
+    caster.apply_status_effect(
+        status_effect,
+        telemetry=context.get("telemetry")
+    )
 
 
 
@@ -174,7 +177,10 @@ def apply_aoe_buff(caster, skill, data, context, skill_result):
             source=caster
         )
 
-        ally.apply_status_effect(status_effect)
+        ally.apply_status_effect(
+            status_effect,
+            telemetry=context.get("telemetry")
+        )
 
 
 # =========================================================
