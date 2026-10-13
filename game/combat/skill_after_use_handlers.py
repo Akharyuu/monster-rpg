@@ -246,6 +246,134 @@ def increase_action_gauge(caster, skill, data, context, skill_result):
     caster.increase_action_gauge(data["amount"])
 
 
+
+
+# =========================================================
+#                    AETHER DRAKE HANDLERS
+# =========================================================
+
+def apply_scaling_silence(
+    caster,
+    skill,
+    data,
+    context,
+    skill_result
+):
+
+    buff_count = len(
+        caster.buffs
+    )
+
+    chance = (
+        data["base_chance"]
+        + buff_count
+        * data["chance_per_buff"]
+    )
+
+    chance = min(
+        chance,
+        data["max_chance"]
+    )
+
+    applied_targets = []
+
+    for target_result in skill_result.target_results:
+
+        target = target_result["target"]
+
+        if not target.is_alive:
+            continue
+
+        effect = {
+            "effect_id": "silence",
+            "chance": chance,
+            "turns": data["turns"]
+        }
+
+        applied_effect = skill.try_apply_effect(
+            effect,
+            caster,
+            target,
+            target_result["snapshot"],
+            target_result.get("telemetry")
+        )
+
+        if applied_effect is not None:
+            target_result[
+                "effects_applied"
+            ].append(
+                applied_effect
+            )
+
+            applied_targets.append(
+                target
+            )
+
+    return {
+        "type": "scaling_silence",
+        "targets": applied_targets,
+        "chance": chance
+    }
+
+
+
+def grant_extra_turn(
+    caster,
+    skill,
+    data,
+    context,
+    skill_result
+):
+
+    caster.extra_turn_pending = True
+
+    return {
+        "type": "extra_turn"
+    }
+
+
+# =========================================================
+#                     VOID DRAKE HANDLERS
+# =========================================================
+
+def banish_killed_oblivion_targets(
+    caster,
+    skill,
+    data,
+    context,
+    skill_result
+):
+
+    banished_targets = []
+
+    for target_result in skill_result.target_results:
+
+        target = target_result["target"]
+
+        if target.is_alive:
+            continue
+
+        starting_debuffs = (
+            target_result
+            .get("snapshot", {})
+            .get("debuffs", {})
+        )
+
+        if "oblivion" not in starting_debuffs:
+            continue
+
+        target.banished = True
+
+        banished_targets.append(
+            target
+        )
+
+    return {
+        "type": "banish",
+        "targets": banished_targets
+    }
+
+
 # =========================================================
 #                      HANDLER REGISTRY
 # =========================================================
@@ -256,5 +384,9 @@ AFTER_USE_HANDLERS = {
     "apply_self_buff": apply_self_buff,
     "apply_aoe_buff": apply_aoe_buff,
     "aoe_follow_up_attack": aoe_follow_up_attack,
-    "increase_action_gauge": increase_action_gauge
+    "increase_action_gauge": increase_action_gauge,
+    "apply_scaling_silence": apply_scaling_silence,
+    "grant_extra_turn": grant_extra_turn,
+    "banish_killed_oblivion_targets":
+        banish_killed_oblivion_targets
 }
