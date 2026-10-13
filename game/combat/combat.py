@@ -45,6 +45,12 @@ def battle(allies, enemies):
     for monster in all_combatants:
         monster.reset_combat_state()
 
+    for monster in allies:
+        monster._combat_team = allies
+
+    for monster in enemies:
+        monster._combat_team = enemies
+
     try:
         # Combat continues while both teams have at least one living monster.
         while (
@@ -216,7 +222,7 @@ def player_turn(active_ally, allies, enemies, upcoming_combatant):
                     else:
                         continue
 
-                case SkillType.HEALING:
+                case SkillType.HEALING | SkillType.SUPPORT:
 
                     skill_result = active_ally.use_skill(
                         targets,
@@ -343,7 +349,7 @@ def enemy_turn(active_enemy, enemies, allies):
                         print("All allies were defeated.")
                         outcome = "defeat"
 
-            case SkillType.HEALING:
+            case SkillType.HEALING | SkillType.SUPPORT:
 
                 skill_result = active_enemy.use_skill(
                     targets,
@@ -395,6 +401,12 @@ def simulate_battle(
 
     for monster in all_combatants:
         monster.reset_combat_state()
+
+    for monster in team_a:
+        monster._combat_team = team_a
+
+    for monster in team_b:
+        monster._combat_team = team_b
 
     try:
         while (
@@ -995,7 +1007,7 @@ def auto_turn(
                     ):
                         outcome = "team_wins"
 
-            case SkillType.HEALING:
+            case SkillType.HEALING | SkillType.SUPPORT:
 
                 skill_result = active_monster.use_skill(
                     targets,
@@ -1148,6 +1160,13 @@ def handle_incapacitated_turn(
 
 def fill_action_gauges(combatants):
 
+    if any(
+        combatant.is_alive
+        and combatant.extra_turn_pending
+        for combatant in combatants
+    ):
+        return
+
     time_to_ready = []
 
     for combatant in combatants:
@@ -1184,6 +1203,35 @@ def fill_action_gauges(combatants):
 
 
 def get_ready_combatant(combatants):
+
+    extra_turn_ready = [
+        combatant
+        for combatant in combatants
+        if combatant.is_alive
+        and combatant.extra_turn_pending
+    ]
+
+    if extra_turn_ready:
+
+        highest_speed = max(
+            combatant.get_effective_stat("speed")
+            for combatant in extra_turn_ready
+        )
+
+        candidates = [
+            combatant
+            for combatant in extra_turn_ready
+            if combatant.get_effective_stat("speed")
+            == highest_speed
+        ]
+
+        chosen = random.choice(
+            candidates
+        )
+
+        chosen.extra_turn_pending = False
+
+        return chosen
 
     ready = [
         combatant
