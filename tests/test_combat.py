@@ -5055,6 +5055,29 @@ def test_celestial_authority_ascendance_gives_gauge_to_most_buffed_ally(
     )
 
 
+def test_subjugation_upgrades_silence_and_cooldown():
+
+    aether = create_monster("drake_aether")
+    aether.resonance = 3
+    update_resonance_kit(aether)
+
+    skill = aether.get_skill(2)
+
+    assert skill.cooldown == 3
+
+    data = skill.after_use_handlers[0][
+        "data"
+    ]
+
+    assert data["base_chance"] == pytest.approx(
+        0.50
+    )
+
+    assert data["max_chance"] == pytest.approx(
+        1.00
+    )
+
+
 def test_divine_grace_enlightenment_adds_accuracy():
 
     aether = create_monster("drake_aether")
