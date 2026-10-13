@@ -13,7 +13,19 @@ TELEMETRY_METRICS = (
     "freezes_applied",
     "stun_turns_denied",
     "freeze_turns_denied",
-    "freezes_broken_before_turn"
+    "freezes_broken_before_turn",
+    "buffs_removed",
+    "strip_events",
+    "veil_blocks",
+    "bottomless_hunger_activations",
+    "action_gauge_from_bottomless_hunger",
+    "voidborn_activations",
+    "oblivions_applied",
+    "defense_breaks_applied",
+    "null_rend_uses",
+    "dismantle_uses",
+    "null_rend_damage",
+    "dismantle_damage"
 )
 
 
@@ -43,7 +55,19 @@ def create_battle_telemetry(team_a, team_b):
                 "freezes_applied": 0,
                 "stun_turns_denied": 0,
                 "freeze_turns_denied": 0,
-                "freezes_broken_before_turn": 0
+                "freezes_broken_before_turn": 0,
+                "buffs_removed": 0,
+                "strip_events": 0,
+                "veil_blocks": 0,
+                "bottomless_hunger_activations": 0,
+                "action_gauge_from_bottomless_hunger": 0,
+                "voidborn_activations": 0,
+                "oblivions_applied": 0,
+                "defense_breaks_applied": 0,
+                "null_rend_uses": 0,
+                "dismantle_uses": 0,
+                "null_rend_damage": 0,
+                "dismantle_damage": 0
             }
 
     return {
