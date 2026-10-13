@@ -495,6 +495,26 @@ class Monster:
         if combat_context is not None:
             context.update(combat_context)
 
+        skill_use_metrics = {
+            "null_rend": "null_rend_uses",
+            "null_rend_obliterate": "null_rend_uses",
+            "null_rend_annihilation": "null_rend_uses",
+            "dismantle": "dismantle_uses",
+            "dismantle_decimation": "dismantle_uses"
+        }
+
+        skill_use_metric = skill_use_metrics.get(
+            skill.skill_id
+        )
+
+        if skill_use_metric is not None:
+            record_telemetry(
+                context.get("telemetry"),
+                self,
+                skill_use_metric,
+                1
+            )
+
         # Passives that activate before the skill.
         trigger_passives(
             "before_skill",
