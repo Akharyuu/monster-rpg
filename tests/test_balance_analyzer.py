@@ -3,6 +3,7 @@ import pytest
 import game.combat.balance_analyzer as balance_module
 
 from game.combat.balance_analyzer import (
+    analyze_drake_roster_balance,
     analyze_team_matchup_balance,
     analyze_team_swap_balance,
     analyze_unit_balance,
@@ -1051,3 +1052,101 @@ def test_team_matchup_balance_averages_both_sides(
     assert report["team_b_win_rate"] == pytest.approx(
         57.5
     )
+
+
+def test_drake_roster_balance_builds_symmetric_pair_matrix(
+    monkeypatch
+):
+
+    calls = []
+
+    def fake_team_swap_balance(
+        monster_id,
+        runs=500,
+        benchmark_ids=None,
+        core_team_ids=None,
+        core_team_sets=None,
+        level=50,
+        ascended=True,
+        max_turns=200,
+        attribute_targeting=False,
+        neutral_core_attributes=True,
+        resonance=0,
+        candidate_resonance=None,
+        benchmark_resonance=None,
+        verbose=True
+    ):
+
+        benchmark_id = benchmark_ids[0]
+
+        calls.append(
+            (
+                monster_id,
+                benchmark_id,
+                resonance
+            )
+        )
+
+        return {
+            "matchups": [
+                {
+                    "combined_win_rate": 60.0,
+                    "draw_rate": 5.0
+                }
+            ]
+        }
+
+    monkeypatch.setattr(
+        balance_module,
+        "analyze_team_swap_balance",
+        fake_team_swap_balance
+    )
+
+    report = analyze_drake_roster_balance(
+        runs=10,
+        resonances=(0,),
+        verbose=False
+    )
+
+    resonance_report = report[
+        "resonance_reports"
+    ][0]
+
+    matrix = resonance_report[
+        "matrix"
+    ]
+
+    assert len(calls) == 10
+
+    assert matrix[
+        "drake_igneous"
+    ][
+        "drake_abyssal"
+    ] == pytest.approx(
+        60.0
+    )
+
+    assert matrix[
+        "drake_abyssal"
+    ][
+        "drake_igneous"
+    ] == pytest.approx(
+        35.0
+    )
+
+    assert matrix[
+        "drake_igneous"
+    ][
+        "drake_igneous"
+    ] is None
+
+
+
+def test_drake_roster_balance_rejects_invalid_resonance():
+
+    with pytest.raises(ValueError):
+
+        analyze_drake_roster_balance(
+            resonances=(6,),
+            verbose=False
+        )
