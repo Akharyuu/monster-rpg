@@ -6,6 +6,9 @@ def get_passive_damage_multiplier(owner):
 
     damage_multiplier = 1.0
 
+    if owner.has_oblivion:
+        return damage_multiplier
+
     for passive in owner.passives:
 
         if passive.handler != "thunderheart":
@@ -28,6 +31,9 @@ def get_direct_heal_multiplier(owner, target):
 
     healing_multiplier = 1.0
 
+    if owner.has_oblivion:
+        return healing_multiplier
+
     for passive in owner.passives:
 
         if passive.handler != "natures_grace":
@@ -49,6 +55,9 @@ def get_direct_heal_multiplier(owner, target):
 # =========================================================
 
 def get_overgrowth_shield(owner, target, intended_heal, actual_heal):
+
+    if owner.has_oblivion:
+        return 0, 0
 
     for passive in owner.passives:
 
@@ -85,26 +94,44 @@ def get_passive_stat_bonus(owner, stat):
 
     bonus = 0
 
-    if stat != "crit_rate":
+    if owner.has_oblivion:
         return bonus
 
     for passive in owner.passives:
 
-        if passive.handler != "thunderheart":
-            continue
-
         data = passive.handler_data
 
-        if "speed_per_crit" not in data:
-            continue
+        if (
+            stat == "crit_rate"
+            and passive.handler == "thunderheart"
+            and "speed_per_crit" in data
+        ):
+            bonus_speed = max(
+                0,
+                owner.get_effective_stat("speed")
+                - owner.speed
+            )
 
-        bonus_speed = max( 0, owner.get_effective_stat("speed") - owner.speed )
+            crit_rate_bonus = (
+                bonus_speed
+                // data["speed_per_crit"]
+            )
 
-        crit_rate_bonus = ( bonus_speed // data["speed_per_crit"] )
+            crit_rate_bonus = min(
+                crit_rate_bonus,
+                data["max_crit_rate_bonus"]
+            )
 
-        crit_rate_bonus = min( crit_rate_bonus, data["max_crit_rate_bonus"] )
+            bonus += crit_rate_bonus
 
-        bonus += crit_rate_bonus
+        if (
+            stat == "accuracy"
+            and passive.handler
+            == "divine_grace"
+        ):
+            bonus += data.get(
+                "accuracy_bonus",
+                0
+            )
 
     return bonus
-
