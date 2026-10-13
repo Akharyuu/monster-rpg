@@ -5173,7 +5173,7 @@ def test_null_rend_applies_oblivion_only_on_second_hit(
     )
 
 
-def test_obliterate_second_hit_has_thirty_percent_bonus_damage():
+def test_obliterate_second_hit_has_thirty_five_percent_bonus_damage():
 
     void = create_monster("drake_void")
     void.resonance = 1
@@ -5191,11 +5191,23 @@ def test_obliterate_second_hit_has_thirty_percent_bonus_damage():
     second_hit = skill.base_damage_calc(
         void,
         target,
-        1.30
+        1.35
     )
 
     assert second_hit == pytest.approx(
-        first_hit * 1.30
+        first_hit * 1.35
+    )
+
+
+def test_null_rend_uses_buffed_base_multiplier():
+
+    void = create_monster(
+        "drake_void"
+    )
+
+    assert (
+        void.get_skill(2).multiplier
+        == pytest.approx(2.25)
     )
 
 
