@@ -1,5 +1,8 @@
+import random
+
 from ..combat.combat import simulate_battles
 from ..data.monster_data import MONSTER_DATA
+from ..data.skill_data import SKILL_DATA
 from ..data.stat_growth_data import (
     ASCENDED_STAT_MULTIPLIER,
     LEVEL_STAT_MULTIPLIER
@@ -3183,6 +3186,524 @@ def print_void_buff_sensitivity_report(
             f"{result['dismantle_damage']:>10.1f} "
             f"{result['dismantle_damage_per_use']:>10.1f} "
             f"{result['buffs_removed_per_dismantle']:>10.2f}"
+        )
+
+    print()
+    print(
+        "=============================================================="
+    )
+
+
+# =========================================================
+#               NULL REND SEEDED A/B BENCHMARK
+# =========================================================
+
+NULL_REND_VARIANTS = {
+    "original": {
+        "multiplier": 2.10,
+        "second_hit_multiplier": 1.30
+    },
+    "buffed": {
+        "multiplier": 2.25,
+        "second_hit_multiplier": 1.35
+    }
+}
+
+
+
+def _set_null_rend_variant(
+    multiplier,
+    second_hit_multiplier
+):
+
+    for skill_id in (
+        "null_rend",
+        "null_rend_obliterate",
+        "null_rend_annihilation"
+    ):
+
+        SKILL_DATA[
+            skill_id
+        ]["multiplier"] = multiplier
+
+    for skill_id in (
+        "null_rend_obliterate",
+        "null_rend_annihilation"
+    ):
+
+        SKILL_DATA[
+            skill_id
+        ]["hit_multipliers"] = [
+            1.00,
+            second_hit_multiplier
+        ]
+
+
+
+def _capture_null_rend_state():
+
+    state = {}
+
+    for skill_id in (
+        "null_rend",
+        "null_rend_obliterate",
+        "null_rend_annihilation"
+    ):
+
+        skill_data = SKILL_DATA[
+            skill_id
+        ]
+
+        state[skill_id] = {
+            "multiplier":
+                skill_data[
+                    "multiplier"
+                ],
+            "hit_multipliers": (
+                list(
+                    skill_data[
+                        "hit_multipliers"
+                    ]
+                )
+                if skill_data.get(
+                    "hit_multipliers"
+                ) is not None
+                else None
+            )
+        }
+
+    return state
+
+
+
+def _restore_null_rend_state(state):
+
+    for skill_id, skill_state in state.items():
+
+        SKILL_DATA[
+            skill_id
+        ]["multiplier"] = (
+            skill_state[
+                "multiplier"
+            ]
+        )
+
+        hit_multipliers = skill_state[
+            "hit_multipliers"
+        ]
+
+        if hit_multipliers is None:
+
+            SKILL_DATA[
+                skill_id
+            ].pop(
+                "hit_multipliers",
+                None
+            )
+
+        else:
+
+            SKILL_DATA[
+                skill_id
+            ]["hit_multipliers"] = list(
+                hit_multipliers
+            )
+
+
+
+def _combine_void_seeded_sides(
+    side_a,
+    side_b
+):
+
+    void_telemetry_a = (
+        _get_monster_telemetry(
+            side_a[
+                "team_a_telemetry"
+            ],
+            "drake_void"
+        )
+    )
+
+    void_telemetry_b = (
+        _get_monster_telemetry(
+            side_b[
+                "team_b_telemetry"
+            ],
+            "drake_void"
+        )
+    )
+
+    metrics = {}
+
+    for metric in VOID_DIAGNOSTIC_METRICS:
+
+        metrics[metric] = (
+            void_telemetry_a.get(
+                metric,
+                0
+            )
+            + void_telemetry_b.get(
+                metric,
+                0
+            )
+        ) / 2
+
+    null_rend_uses = metrics[
+        "null_rend_uses"
+    ]
+
+    if null_rend_uses > 0:
+
+        null_rend_damage_per_use = (
+            metrics[
+                "null_rend_damage"
+            ]
+            / null_rend_uses
+        )
+
+        oblivions_per_use = (
+            metrics[
+                "oblivions_applied"
+            ]
+            / null_rend_uses
+        )
+
+    else:
+
+        null_rend_damage_per_use = 0
+        oblivions_per_use = 0
+
+    return {
+        "void_win_rate": (
+            side_a[
+                "team_a_win_rate"
+            ]
+            + side_b[
+                "team_b_win_rate"
+            ]
+        ) / 2,
+        "draw_rate": (
+            side_a[
+                "draw_rate"
+            ]
+            + side_b[
+                "draw_rate"
+            ]
+        ) / 2,
+        "null_rend_uses":
+            null_rend_uses,
+        "null_rend_damage":
+            metrics[
+                "null_rend_damage"
+            ],
+        "null_rend_damage_per_use":
+            null_rend_damage_per_use,
+        "oblivions_per_null_rend":
+            oblivions_per_use
+    }
+
+
+
+def analyze_void_null_rend_ab(
+    runs=5000,
+    resonance=5,
+    seed=20261013,
+    level=50,
+    ascended=True,
+    max_turns=200,
+    attribute_targeting=False,
+    verbose=True
+):
+
+    void_team = [
+        "drake_storm",
+        "drake_void",
+        "drake_abyssal"
+    ]
+
+    benchmark_team = [
+        "drake_storm",
+        "drake_igneous",
+        "drake_abyssal"
+    ]
+
+    resonances = [
+        resonance
+        for _ in void_team
+    ]
+
+    original_state = (
+        _capture_null_rend_state()
+    )
+
+    results = []
+
+    try:
+
+        for buff_count in range(4):
+
+            initial_buffs = (
+                _build_team_initial_buffs(
+                    len(void_team),
+                    buff_count
+                )
+            )
+
+            variant_results = {}
+
+            for (
+                variant_name,
+                variant_data
+            ) in NULL_REND_VARIANTS.items():
+
+                _set_null_rend_variant(
+                    variant_data[
+                        "multiplier"
+                    ],
+                    variant_data[
+                        "second_hit_multiplier"
+                    ]
+                )
+
+                side_a_seed = (
+                    seed
+                    + buff_count * 100
+                )
+
+                side_b_seed = (
+                    side_a_seed
+                    + 1
+                )
+
+                random.seed(
+                    side_a_seed
+                )
+
+                side_a = simulate_battles(
+                    void_team,
+                    benchmark_team,
+                    runs=runs,
+                    verbose=False,
+                    level=level,
+                    ascended=ascended,
+                    max_turns=max_turns,
+                    attribute_targeting=
+                        attribute_targeting,
+                    team_a_resonances=
+                        resonances,
+                    team_b_resonances=
+                        resonances,
+                    team_a_initial_buffs=
+                        initial_buffs,
+                    team_b_initial_buffs=
+                        _build_team_initial_buffs(
+                            len(
+                                benchmark_team
+                            ),
+                            buff_count
+                        )
+                )
+
+                random.seed(
+                    side_b_seed
+                )
+
+                side_b = simulate_battles(
+                    benchmark_team,
+                    void_team,
+                    runs=runs,
+                    verbose=False,
+                    level=level,
+                    ascended=ascended,
+                    max_turns=max_turns,
+                    attribute_targeting=
+                        attribute_targeting,
+                    team_a_resonances=
+                        resonances,
+                    team_b_resonances=
+                        resonances,
+                    team_a_initial_buffs=
+                        _build_team_initial_buffs(
+                            len(
+                                benchmark_team
+                            ),
+                            buff_count
+                        ),
+                    team_b_initial_buffs=
+                        initial_buffs
+                )
+
+                variant_results[
+                    variant_name
+                ] = (
+                    _combine_void_seeded_sides(
+                        side_a,
+                        side_b
+                    )
+                )
+
+            original = variant_results[
+                "original"
+            ]
+
+            buffed = variant_results[
+                "buffed"
+            ]
+
+            results.append(
+                {
+                    "buff_count":
+                        buff_count,
+                    "original":
+                        original,
+                    "buffed":
+                        buffed,
+                    "win_rate_delta": (
+                        buffed[
+                            "void_win_rate"
+                        ]
+                        - original[
+                            "void_win_rate"
+                        ]
+                    ),
+                    "damage_per_use_delta": (
+                        buffed[
+                            "null_rend_damage_per_use"
+                        ]
+                        - original[
+                            "null_rend_damage_per_use"
+                        ]
+                    )
+                }
+            )
+
+    finally:
+
+        _restore_null_rend_state(
+            original_state
+        )
+
+    report = {
+        "runs_per_side": runs,
+        "resonance": resonance,
+        "seed": seed,
+        "void_team": void_team,
+        "benchmark_team":
+            benchmark_team,
+        "results": results
+    }
+
+    if verbose:
+        print_void_null_rend_ab_report(
+            report
+        )
+
+    return report
+
+
+
+def print_void_null_rend_ab_report(
+    report
+):
+
+    print()
+    print(
+        "=============================================================="
+    )
+    print(
+        "                 NULL REND SEEDED A/B"
+    )
+    print(
+        "=============================================================="
+    )
+
+    print(
+        f"Runs per side: "
+        f"{report['runs_per_side']} "
+        f"| Resonance: "
+        f"R{report['resonance']} "
+        f"| Seed: "
+        f"{report['seed']}"
+    )
+
+    print()
+    print(
+        "WIN RATE"
+    )
+
+    print(
+        f"{'Buffs':>5} "
+        f"{'Original':>10} "
+        f"{'Buffed':>10} "
+        f"{'Delta':>9}"
+    )
+
+    for result in report[
+        "results"
+    ]:
+
+        print(
+            f"{result['buff_count']:>5} "
+            f"{result['original']['void_win_rate']:>9.1f}% "
+            f"{result['buffed']['void_win_rate']:>9.1f}% "
+            f"{result['win_rate_delta']:>+8.1f}"
+        )
+
+    print()
+    print(
+        "NULL REND OUTPUT"
+    )
+
+    print(
+        f"{'Buffs':>5} "
+        f"{'Old use':>8} "
+        f"{'New use':>8} "
+        f"{'Old dmg/use':>12} "
+        f"{'New dmg/use':>12} "
+        f"{'Delta':>10}"
+    )
+
+    for result in report[
+        "results"
+    ]:
+
+        original = result[
+            "original"
+        ]
+
+        buffed = result[
+            "buffed"
+        ]
+
+        print(
+            f"{result['buff_count']:>5} "
+            f"{original['null_rend_uses']:>8.2f} "
+            f"{buffed['null_rend_uses']:>8.2f} "
+            f"{original['null_rend_damage_per_use']:>12.1f} "
+            f"{buffed['null_rend_damage_per_use']:>12.1f} "
+            f"{result['damage_per_use_delta']:>+10.1f}"
+        )
+
+    print()
+    print(
+        "OBLIVION PER NULL REND"
+    )
+
+    print(
+        f"{'Buffs':>5} "
+        f"{'Original':>10} "
+        f"{'Buffed':>10}"
+    )
+
+    for result in report[
+        "results"
+    ]:
+
+        print(
+            f"{result['buff_count']:>5} "
+            f"{result['original']['oblivions_per_null_rend']:>10.2f} "
+            f"{result['buffed']['oblivions_per_null_rend']:>10.2f}"
         )
 
     print()
