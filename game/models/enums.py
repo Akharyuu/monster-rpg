@@ -13,6 +13,7 @@ class Attribute(Enum):
 class SkillType(Enum):
     DAMAGE = "Damage"
     HEALING = "Healing"
+    SUPPORT = "Support"
     PASSIVE = "Passive"
 
 
