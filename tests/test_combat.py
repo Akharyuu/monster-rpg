@@ -5089,3 +5089,344 @@ def test_apotheosis_uses_three_turn_buffs_and_grants_extra_turn():
     )
 
     assert aether.extra_turn_pending is True
+
+
+# =========================================================
+#                   VOID DRAKE TESTS
+# =========================================================
+
+def test_null_rend_applies_oblivion_only_on_second_hit(
+    monkeypatch
+):
+
+    void = create_monster("drake_void")
+    target = create_monster("drake_igneous")
+    skill = void.get_skill(2)
+
+    target_result = skill.create_target_result(
+        target
+    )
+
+    monkeypatch.setattr(
+        random,
+        "random",
+        lambda: 0.0
+    )
+    monkeypatch.setattr(
+        random,
+        "uniform",
+        lambda a, b: 100
+    )
+    monkeypatch.setattr(
+        random,
+        "randint",
+        lambda a, b: 100
+    )
+
+    skill.resolve_hit(
+        void,
+        target,
+        0,
+        target_result
+    )
+
+    assert not any(
+        debuff.effect_id == "oblivion"
+        for debuff in target.debuffs
+    )
+
+    skill.resolve_hit(
+        void,
+        target,
+        1,
+        target_result
+    )
+
+    assert any(
+        debuff.effect_id == "oblivion"
+        for debuff in target.debuffs
+    )
+
+
+def test_obliterate_second_hit_has_thirty_percent_bonus_damage():
+
+    void = create_monster("drake_void")
+    void.resonance = 1
+    update_resonance_kit(void)
+
+    target = create_monster("drake_igneous")
+    skill = void.get_skill(2)
+
+    first_hit = skill.base_damage_calc(
+        void,
+        target,
+        1.00
+    )
+
+    second_hit = skill.base_damage_calc(
+        void,
+        target,
+        1.30
+    )
+
+    assert second_hit == pytest.approx(
+        first_hit * 1.30
+    )
+
+
+def test_veil_blocks_strip_and_is_consumed():
+
+    void = create_monster("drake_void")
+    target = create_monster("drake_aether")
+
+    for effect_id in [
+        "attack_up",
+        "immunity",
+        "veil"
+    ]:
+        target.apply_status_effect(
+            create_status_effect(
+                effect_id=effect_id,
+                duration=2,
+                source=target
+            )
+        )
+
+    skill = void.get_skill(3)
+    target_result = skill.create_target_result(
+        target
+    )
+
+    skill.resolve_hit(
+        void,
+        target,
+        0,
+        target_result
+    )
+
+    buff_ids = {
+        buff.effect_id
+        for buff in target.buffs
+    }
+
+    assert "veil" not in buff_ids
+    assert "attack_up" in buff_ids
+    assert "immunity" in buff_ids
+
+
+def test_bottomless_hunger_counts_each_removed_buff():
+
+    void = create_monster("drake_void")
+    target = create_monster("drake_igneous")
+
+    void.health = int(
+        void.max_health * 0.50
+    )
+    health_before = void.health
+
+    for effect_id in [
+        "attack_up",
+        "immunity"
+    ]:
+        target.apply_status_effect(
+            create_status_effect(
+                effect_id=effect_id,
+                duration=2,
+                source=target
+            )
+        )
+
+    skill = void.get_skill(3)
+    target_result = skill.create_target_result(
+        target
+    )
+
+    skill.resolve_hit(
+        void,
+        target,
+        0,
+        target_result
+    )
+
+    assert target.buffs == []
+
+    assert void.health == (
+        health_before
+        + int(void.max_health * 0.20)
+    )
+
+    assert void.action_gauge == pytest.approx(
+        0.16
+    )
+
+
+def test_voidborn_activates_at_five_removed_buffs():
+
+    void = create_monster("drake_void")
+    void.resonance = 2
+    update_resonance_kit(void)
+
+    trigger_passives(
+        "on_remove_enemy_buff",
+        void,
+        {"removed_count": 5}
+    )
+
+    assert void.get_combat_resource(
+        "voidborn"
+    ) == 0
+
+    assert any(
+        buff.effect_id == "invincibility"
+        and buff.remaining_turns == 2
+        for buff in void.buffs
+    )
+
+
+def test_voidborn_transcendence_full_cleanses_on_activation():
+
+    void = create_monster("drake_void")
+    void.resonance = 3
+    update_resonance_kit(void)
+
+    void.apply_status_effect(
+        create_status_effect(
+            effect_id="poison",
+            duration=2,
+            source=void
+        )
+    )
+
+    trigger_passives(
+        "on_remove_enemy_buff",
+        void,
+        {"removed_count": 5}
+    )
+
+    assert void.debuffs == []
+
+    assert any(
+        buff.effect_id == "invincibility"
+        for buff in void.buffs
+    )
+
+
+def test_dismantle_decimation_has_upgraded_proc_and_cooldown():
+
+    void = create_monster("drake_void")
+    void.resonance = 4
+    update_resonance_kit(void)
+
+    skill = void.get_skill(3)
+
+    assert skill.cooldown == 4
+
+    handler_data = (
+        skill.on_hit_handlers[1][
+            "data"
+        ]
+    )
+
+    assert handler_data["chance"] == pytest.approx(
+        0.50
+    )
+
+
+def test_annihilation_banishes_killed_oblivion_target(
+    monkeypatch
+):
+
+    void = create_monster("drake_void")
+    void.resonance = 5
+    update_resonance_kit(void)
+
+    target = create_monster("drake_igneous")
+
+    target.apply_status_effect(
+        create_status_effect(
+            effect_id="oblivion",
+            duration=2,
+            source=void
+        )
+    )
+
+    target.health = 1
+
+    monkeypatch.setattr(
+        random,
+        "randint",
+        lambda a, b: 100
+    )
+
+    void.use_skill(
+        [target],
+        void.get_skill(2),
+        combat_context={
+            "team": [void],
+            "opponents": [target]
+        }
+    )
+
+    assert target.is_alive is False
+    assert target.banished is True
+
+
+def test_oblivion_prevents_passive_activation(
+    monkeypatch
+):
+
+    aether = create_monster("drake_aether")
+    attacker = create_monster("drake_storm")
+
+    aether.apply_status_effect(
+        create_status_effect(
+            effect_id="oblivion",
+            duration=2,
+            source=attacker
+        )
+    )
+
+    monkeypatch.setattr(
+        random,
+        "random",
+        lambda: 0.0
+    )
+    monkeypatch.setattr(
+        random,
+        "uniform",
+        lambda a, b: 100
+    )
+
+    trigger_passives(
+        "on_receive_hit",
+        aether,
+        {"attacker": attacker}
+    )
+
+    assert not any(
+        debuff.effect_id == "attack_break"
+        for debuff in attacker.debuffs
+    )
+
+
+def test_invincibility_prevents_direct_damage():
+
+    void = create_monster("drake_void")
+    attacker = create_monster("drake_igneous")
+
+    void.apply_status_effect(
+        create_status_effect(
+            effect_id="invincibility",
+            duration=2,
+            source=void
+        )
+    )
+
+    health_before = void.health
+
+    void.receive_damage(
+        1000,
+        source=attacker
+    )
+
+    assert void.health == health_before
