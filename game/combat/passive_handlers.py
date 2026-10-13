@@ -425,6 +425,13 @@ def bottomless_hunger(owner, context, passive):
 
     data = passive.handler_data
 
+    record_telemetry(
+        context.get("telemetry"),
+        owner,
+        "bottomless_hunger_activations",
+        1
+    )
+
     for _ in range(removed_count):
 
         heal_amount = int(
@@ -443,8 +450,19 @@ def bottomless_hunger(owner, context, passive):
             actual_heal
         )
 
+        action_gauge_gain = data[
+            "action_gauge_per_buff"
+        ]
+
         owner.increase_action_gauge(
-            data["action_gauge_per_buff"]
+            action_gauge_gain
+        )
+
+        record_telemetry(
+            context.get("telemetry"),
+            owner,
+            "action_gauge_from_bottomless_hunger",
+            action_gauge_gain
         )
 
 
@@ -479,6 +497,13 @@ def voidborn(owner, context, passive):
         owner.consume_combat_resource(
             "voidborn",
             max_stacks
+        )
+
+        record_telemetry(
+            context.get("telemetry"),
+            owner,
+            "voidborn_activations",
+            1
         )
 
         if data.get(
