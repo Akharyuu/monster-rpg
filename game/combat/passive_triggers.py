@@ -4,6 +4,9 @@
 
 def trigger_passives(trigger_name, owner, context):
 
+    if owner.has_oblivion:
+        return
+
     context["trigger"] = trigger_name
 
     for passive in owner.passives:
