@@ -346,6 +346,51 @@ MONSTER_DATA = {
         ]
     },
 
+
+    "drake_aether": {
+        "name": "???",
+        "family": "Drake",
+        "attribute": Attribute.AETHER,
+        "rarity": 5,
+
+        "max_health": 12850,
+        "attack": 725,
+        "defense": 815,
+        "speed": 230,
+
+        "skills": [
+            "draconic_claw",
+            "sovereign_breath",
+            "heavens_decree"
+        ],
+
+        "passives": [
+            "celestial_authority"
+        ]
+    },
+
+    "drake_void": {
+        "name": "???",
+        "family": "Drake",
+        "attribute": Attribute.VOID,
+        "rarity": 5,
+
+        "max_health": 10750,
+        "attack": 995,
+        "defense": 670,
+        "speed": 230,
+
+        "skills": [
+            "draconic_claw",
+            "null_rend",
+            "dismantle"
+        ],
+
+        "passives": [
+            "bottomless_hunger"
+        ]
+    },
+
     # =========================================================
     #                          TEST
     # =========================================================
