@@ -7,6 +7,7 @@ from game.combat.balance_analyzer import (
     analyze_team_matchup_balance,
     analyze_void_buff_sensitivity,
     analyze_void_diagnostics,
+    analyze_void_null_rend_ab,
     analyze_team_swap_balance,
     analyze_unit_balance,
     get_default_balance_benchmarks
@@ -1661,4 +1662,174 @@ def test_void_buff_sensitivity_calculates_null_rend_contribution(
         "oblivions_per_null_rend"
     ] == pytest.approx(
         0.4
+    )
+
+
+# =========================================================
+#               NULL REND SEEDED A/B TESTS
+# =========================================================
+
+def test_void_null_rend_ab_compares_original_and_buffed(
+    monkeypatch
+):
+
+    calls = []
+
+    def fake_simulate_battles(
+        team_a_ids,
+        team_b_ids,
+        **kwargs
+    ):
+
+        calls.append(
+            (
+                list(team_a_ids),
+                list(team_b_ids)
+            )
+        )
+
+        void_is_team_a = (
+            "drake_void" in team_a_ids
+        )
+
+        void_entry = {
+            "slot": 0,
+            "monster_id": "drake_void",
+            "direct_damage": 2000,
+            "healing": 0,
+            "null_rend_damage": 600,
+            "dismantle_damage": 1200,
+            "null_rend_uses": 0.5,
+            "dismantle_uses": 1,
+            "buffs_removed": 0,
+            "strip_events": 0,
+            "veil_blocks": 0,
+            "bottomless_hunger_activations": 0,
+            "action_gauge_from_bottomless_hunger": 0,
+            "voidborn_activations": 0,
+            "oblivions_applied": 0.25,
+            "defense_breaks_applied": 1
+        }
+
+        filler = dict(
+            void_entry
+        )
+
+        filler[
+            "monster_id"
+        ] = "drake_igneous"
+
+        return {
+            "team_a_win_rate": (
+                55
+                if void_is_team_a
+                else 45
+            ),
+            "team_b_win_rate": (
+                45
+                if void_is_team_a
+                else 55
+            ),
+            "draw_rate": 0,
+            "average_turns": 10,
+            "team_a_telemetry": (
+                [void_entry]
+                if void_is_team_a
+                else [filler]
+            ),
+            "team_b_telemetry": (
+                [filler]
+                if void_is_team_a
+                else [void_entry]
+            )
+        }
+
+    monkeypatch.setattr(
+        balance_module,
+        "simulate_battles",
+        fake_simulate_battles
+    )
+
+    report = analyze_void_null_rend_ab(
+        runs=10,
+        verbose=False
+    )
+
+    assert len(
+        report["results"]
+    ) == 4
+
+    assert len(calls) == 16
+
+    for result in report[
+        "results"
+    ]:
+
+        assert (
+            result["original"][
+                "null_rend_damage_per_use"
+            ]
+            == pytest.approx(1200)
+        )
+
+        assert (
+            result["buffed"][
+                "null_rend_damage_per_use"
+            ]
+            == pytest.approx(1200)
+        )
+
+
+def test_void_null_rend_ab_restores_skill_data(
+    monkeypatch
+):
+
+    original_multiplier = (
+        balance_module.SKILL_DATA[
+            "null_rend"
+        ]["multiplier"]
+    )
+
+    original_hit_multipliers = list(
+        balance_module.SKILL_DATA[
+            "null_rend_annihilation"
+        ]["hit_multipliers"]
+    )
+
+    def fake_simulate_battles(
+        *args,
+        **kwargs
+    ):
+
+        raise RuntimeError(
+            "forced failure"
+        )
+
+    monkeypatch.setattr(
+        balance_module,
+        "simulate_battles",
+        fake_simulate_battles
+    )
+
+    with pytest.raises(RuntimeError):
+
+        analyze_void_null_rend_ab(
+            runs=1,
+            verbose=False
+        )
+
+    assert (
+        balance_module.SKILL_DATA[
+            "null_rend"
+        ]["multiplier"]
+        == pytest.approx(
+            original_multiplier
+        )
+    )
+
+    assert (
+        balance_module.SKILL_DATA[
+            "null_rend_annihilation"
+        ]["hit_multipliers"]
+        == original_hit_multipliers
     )
