@@ -37,6 +37,8 @@ class Monster:
         self.ascended = ascended
         self.action_gauge = 0
         self.resonance = 0
+        self.extra_turn_pending = False
+        self.banished = False
 
         if combat_resources is None:
             self.combat_resources = {}
@@ -148,6 +150,24 @@ class Monster:
     def has_immunity(self):
         for buff in self.buffs:
             if buff.effect_id == "immunity":
+                return True
+
+        return False
+
+
+    @property
+    def has_invincibility(self):
+        for buff in self.buffs:
+            if buff.effect_id == "invincibility":
+                return True
+
+        return False
+
+
+    @property
+    def has_oblivion(self):
+        for debuff in self.debuffs:
+            if debuff.effect_id == "oblivion":
                 return True
 
         return False
@@ -511,6 +531,10 @@ class Monster:
 
 
     def has_passive_trait(self, trait):
+
+        if self.has_oblivion:
+            return False
+
         for passive in self.passives:
             data = PASSIVE_DATA[passive.skill_id]
 
@@ -525,6 +549,9 @@ class Monster:
     # =========================================================
 
     def receive_damage(self, damage, source=None, telemetry=None):
+
+        if self.has_invincibility:
+            return []
 
         # If monster has Shield, the shield absorbs damage
         shield = None
@@ -648,10 +675,37 @@ class Monster:
                 # Update who applied/refreshed the effect.
                 active_effect.source = effect.source
 
+                if (
+                    effect.effect_type == EffectType.BUFF
+                    and effect.source is not None
+                ):
+                    trigger_passives(
+                        "on_apply_buff",
+                        effect.source,
+                        {
+                            "target": self,
+                            "effect": active_effect
+                        }
+                    )
+
                 return active_effect
 
         if len(effects_list) < 5:
             effects_list.append(effect)
+
+            if (
+                effect.effect_type == EffectType.BUFF
+                and effect.source is not None
+            ):
+                trigger_passives(
+                    "on_apply_buff",
+                    effect.source,
+                    {
+                        "target": self,
+                        "effect": effect
+                    }
+                )
+
             return effect
 
         return None
@@ -690,6 +744,9 @@ class Monster:
 
     def apply_damage_over_time(self, telemetry=None):
         total_damage = 0
+
+        if self.has_invincibility:
+            return
 
         for debuff in self.debuffs:
 
@@ -854,6 +911,8 @@ class Monster:
         self.reset_buffs()
         self.reset_debuffs()
         self.reset_combat_resources()
+        self.extra_turn_pending = False
+        self.banished = False
 
         for skill in self.skills:
             skill.reset_cooldown()
