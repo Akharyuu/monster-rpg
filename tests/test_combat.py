@@ -4813,7 +4813,9 @@ def test_simulate_battles_accepts_resonance_per_team_slot(
         team_a,
         team_b,
         max_turns=200,
-        attribute_targeting=True
+        attribute_targeting=True,
+        team_a_initial_buffs=None,
+        team_b_initial_buffs=None
     ):
 
         captured["team_a"] = [
