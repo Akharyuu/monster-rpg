@@ -10,6 +10,7 @@ from ..combat.enemy_ai import (
 )
 
 from ..factories.monster_factory import create_monster
+from ..factories.status_effect_factory import create_status_effect
 from ..systems.resonance import update_resonance_kit
 
 from ..combat.telemetry import (
@@ -36,6 +37,41 @@ from ..ui import (
 # =========================================================
 #                       BATTLE LOOP
 # =========================================================
+
+
+
+def apply_initial_buffs(
+    team,
+    initial_buffs
+):
+
+    if initial_buffs is None:
+        return
+
+    for slot, buff_configs in enumerate(
+        initial_buffs
+    ):
+
+        if slot >= len(team):
+            break
+
+        monster = team[slot]
+
+        for buff_config in buff_configs:
+
+            buff = create_status_effect(
+                effect_id=buff_config["effect_id"],
+                duration=buff_config.get(
+                    "turns",
+                    3
+                ),
+                source=monster
+            )
+
+            monster.apply_status_effect(
+                buff
+            )
+
 
 def battle(allies, enemies):
 
@@ -387,7 +423,9 @@ def simulate_battle(
     team_a,
     team_b,
     max_turns=200,
-    attribute_targeting=True
+    attribute_targeting=True,
+    team_a_initial_buffs=None,
+    team_b_initial_buffs=None
 ):
 
     turns = 0
@@ -407,6 +445,16 @@ def simulate_battle(
 
     for monster in team_b:
         monster._combat_team = team_b
+
+    apply_initial_buffs(
+        team_a,
+        team_a_initial_buffs
+    )
+
+    apply_initial_buffs(
+        team_b,
+        team_b_initial_buffs
+    )
 
     try:
         while (
@@ -596,7 +644,9 @@ def simulate_battles(
     team_a_primary_resonance=None,
     team_b_primary_resonance=None,
     team_a_resonances=None,
-    team_b_resonances=None
+    team_b_resonances=None,
+    team_a_initial_buffs=None,
+    team_b_initial_buffs=None
 ):
 
     if team_a_primary_resonance is None:
@@ -770,7 +820,9 @@ def simulate_battles(
                     team_a,
                     team_b,
                     max_turns=max_turns,
-                    attribute_targeting=attribute_targeting
+                    attribute_targeting=attribute_targeting,
+                    team_a_initial_buffs=team_a_initial_buffs,
+                    team_b_initial_buffs=team_b_initial_buffs
                 )
 
         add_team_telemetry(
