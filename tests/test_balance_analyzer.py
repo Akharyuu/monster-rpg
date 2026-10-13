@@ -5,6 +5,7 @@ import game.combat.balance_analyzer as balance_module
 from game.combat.balance_analyzer import (
     analyze_drake_roster_balance,
     analyze_team_matchup_balance,
+    analyze_void_buff_sensitivity,
     analyze_void_diagnostics,
     analyze_team_swap_balance,
     analyze_unit_balance,
@@ -1478,4 +1479,186 @@ def test_void_diagnostics_forwards_controlled_initial_buffs(
             "team_b_initial_buffs"
         ]
         == void_buffs
+    )
+
+
+# =========================================================
+#             VOID BUFF SENSITIVITY TESTS
+# =========================================================
+
+def test_void_buff_sensitivity_builds_four_buff_levels(
+    monkeypatch
+):
+
+    captured_scenarios = []
+
+    def fake_void_diagnostics(
+        runs=1000,
+        resonance=5,
+        scenarios=None,
+        level=50,
+        ascended=True,
+        max_turns=200,
+        attribute_targeting=False,
+        neutral_all_attributes=False,
+        verbose=True
+    ):
+
+        captured_scenarios.extend(
+            scenarios
+        )
+
+        scenario_reports = []
+
+        for index, scenario in enumerate(
+            scenarios
+        ):
+
+            scenario_reports.append(
+                {
+                    "name": scenario["name"],
+                    "void_win_rate":
+                        25 + index * 10,
+                    "benchmark_win_rate":
+                        75 - index * 10,
+                    "draw_rate": 0,
+                    "average_turns": 10,
+                    "void_metrics": {
+                        "direct_damage": 1000,
+                        "healing": 100,
+                        "null_rend_damage": 200,
+                        "dismantle_damage": 600,
+                        "null_rend_uses": 0.5,
+                        "dismantle_uses": 1.0,
+                        "buffs_removed": index * 2,
+                        "strip_events": index,
+                        "veil_blocks": 0,
+                        "bottomless_hunger_activations":
+                            index,
+                        "action_gauge_from_bottomless_hunger":
+                            index * 0.08,
+                        "voidborn_activations":
+                            index * 0.25,
+                        "oblivions_applied": 0.25,
+                        "defense_breaks_applied": 1
+                    }
+                }
+            )
+
+        return {
+            "scenarios":
+                scenario_reports
+        }
+
+    monkeypatch.setattr(
+        balance_module,
+        "analyze_void_diagnostics",
+        fake_void_diagnostics
+    )
+
+    report = analyze_void_buff_sensitivity(
+        runs=10,
+        verbose=False
+    )
+
+    assert len(
+        captured_scenarios
+    ) == 4
+
+    assert [
+        result["buff_count"]
+        for result in report["results"]
+    ] == [
+        0,
+        1,
+        2,
+        3
+    ]
+
+    assert (
+        len(
+            captured_scenarios[3][
+                "benchmark_team_initial_buffs"
+            ][0]
+        )
+        == 3
+    )
+
+
+def test_void_buff_sensitivity_calculates_null_rend_contribution(
+    monkeypatch
+):
+
+    def fake_void_diagnostics(
+        **kwargs
+    ):
+
+        scenario_reports = []
+
+        for scenario in kwargs[
+            "scenarios"
+        ]:
+
+            scenario_reports.append(
+                {
+                    "name": scenario["name"],
+                    "void_win_rate": 50,
+                    "benchmark_win_rate": 50,
+                    "draw_rate": 0,
+                    "average_turns": 10,
+                    "void_metrics": {
+                        "direct_damage": 2000,
+                        "healing": 0,
+                        "null_rend_damage": 500,
+                        "dismantle_damage": 1000,
+                        "null_rend_uses": 0.5,
+                        "dismantle_uses": 1,
+                        "buffs_removed": 2,
+                        "strip_events": 1,
+                        "veil_blocks": 0,
+                        "bottomless_hunger_activations": 1,
+                        "action_gauge_from_bottomless_hunger": 0.16,
+                        "voidborn_activations": 0.25,
+                        "oblivions_applied": 0.2,
+                        "defense_breaks_applied": 1
+                    }
+                }
+            )
+
+        return {
+            "scenarios":
+                scenario_reports
+        }
+
+    monkeypatch.setattr(
+        balance_module,
+        "analyze_void_diagnostics",
+        fake_void_diagnostics
+    )
+
+    report = analyze_void_buff_sensitivity(
+        runs=10,
+        verbose=False
+    )
+
+    result = report[
+        "results"
+    ][0]
+
+    assert result[
+        "null_rend_damage_per_use"
+    ] == pytest.approx(
+        1000
+    )
+
+    assert result[
+        "null_rend_damage_share"
+    ] == pytest.approx(
+        25
+    )
+
+    assert result[
+        "oblivions_per_null_rend"
+    ] == pytest.approx(
+        0.4
     )
