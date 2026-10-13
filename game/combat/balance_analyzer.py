@@ -2317,6 +2317,107 @@ DEFAULT_VOID_DIAGNOSTIC_SCENARIOS = [
             "drake_igneous",
             "drake_aether"
         ]
+    },
+    {
+        "name": "Controlled buffs without Veil",
+        "void_team": [
+            "drake_storm",
+            "drake_void",
+            "drake_abyssal"
+        ],
+        "benchmark_team": [
+            "drake_storm",
+            "drake_igneous",
+            "drake_abyssal"
+        ],
+        "void_team_initial_buffs": [
+            [
+                {
+                    "effect_id": "attack_up",
+                    "turns": 3
+                },
+                {
+                    "effect_id": "defense_up",
+                    "turns": 3
+                },
+                {
+                    "effect_id": "speed_up",
+                    "turns": 3
+                }
+            ],
+            [
+                {
+                    "effect_id": "attack_up",
+                    "turns": 3
+                },
+                {
+                    "effect_id": "defense_up",
+                    "turns": 3
+                },
+                {
+                    "effect_id": "speed_up",
+                    "turns": 3
+                }
+            ],
+            [
+                {
+                    "effect_id": "attack_up",
+                    "turns": 3
+                },
+                {
+                    "effect_id": "defense_up",
+                    "turns": 3
+                },
+                {
+                    "effect_id": "speed_up",
+                    "turns": 3
+                }
+            ]
+        ],
+        "benchmark_team_initial_buffs": [
+            [
+                {
+                    "effect_id": "attack_up",
+                    "turns": 3
+                },
+                {
+                    "effect_id": "defense_up",
+                    "turns": 3
+                },
+                {
+                    "effect_id": "speed_up",
+                    "turns": 3
+                }
+            ],
+            [
+                {
+                    "effect_id": "attack_up",
+                    "turns": 3
+                },
+                {
+                    "effect_id": "defense_up",
+                    "turns": 3
+                },
+                {
+                    "effect_id": "speed_up",
+                    "turns": 3
+                }
+            ],
+            [
+                {
+                    "effect_id": "attack_up",
+                    "turns": 3
+                },
+                {
+                    "effect_id": "defense_up",
+                    "turns": 3
+                },
+                {
+                    "effect_id": "speed_up",
+                    "turns": 3
+                }
+            ]
+        ]
     }
 ]
 
@@ -2418,7 +2519,15 @@ def analyze_void_diagnostics(
             team_a_resonances=
                 void_resonances,
             team_b_resonances=
-                benchmark_resonances
+                benchmark_resonances,
+            team_a_initial_buffs=
+                scenario.get(
+                    "void_team_initial_buffs"
+                ),
+            team_b_initial_buffs=
+                scenario.get(
+                    "benchmark_team_initial_buffs"
+                )
         )
 
         side_b = simulate_battles(
@@ -2435,7 +2544,15 @@ def analyze_void_diagnostics(
             team_a_resonances=
                 benchmark_resonances,
             team_b_resonances=
-                void_resonances
+                void_resonances,
+            team_a_initial_buffs=
+                scenario.get(
+                    "benchmark_team_initial_buffs"
+                ),
+            team_b_initial_buffs=
+                scenario.get(
+                    "void_team_initial_buffs"
+                )
         )
 
         void_telemetry_a = (
