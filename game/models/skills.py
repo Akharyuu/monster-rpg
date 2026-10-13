@@ -723,6 +723,9 @@ class DamageSkill(Skill):
             )
 
             data["_hit_index"] = hit_index
+            data["_telemetry"] = target_result.get(
+                "telemetry"
+            )
 
             handler = ON_HIT_HANDLERS[handler_name]
 
