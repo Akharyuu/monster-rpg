@@ -2259,3 +2259,420 @@ def print_drake_roster_report(report):
     print(
         "=============================================================="
     )
+
+
+# =========================================================
+#                  VOID DRAKE DIAGNOSTICS
+# =========================================================
+
+DEFAULT_VOID_DIAGNOSTIC_SCENARIOS = [
+    {
+        "name": "Generic flex slot",
+        "void_team": [
+            "drake_igneous",
+            "drake_storm",
+            "drake_void"
+        ],
+        "benchmark_team": [
+            "drake_igneous",
+            "drake_storm",
+            "drake_abyssal"
+        ]
+    },
+    {
+        "name": "Directly into Aether",
+        "void_team": [
+            "drake_igneous",
+            "drake_abyssal",
+            "drake_void"
+        ],
+        "benchmark_team": [
+            "drake_igneous",
+            "drake_abyssal",
+            "drake_aether"
+        ]
+    },
+    {
+        "name": "Buff-heavy environment",
+        "void_team": [
+            "drake_storm",
+            "drake_void",
+            "drake_aether"
+        ],
+        "benchmark_team": [
+            "drake_storm",
+            "drake_igneous",
+            "drake_aether"
+        ]
+    },
+    {
+        "name": "Control plus support",
+        "void_team": [
+            "drake_abyssal",
+            "drake_void",
+            "drake_aether"
+        ],
+        "benchmark_team": [
+            "drake_abyssal",
+            "drake_igneous",
+            "drake_aether"
+        ]
+    }
+]
+
+
+VOID_DIAGNOSTIC_METRICS = (
+    "direct_damage",
+    "healing",
+    "null_rend_damage",
+    "dismantle_damage",
+    "null_rend_uses",
+    "dismantle_uses",
+    "buffs_removed",
+    "strip_events",
+    "veil_blocks",
+    "bottomless_hunger_activations",
+    "action_gauge_from_bottomless_hunger",
+    "voidborn_activations",
+    "oblivions_applied",
+    "defense_breaks_applied"
+)
+
+
+
+def _get_monster_telemetry(
+    telemetry_entries,
+    monster_id
+):
+
+    for entry in telemetry_entries:
+
+        if entry["monster_id"] == monster_id:
+            return entry
+
+    raise ValueError(
+        f"Telemetry entry not found for {monster_id}."
+    )
+
+
+
+def analyze_void_diagnostics(
+    runs=1000,
+    resonance=5,
+    scenarios=None,
+    level=50,
+    ascended=True,
+    max_turns=200,
+    attribute_targeting=False,
+    neutral_all_attributes=False,
+    verbose=True
+):
+
+    if resonance < 0 or resonance > 5:
+        raise ValueError(
+            "resonance must be between 0 and 5."
+        )
+
+    if scenarios is None:
+        scenarios = DEFAULT_VOID_DIAGNOSTIC_SCENARIOS
+
+    scenario_reports = []
+
+    for scenario in scenarios:
+
+        void_team = list(
+            scenario["void_team"]
+        )
+
+        benchmark_team = list(
+            scenario["benchmark_team"]
+        )
+
+        if "drake_void" not in void_team:
+            raise ValueError(
+                "Every Void diagnostic scenario must "
+                "include drake_void in void_team."
+            )
+
+        void_resonances = [
+            resonance
+            for _ in void_team
+        ]
+
+        benchmark_resonances = [
+            resonance
+            for _ in benchmark_team
+        ]
+
+        side_a = simulate_battles(
+            void_team,
+            benchmark_team,
+            runs=runs,
+            verbose=False,
+            level=level,
+            ascended=ascended,
+            max_turns=max_turns,
+            attribute_targeting=attribute_targeting,
+            neutral_all_attributes=
+                neutral_all_attributes,
+            team_a_resonances=
+                void_resonances,
+            team_b_resonances=
+                benchmark_resonances
+        )
+
+        side_b = simulate_battles(
+            benchmark_team,
+            void_team,
+            runs=runs,
+            verbose=False,
+            level=level,
+            ascended=ascended,
+            max_turns=max_turns,
+            attribute_targeting=attribute_targeting,
+            neutral_all_attributes=
+                neutral_all_attributes,
+            team_a_resonances=
+                benchmark_resonances,
+            team_b_resonances=
+                void_resonances
+        )
+
+        void_telemetry_a = (
+            _get_monster_telemetry(
+                side_a["team_a_telemetry"],
+                "drake_void"
+            )
+        )
+
+        void_telemetry_b = (
+            _get_monster_telemetry(
+                side_b["team_b_telemetry"],
+                "drake_void"
+            )
+        )
+
+        void_metrics = {}
+
+        for metric in VOID_DIAGNOSTIC_METRICS:
+
+            void_metrics[metric] = (
+                void_telemetry_a.get(
+                    metric,
+                    0
+                )
+                + void_telemetry_b.get(
+                    metric,
+                    0
+                )
+            ) / 2
+
+        void_win_rate = (
+            side_a["team_a_win_rate"]
+            + side_b["team_b_win_rate"]
+        ) / 2
+
+        benchmark_win_rate = (
+            side_a["team_b_win_rate"]
+            + side_b["team_a_win_rate"]
+        ) / 2
+
+        draw_rate = (
+            side_a["draw_rate"]
+            + side_b["draw_rate"]
+        ) / 2
+
+        average_turns = (
+            side_a["average_turns"]
+            + side_b["average_turns"]
+        ) / 2
+
+        scenario_reports.append(
+            {
+                "name": scenario["name"],
+                "void_team": void_team,
+                "benchmark_team":
+                    benchmark_team,
+                "void_win_rate":
+                    void_win_rate,
+                "benchmark_win_rate":
+                    benchmark_win_rate,
+                "draw_rate":
+                    draw_rate,
+                "average_turns":
+                    average_turns,
+                "void_metrics":
+                    void_metrics
+            }
+        )
+
+    report = {
+        "runs_per_side": runs,
+        "resonance": resonance,
+        "level": level,
+        "ascended": ascended,
+        "attribute_targeting":
+            attribute_targeting,
+        "neutral_all_attributes":
+            neutral_all_attributes,
+        "scenarios":
+            scenario_reports
+    }
+
+    if verbose:
+        print_void_diagnostics_report(
+            report
+        )
+
+    return report
+
+
+
+def print_void_diagnostics_report(report):
+
+    print()
+    print(
+        "=============================================================="
+    )
+    print(
+        "                    VOID DRAKE DIAGNOSTICS"
+    )
+    print(
+        "=============================================================="
+    )
+
+    print(
+        f"Runs per side: {report['runs_per_side']} "
+        f"| Resonance: R{report['resonance']}"
+    )
+
+    print(
+        f"Level: {report['level']} "
+        f"| Ascended: {report['ascended']}"
+    )
+
+    for scenario in report["scenarios"]:
+
+        metrics = scenario[
+            "void_metrics"
+        ]
+
+        print()
+        print(
+            "--------------------------------------------------------------"
+        )
+
+        print(
+            scenario["name"].upper()
+        )
+
+        print(
+            "Void team: "
+            + ", ".join(
+                scenario["void_team"]
+            )
+        )
+
+        print(
+            "Benchmark: "
+            + ", ".join(
+                scenario["benchmark_team"]
+            )
+        )
+
+        print(
+            f"Win rate: "
+            f"{scenario['void_win_rate']:.1f}% "
+            f"| "
+            f"{scenario['benchmark_win_rate']:.1f}% "
+            f"(draws {scenario['draw_rate']:.1f}%)"
+        )
+
+        print(
+            f"Average turns: "
+            f"{scenario['average_turns']:.2f}"
+        )
+
+        print()
+        print(
+            "VOID OUTPUT PER BATTLE"
+        )
+
+        print(
+            f"  Direct damage: "
+            f"{metrics['direct_damage']:.1f}"
+        )
+
+        print(
+            f"    Null Rend damage: "
+            f"{metrics['null_rend_damage']:.1f} "
+            f"| uses: "
+            f"{metrics['null_rend_uses']:.2f}"
+        )
+
+        print(
+            f"    Dismantle damage: "
+            f"{metrics['dismantle_damage']:.1f} "
+            f"| uses: "
+            f"{metrics['dismantle_uses']:.2f}"
+        )
+
+        print(
+            f"  Healing: "
+            f"{metrics['healing']:.1f}"
+        )
+
+        print()
+        print(
+            "STRIP / TEMPO"
+        )
+
+        print(
+            f"  Buffs removed: "
+            f"{metrics['buffs_removed']:.2f}"
+        )
+
+        print(
+            f"  Successful strip targets: "
+            f"{metrics['strip_events']:.2f}"
+        )
+
+        print(
+            f"  Veil blocks: "
+            f"{metrics['veil_blocks']:.2f}"
+        )
+
+        print(
+            f"  Bottomless Hunger activations: "
+            f"{metrics['bottomless_hunger_activations']:.2f}"
+        )
+
+        print(
+            f"  AG gained from strips: "
+            f"{metrics['action_gauge_from_bottomless_hunger'] * 100:.1f}%"
+        )
+
+        print(
+            f"  Voidborn activations: "
+            f"{metrics['voidborn_activations']:.2f}"
+        )
+
+        print()
+        print(
+            "DEBUFF PRESSURE"
+        )
+
+        print(
+            f"  Oblivions applied: "
+            f"{metrics['oblivions_applied']:.2f}"
+        )
+
+        print(
+            f"  Defense Breaks applied by Dismantle: "
+            f"{metrics['defense_breaks_applied']:.2f}"
+        )
+
+    print()
+    print(
+        "=============================================================="
+    )
