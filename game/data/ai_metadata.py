@@ -42,6 +42,29 @@ SKILL_AI_DATA = {
                 "scope": "any_enemy"
             }
         ]
+    },
+
+    # =========================================================
+    #                       VOID DRAKE
+    # =========================================================
+
+    "dismantle": {
+        "priority_conditions": [
+            {
+                "condition": "target_has_buff",
+                "scope": "any_enemy"
+            }
+        ]
+    },
+
+    "dismantle_decimation": {
+        "priority_conditions": [
+            {
+                "condition": "target_has_buff",
+                "scope": "any_enemy"
+            }
+        ]
     }
+
 }
 
