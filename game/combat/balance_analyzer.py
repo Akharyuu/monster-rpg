@@ -1942,3 +1942,320 @@ def print_team_matchup_report(report):
     print(
         "========================================"
     )
+
+
+# =========================================================
+#                 FIVE DRAKE ROSTER BENCHMARK
+# =========================================================
+
+DRAKE_ROSTER_IDS = [
+    "drake_igneous",
+    "drake_abyssal",
+    "drake_storm",
+    "drake_aether",
+    "drake_void"
+]
+
+
+DRAKE_ROSTER_LABELS = {
+    "drake_igneous": "Igneous",
+    "drake_abyssal": "Abyssal",
+    "drake_storm": "Storm",
+    "drake_aether": "Aether",
+    "drake_void": "Void"
+}
+
+
+
+def analyze_drake_roster_balance(
+    runs=300,
+    resonances=(0, 5),
+    core_team_sets=None,
+    level=50,
+    ascended=True,
+    max_turns=200,
+    attribute_targeting=False,
+    neutral_core_attributes=True,
+    verbose=True
+):
+
+    if not resonances:
+        raise ValueError(
+            "At least one resonance value is required."
+        )
+
+    for resonance in resonances:
+
+        if resonance < 0 or resonance > 5:
+            raise ValueError(
+                "Resonance values must be between 0 and 5."
+            )
+
+    resonance_reports = []
+
+    for resonance in resonances:
+
+        matrix = {}
+
+        for monster_id in DRAKE_ROSTER_IDS:
+            matrix[monster_id] = {
+                monster_id: None
+            }
+
+        pair_results = []
+
+        for candidate_index in range(
+            len(DRAKE_ROSTER_IDS)
+        ):
+
+            candidate_id = DRAKE_ROSTER_IDS[
+                candidate_index
+            ]
+
+            for benchmark_index in range(
+                candidate_index + 1,
+                len(DRAKE_ROSTER_IDS)
+            ):
+
+                benchmark_id = DRAKE_ROSTER_IDS[
+                    benchmark_index
+                ]
+
+                report = analyze_team_swap_balance(
+                    candidate_id,
+                    runs=runs,
+                    benchmark_ids=[
+                        benchmark_id
+                    ],
+                    core_team_sets=core_team_sets,
+                    level=level,
+                    ascended=ascended,
+                    max_turns=max_turns,
+                    attribute_targeting=attribute_targeting,
+                    neutral_core_attributes=
+                        neutral_core_attributes,
+                    resonance=resonance,
+                    verbose=False
+                )
+
+                matchup = report[
+                    "matchups"
+                ][0]
+
+                candidate_win_rate = matchup[
+                    "combined_win_rate"
+                ]
+
+                draw_rate = matchup[
+                    "draw_rate"
+                ]
+
+                benchmark_win_rate = (
+                    100
+                    - candidate_win_rate
+                    - draw_rate
+                )
+
+                matrix[candidate_id][
+                    benchmark_id
+                ] = candidate_win_rate
+
+                matrix[benchmark_id][
+                    candidate_id
+                ] = benchmark_win_rate
+
+                pair_results.append(
+                    {
+                        "candidate_id":
+                            candidate_id,
+                        "benchmark_id":
+                            benchmark_id,
+                        "candidate_win_rate":
+                            candidate_win_rate,
+                        "benchmark_win_rate":
+                            benchmark_win_rate,
+                        "draw_rate":
+                            draw_rate
+                    }
+                )
+
+        average_win_rates = {}
+
+        for monster_id in DRAKE_ROSTER_IDS:
+
+            values = [
+                value
+                for opponent_id, value
+                in matrix[monster_id].items()
+                if (
+                    opponent_id != monster_id
+                    and value is not None
+                )
+            ]
+
+            average_win_rates[monster_id] = (
+                _average_values(values)
+            )
+
+        resonance_reports.append(
+            {
+                "resonance": resonance,
+                "matrix": matrix,
+                "average_win_rates":
+                    average_win_rates,
+                "pair_results":
+                    pair_results
+            }
+        )
+
+    report = {
+        "runs_per_side_core": runs,
+        "level": level,
+        "ascended": ascended,
+        "max_turns": max_turns,
+        "attribute_targeting":
+            attribute_targeting,
+        "neutral_core_attributes":
+            neutral_core_attributes,
+        "drake_ids":
+            list(DRAKE_ROSTER_IDS),
+        "resonance_reports":
+            resonance_reports
+    }
+
+    if verbose:
+        print_drake_roster_report(
+            report
+        )
+
+    return report
+
+
+
+def print_drake_roster_report(report):
+
+    print()
+    print(
+        "=============================================================="
+    )
+    print(
+        "                 FIVE DRAKE ROSTER BALANCE"
+    )
+    print(
+        "=============================================================="
+    )
+
+    print(
+        f"Runs per side/core: "
+        f"{report['runs_per_side_core']}"
+    )
+
+    print(
+        f"Level: {report['level']} "
+        f"| Ascended: {report['ascended']}"
+    )
+
+    print(
+        "Target AI: "
+        + (
+            "attribute-aware"
+            if report["attribute_targeting"]
+            else "neutral"
+        )
+    )
+
+    print(
+        "Core attributes: "
+        + (
+            "neutral"
+            if report[
+                "neutral_core_attributes"
+            ]
+            else "normal"
+        )
+    )
+
+    labels = [
+        DRAKE_ROSTER_LABELS[
+            monster_id
+        ]
+        for monster_id in report[
+            "drake_ids"
+        ]
+    ]
+
+    for resonance_report in report[
+        "resonance_reports"
+    ]:
+
+        print()
+        print(
+            f"-------------------------- "
+            f"R{resonance_report['resonance']} "
+            f"--------------------------"
+        )
+
+        header = (
+            f"{'Drake':<10}"
+            + "".join(
+                f"{label:>10}"
+                for label in labels
+            )
+            + f"{'AVG':>10}"
+        )
+
+        print(
+            header
+        )
+
+        for monster_id in report[
+            "drake_ids"
+        ]:
+
+            row = (
+                f"{DRAKE_ROSTER_LABELS[monster_id]:<10}"
+            )
+
+            for opponent_id in report[
+                "drake_ids"
+            ]:
+
+                value = resonance_report[
+                    "matrix"
+                ][monster_id].get(
+                    opponent_id
+                )
+
+                if value is None:
+                    cell = "--"
+                else:
+                    cell = f"{value:.1f}%"
+
+                row += f"{cell:>10}"
+
+            average = resonance_report[
+                "average_win_rates"
+            ][monster_id]
+
+            row += f"{average:.1f}%".rjust(
+                10
+            )
+
+            print(
+                row
+            )
+
+    print()
+    print(
+        "Each cell is the row Drake's mirrored win rate "
+        "against the column Drake."
+    )
+
+    print(
+        "AVG is only a rough roster reference, not a role "
+        "power ranking."
+    )
+
+    print(
+        "=============================================================="
+    )
