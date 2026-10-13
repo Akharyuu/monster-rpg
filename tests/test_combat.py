@@ -5453,3 +5453,91 @@ def test_invincibility_prevents_direct_damage():
     )
 
     assert void.health == health_before
+
+
+# =========================================================
+#                    VOID DRAKE AI TESTS
+# =========================================================
+
+def test_void_ai_prioritizes_dismantle_when_enemy_has_buff(
+    monkeypatch
+):
+
+    void = create_monster(
+        "drake_void"
+    )
+
+    void.resonance = 5
+    update_resonance_kit(
+        void
+    )
+
+    target = create_monster(
+        "drake_igneous"
+    )
+
+    target.apply_status_effect(
+        create_status_effect(
+            effect_id="attack_up",
+            duration=2,
+            source=target
+        )
+    )
+
+    monkeypatch.setattr(
+        "game.combat.enemy_ai.sees_kill",
+        lambda *args, **kwargs: False
+    )
+
+    selected_skill = choose_skill(
+        void,
+        [void],
+        [target]
+    )
+
+    assert (
+        selected_skill.skill_id
+        == "dismantle_decimation"
+    )
+
+
+def test_void_ai_does_not_force_dismantle_without_enemy_buffs(
+    monkeypatch
+):
+
+    void = create_monster(
+        "drake_void"
+    )
+
+    void.resonance = 5
+    update_resonance_kit(
+        void
+    )
+
+    target = create_monster(
+        "drake_igneous"
+    )
+
+    monkeypatch.setattr(
+        "game.combat.enemy_ai.sees_kill",
+        lambda *args, **kwargs: False
+    )
+
+    monkeypatch.setattr(
+        random,
+        "choices",
+        lambda population, weights, k: [
+            population[1]
+        ]
+    )
+
+    selected_skill = choose_skill(
+        void,
+        [void],
+        [target]
+    )
+
+    assert (
+        selected_skill.skill_id
+        == "null_rend_annihilation"
+    )
