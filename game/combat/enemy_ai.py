@@ -104,6 +104,61 @@ def choose_skill(active_enemy, enemies, allies):
 
         return random.choice(lowest_cooldown_skills)
 
+    # Some skills become strategically urgent when a
+    # context-specific condition is met. Guaranteed kills still
+    # take precedence over these priorities.
+    priority_skills = []
+
+    for skill in available_skills:
+
+        skill_metadata = SKILL_AI_DATA.get(
+            skill.skill_id,
+            {}
+        )
+
+        priority_conditions = skill_metadata.get(
+            "priority_conditions"
+        )
+
+        if not priority_conditions:
+            continue
+
+        priority_ready = True
+
+        for condition in priority_conditions:
+
+            condition_name = condition[
+                "condition"
+            ]
+
+            handler = AI_CONDITIONS.get(
+                condition_name
+            )
+
+            if handler is None:
+                raise ValueError(
+                    f"Unsupported AI priority condition: "
+                    f"{condition_name}"
+                )
+
+            if not handler(
+                condition,
+                context
+            ):
+                priority_ready = False
+                break
+
+        if priority_ready:
+            priority_skills.append(
+                skill
+            )
+
+    if priority_skills:
+        return random.choice(
+            priority_skills
+        )
+
+
     # Some skills should be held until their setup is ready.
     # Kill checks happen first, so a guaranteed lethal can still
     # be used even when the normal setup is missing.
