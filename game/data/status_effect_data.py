@@ -52,6 +52,13 @@ STATUS_EFFECT_DATA =  {
         "modifier" : None
     },
 
+    "oblivion": {
+        "name": "Oblivion",
+        "stat": None,
+        "effect_type": EffectType.DEBUFF,
+        "modifier": None
+    },
+
     # =========================================================
     #                     DAMAGE OVER TIME
     # =========================================================
@@ -112,6 +119,20 @@ STATUS_EFFECT_DATA =  {
     
     "immunity": {
         "name": "Immunity",
+        "stat": None,
+        "effect_type": EffectType.BUFF,
+        "modifier": None
+    },
+
+    "veil": {
+        "name": "Veil",
+        "stat": None,
+        "effect_type": EffectType.BUFF,
+        "modifier": None
+    },
+
+    "invincibility": {
+        "name": "Invincibility",
         "stat": None,
         "effect_type": EffectType.BUFF,
         "modifier": None
