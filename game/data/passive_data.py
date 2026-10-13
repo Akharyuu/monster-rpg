@@ -233,5 +233,92 @@ PASSIVE_DATA = {
                 }
             }
         }
+    },,
+
+    # =========================================================
+    #                      AETHER DRAKE
+    # =========================================================
+
+    "celestial_authority": {
+        "name": "Celestial Authority",
+        "trigger": "on_receive_hit",
+        "handler": "celestial_authority",
+
+        "handler_data": {
+            "chance": 0.30,
+            "turns": 2
+        }
     },
+
+    "celestial_authority_ascendance": {
+        "name": "Celestial Authority: Ascendance",
+        "trigger": "on_receive_hit",
+        "handler": "celestial_authority",
+
+        "handler_data": {
+            "chance": 0.50,
+            "turns": 2,
+            "action_gauge_to_most_buffed_ally": 0.20
+        }
+    },
+
+    "divine_grace": {
+        "name": "Divine Grace",
+        "trigger": "on_apply_buff",
+        "handler": "divine_grace",
+
+        "handler_data": {
+            "heal_ratio_per_buff": 0.05
+        }
+    },
+
+    "divine_grace_enlightenment": {
+        "name": "Divine Grace: Enlightenment",
+        "trigger": "on_apply_buff",
+        "handler": "divine_grace",
+
+        "handler_data": {
+            "heal_ratio_per_buff": 0.05,
+            "accuracy_bonus": 25
+        }
+    },
+
+    # =========================================================
+    #                       VOID DRAKE
+    # =========================================================
+
+    "bottomless_hunger": {
+        "name": "Bottomless Hunger",
+        "trigger": "on_remove_enemy_buff",
+        "handler": "bottomless_hunger",
+
+        "handler_data": {
+            "heal_ratio_per_buff": 0.10,
+            "action_gauge_per_buff": 0.08
+        }
+    },
+
+    "voidborn": {
+        "name": "Voidborn",
+        "trigger": "on_remove_enemy_buff",
+        "handler": "voidborn",
+
+        "handler_data": {
+            "max_stacks": 5,
+            "invincibility_turns": 2
+        }
+    },
+
+    "voidborn_transcendence": {
+        "name": "Voidborn: Transcendence",
+        "trigger": "on_remove_enemy_buff",
+        "handler": "voidborn",
+
+        "handler_data": {
+            "max_stacks": 5,
+            "invincibility_turns": 2,
+            "full_cleanse_on_activation": True
+        }
+    },
+
 }
