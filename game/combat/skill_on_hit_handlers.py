@@ -2,6 +2,7 @@ import random
 
 from ..combat.passive_triggers import trigger_passives
 from ..factories.status_effect_factory import create_status_effect
+from ..combat.telemetry import record_telemetry
 
 # =========================================================
 #                    ACTION GAUGE HANDLERS
@@ -87,9 +88,32 @@ def apply_debuff_on_hit_indices(
         source=caster
     )
 
-    target.apply_status_effect(
+    applied_effect = target.apply_status_effect(
         effect
     )
+
+    if applied_effect is None:
+        return
+
+    telemetry = data.get(
+        "_telemetry"
+    )
+
+    if data["effect_id"] == "oblivion":
+        record_telemetry(
+            telemetry,
+            caster,
+            "oblivions_applied",
+            1
+        )
+
+    elif data["effect_id"] == "defense_break":
+        record_telemetry(
+            telemetry,
+            caster,
+            "defense_breaks_applied",
+            1
+        )
 
 
 # =========================================================
@@ -129,6 +153,14 @@ def strip_buffs_on_hit(
         target.buffs.remove(
             veil
         )
+
+        record_telemetry(
+            data.get("_telemetry"),
+            caster,
+            "veil_blocks",
+            1
+        )
+
         return
 
     removed_count = len(
@@ -139,6 +171,20 @@ def strip_buffs_on_hit(
         return
 
     target.buffs = []
+
+    record_telemetry(
+        data.get("_telemetry"),
+        caster,
+        "strip_events",
+        1
+    )
+
+    record_telemetry(
+        data.get("_telemetry"),
+        caster,
+        "buffs_removed",
+        removed_count
+    )
 
     trigger_passives(
         "on_remove_enemy_buff",
