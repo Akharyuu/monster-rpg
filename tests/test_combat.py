@@ -4891,3 +4891,201 @@ def test_simulate_battles_rejects_wrong_resonance_list_length():
             team_a_resonances=[5],
             team_b_resonances=[5, 5]
         )
+
+
+# =========================================================
+#                  AETHER DRAKE TESTS
+# =========================================================
+
+def test_heavens_decree_applies_three_team_buffs():
+
+    aether = create_monster("drake_aether")
+    ally = create_monster("drake_igneous")
+
+    aether.use_skill(
+        [aether, ally],
+        aether.get_skill(3),
+        combat_context={
+            "team": [aether, ally],
+            "opponents": []
+        }
+    )
+
+    for monster in [aether, ally]:
+        buff_ids = {
+            buff.effect_id
+            for buff in monster.buffs
+        }
+
+        assert buff_ids == {
+            "attack_up",
+            "immunity",
+            "veil"
+        }
+
+        assert all(
+            buff.remaining_turns == 2
+            for buff in monster.buffs
+        )
+
+
+def test_divine_grace_heals_five_percent_per_buff():
+
+    aether = create_monster("drake_aether")
+    aether.resonance = 1
+    update_resonance_kit(aether)
+
+    ally = create_monster("drake_igneous")
+    ally.health = int(ally.max_health * 0.50)
+    health_before = ally.health
+
+    aether.use_skill(
+        [aether, ally],
+        aether.get_skill(3),
+        combat_context={
+            "team": [aether, ally],
+            "opponents": []
+        }
+    )
+
+    expected_heal = int(
+        ally.max_health * 0.15
+    )
+
+    assert ally.health == (
+        health_before + expected_heal
+    )
+
+
+def test_sovereign_breath_scales_silence_with_buffs(
+    monkeypatch
+):
+
+    aether = create_monster("drake_aether")
+    target = create_monster("drake_igneous")
+
+    for effect_id in [
+        "attack_up",
+        "immunity",
+        "veil"
+    ]:
+        aether.apply_status_effect(
+            create_status_effect(
+                effect_id=effect_id,
+                duration=2,
+                source=aether
+            )
+        )
+
+    monkeypatch.setattr(
+        random,
+        "random",
+        lambda: 0.55
+    )
+    monkeypatch.setattr(
+        random,
+        "uniform",
+        lambda a, b: 100
+    )
+
+    aether.get_skill(2).execute(
+        aether,
+        [target],
+        {
+            "team": [aether],
+            "opponents": [target]
+        }
+    )
+
+    assert any(
+        debuff.effect_id == "silence"
+        for debuff in target.debuffs
+    )
+
+
+def test_celestial_authority_ascendance_gives_gauge_to_most_buffed_ally(
+    monkeypatch
+):
+
+    aether = create_monster("drake_aether")
+    aether.resonance = 2
+    update_resonance_kit(aether)
+
+    ally = create_monster("drake_igneous")
+    attacker = create_monster("drake_storm")
+
+    aether._combat_team = [aether, ally]
+
+    for effect_id in [
+        "attack_up",
+        "immunity"
+    ]:
+        ally.apply_status_effect(
+            create_status_effect(
+                effect_id=effect_id,
+                duration=2,
+                source=aether
+            )
+        )
+
+    monkeypatch.setattr(
+        random,
+        "random",
+        lambda: 0.0
+    )
+    monkeypatch.setattr(
+        random,
+        "uniform",
+        lambda a, b: 100
+    )
+
+    trigger_passives(
+        "on_receive_hit",
+        aether,
+        {"attacker": attacker}
+    )
+
+    assert any(
+        debuff.effect_id == "attack_break"
+        for debuff in attacker.debuffs
+    )
+
+    assert ally.action_gauge == pytest.approx(
+        0.20
+    )
+
+
+def test_divine_grace_enlightenment_adds_accuracy():
+
+    aether = create_monster("drake_aether")
+    aether.resonance = 4
+    update_resonance_kit(aether)
+
+    assert aether.get_effective_stat(
+        "accuracy"
+    ) == pytest.approx(50)
+
+
+def test_apotheosis_uses_three_turn_buffs_and_grants_extra_turn():
+
+    aether = create_monster("drake_aether")
+    aether.resonance = 5
+    update_resonance_kit(aether)
+
+    aether.use_skill(
+        [aether],
+        aether.get_skill(3),
+        combat_context={
+            "team": [aether],
+            "opponents": []
+        }
+    )
+
+    assert len(aether.buffs) == 3
+
+    assert all(
+        buff.remaining_turns == 3
+        for buff in aether.buffs
+    )
+
+    assert aether.extra_turn_pending is True
