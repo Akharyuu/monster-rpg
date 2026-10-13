@@ -641,7 +641,11 @@ class Monster:
     #                      STATUS EFFECTS
     # =========================================================
 
-    def apply_status_effect(self, effect):
+    def apply_status_effect(
+        self,
+        effect,
+        telemetry=None
+    ):
 
         if effect.effect_type == EffectType.BUFF:
             effects_list = self.buffs
@@ -684,7 +688,8 @@ class Monster:
                         effect.source,
                         {
                             "target": self,
-                            "effect": active_effect
+                            "effect": active_effect,
+                            "telemetry": telemetry
                         }
                     )
 
@@ -702,7 +707,8 @@ class Monster:
                     effect.source,
                     {
                         "target": self,
-                        "effect": effect
+                        "effect": effect,
+                        "telemetry": telemetry
                     }
                 )
 
