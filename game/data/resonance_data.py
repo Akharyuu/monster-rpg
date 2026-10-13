@@ -216,5 +216,88 @@ RESONANCE_DATA = {
                 "new": "stormbreak_requiem"
             }
         ]
+    },
+
+    "drake_aether": {
+        1: [
+            {
+                "action": "add_passive",
+                "passive": "divine_grace"
+            }
+        ],
+
+        2: [
+            {
+                "action": "replace_passive",
+                "old": "celestial_authority",
+                "new": "celestial_authority_ascendance"
+            }
+        ],
+
+        3: [
+            {
+                "action": "replace_skill",
+                "slot": 2,
+                "new": "sovereign_breath_subjugation"
+            }
+        ],
+
+        4: [
+            {
+                "action": "replace_passive",
+                "old": "divine_grace",
+                "new": "divine_grace_enlightenment"
+            }
+        ],
+
+        5: [
+            {
+                "action": "replace_skill",
+                "slot": 3,
+                "new": "heavens_decree_apotheosis"
+            }
+        ]
+    },
+
+    "drake_void": {
+        1: [
+            {
+                "action": "replace_skill",
+                "slot": 2,
+                "new": "null_rend_obliterate"
+            }
+        ],
+
+        2: [
+            {
+                "action": "add_passive",
+                "passive": "voidborn"
+            }
+        ],
+
+        3: [
+            {
+                "action": "replace_passive",
+                "old": "voidborn",
+                "new": "voidborn_transcendence"
+            }
+        ],
+
+        4: [
+            {
+                "action": "replace_skill",
+                "slot": 3,
+                "new": "dismantle_decimation"
+            }
+        ],
+
+        5: [
+            {
+                "action": "replace_skill",
+                "slot": 2,
+                "new": "null_rend_annihilation"
+            }
+        ]
     }
+
 }
