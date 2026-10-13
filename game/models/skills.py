@@ -971,6 +971,73 @@ class HealingSkill(Skill):
 
 
 
+class SupportSkill(Skill):
+
+    # =========================================================
+    #                       INITIALIZATION
+    # =========================================================
+
+    def __init__(
+        self,
+        skill_id,
+        name,
+        target_type,
+        cooldown=0,
+        after_use_handlers=None
+    ):
+        super().__init__(
+            skill_id,
+            name,
+            target_type,
+            cooldown
+        )
+
+        self.skill_type = SkillType.SUPPORT
+
+        self.after_use_handlers = (
+            after_use_handlers
+            if after_use_handlers is not None
+            else []
+        )
+
+
+    # =========================================================
+    #                        EXECUTION
+    # =========================================================
+
+    def execute(self, caster, targets, context=None):
+
+        if context is None:
+            context = {}
+
+        skill_result = SkillResult(
+            success=True,
+            target_results=[]
+        )
+
+        for handler_config in self.after_use_handlers:
+
+            handler = AFTER_USE_HANDLERS[
+                handler_config["handler"]
+            ]
+
+            event = handler(
+                caster,
+                self,
+                handler_config.get("data", {}),
+                context,
+                skill_result
+            )
+
+            if event is not None:
+                skill_result.events.append(
+                    event
+                )
+
+        return skill_result
+
+
+
 
 class PassiveSkill(Skill):
 
