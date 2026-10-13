@@ -2793,3 +2793,399 @@ def print_void_diagnostics_report(report):
     print(
         "=============================================================="
     )
+
+
+# =========================================================
+#              VOID BUFF SENSITIVITY BENCHMARK
+# =========================================================
+
+VOID_SENSITIVITY_BUFF_ORDER = [
+    "attack_up",
+    "defense_up",
+    "speed_up"
+]
+
+
+
+def _build_team_initial_buffs(
+    team_size,
+    buff_count,
+    turns=3
+):
+
+    selected_buffs = (
+        VOID_SENSITIVITY_BUFF_ORDER[
+            :buff_count
+        ]
+    )
+
+    team_buffs = []
+
+    for _ in range(team_size):
+
+        monster_buffs = []
+
+        for effect_id in selected_buffs:
+
+            monster_buffs.append(
+                {
+                    "effect_id": effect_id,
+                    "turns": turns
+                }
+            )
+
+        team_buffs.append(
+            monster_buffs
+        )
+
+    return team_buffs
+
+
+
+def analyze_void_buff_sensitivity(
+    runs=1000,
+    resonance=5,
+    level=50,
+    ascended=True,
+    max_turns=200,
+    attribute_targeting=False,
+    verbose=True
+):
+
+    void_team = [
+        "drake_storm",
+        "drake_void",
+        "drake_abyssal"
+    ]
+
+    benchmark_team = [
+        "drake_storm",
+        "drake_igneous",
+        "drake_abyssal"
+    ]
+
+    scenarios = []
+
+    for buff_count in range(4):
+
+        initial_buffs = (
+            _build_team_initial_buffs(
+                len(void_team),
+                buff_count
+            )
+        )
+
+        scenarios.append(
+            {
+                "name":
+                    f"{buff_count} buffs per monster",
+                "buff_count":
+                    buff_count,
+                "void_team":
+                    list(void_team),
+                "benchmark_team":
+                    list(benchmark_team),
+                "void_team_initial_buffs":
+                    initial_buffs,
+                "benchmark_team_initial_buffs":
+                    _build_team_initial_buffs(
+                        len(benchmark_team),
+                        buff_count
+                    )
+            }
+        )
+
+    diagnostic_report = (
+        analyze_void_diagnostics(
+            runs=runs,
+            resonance=resonance,
+            scenarios=scenarios,
+            level=level,
+            ascended=ascended,
+            max_turns=max_turns,
+            attribute_targeting=
+                attribute_targeting,
+            verbose=False
+        )
+    )
+
+    sensitivity_results = []
+
+    for buff_count, scenario in enumerate(
+        diagnostic_report["scenarios"]
+    ):
+
+        metrics = scenario[
+            "void_metrics"
+        ]
+
+        null_rend_uses = metrics[
+            "null_rend_uses"
+        ]
+
+        dismantle_uses = metrics[
+            "dismantle_uses"
+        ]
+
+        direct_damage = metrics[
+            "direct_damage"
+        ]
+
+        if null_rend_uses > 0:
+            null_rend_damage_per_use = (
+                metrics[
+                    "null_rend_damage"
+                ]
+                / null_rend_uses
+            )
+
+            oblivions_per_null_rend = (
+                metrics[
+                    "oblivions_applied"
+                ]
+                / null_rend_uses
+            )
+
+        else:
+            null_rend_damage_per_use = 0
+            oblivions_per_null_rend = 0
+
+        if dismantle_uses > 0:
+            dismantle_damage_per_use = (
+                metrics[
+                    "dismantle_damage"
+                ]
+                / dismantle_uses
+            )
+
+            buffs_removed_per_dismantle = (
+                metrics[
+                    "buffs_removed"
+                ]
+                / dismantle_uses
+            )
+
+        else:
+            dismantle_damage_per_use = 0
+            buffs_removed_per_dismantle = 0
+
+        if direct_damage > 0:
+            null_rend_damage_share = (
+                metrics[
+                    "null_rend_damage"
+                ]
+                / direct_damage
+                * 100
+            )
+
+        else:
+            null_rend_damage_share = 0
+
+        sensitivity_results.append(
+            {
+                "buff_count": buff_count,
+                "void_win_rate":
+                    scenario[
+                        "void_win_rate"
+                    ],
+                "benchmark_win_rate":
+                    scenario[
+                        "benchmark_win_rate"
+                    ],
+                "draw_rate":
+                    scenario[
+                        "draw_rate"
+                    ],
+                "average_turns":
+                    scenario[
+                        "average_turns"
+                    ],
+                "direct_damage":
+                    direct_damage,
+                "healing":
+                    metrics[
+                        "healing"
+                    ],
+                "null_rend_uses":
+                    null_rend_uses,
+                "null_rend_damage":
+                    metrics[
+                        "null_rend_damage"
+                    ],
+                "null_rend_damage_per_use":
+                    null_rend_damage_per_use,
+                "null_rend_damage_share":
+                    null_rend_damage_share,
+                "oblivions_applied":
+                    metrics[
+                        "oblivions_applied"
+                    ],
+                "oblivions_per_null_rend":
+                    oblivions_per_null_rend,
+                "dismantle_uses":
+                    dismantle_uses,
+                "dismantle_damage":
+                    metrics[
+                        "dismantle_damage"
+                    ],
+                "dismantle_damage_per_use":
+                    dismantle_damage_per_use,
+                "buffs_removed":
+                    metrics[
+                        "buffs_removed"
+                    ],
+                "buffs_removed_per_dismantle":
+                    buffs_removed_per_dismantle,
+                "action_gauge_from_strips":
+                    metrics[
+                        "action_gauge_from_bottomless_hunger"
+                    ],
+                "voidborn_activations":
+                    metrics[
+                        "voidborn_activations"
+                    ]
+            }
+        )
+
+    report = {
+        "runs_per_side": runs,
+        "resonance": resonance,
+        "level": level,
+        "ascended": ascended,
+        "void_team": void_team,
+        "benchmark_team":
+            benchmark_team,
+        "results":
+            sensitivity_results
+    }
+
+    if verbose:
+        print_void_buff_sensitivity_report(
+            report
+        )
+
+    return report
+
+
+
+def print_void_buff_sensitivity_report(
+    report
+):
+
+    print()
+    print(
+        "=============================================================="
+    )
+    print(
+        "                 VOID BUFF SENSITIVITY"
+    )
+    print(
+        "=============================================================="
+    )
+
+    print(
+        f"Runs per side: "
+        f"{report['runs_per_side']} "
+        f"| Resonance: "
+        f"R{report['resonance']}"
+    )
+
+    print(
+        "Void team: "
+        + ", ".join(
+            report["void_team"]
+        )
+    )
+
+    print(
+        "Benchmark: "
+        + ", ".join(
+            report[
+                "benchmark_team"
+            ]
+        )
+    )
+
+    print()
+    print(
+        "WIN RATE / STRIP CURVE"
+    )
+
+    print(
+        f"{'Buffs':>5} "
+        f"{'Void WR':>9} "
+        f"{'Removed':>9} "
+        f"{'AG':>8} "
+        f"{'Voidborn':>9} "
+        f"{'Healing':>10}"
+    )
+
+    for result in report[
+        "results"
+    ]:
+
+        print(
+            f"{result['buff_count']:>5} "
+            f"{result['void_win_rate']:>8.1f}% "
+            f"{result['buffs_removed']:>9.2f} "
+            f"{result['action_gauge_from_strips'] * 100:>7.1f}% "
+            f"{result['voidborn_activations']:>9.2f} "
+            f"{result['healing']:>10.1f}"
+        )
+
+    print()
+    print(
+        "NULL REND CONTRIBUTION"
+    )
+
+    print(
+        f"{'Buffs':>5} "
+        f"{'Uses':>7} "
+        f"{'Damage':>10} "
+        f"{'Dmg/Use':>10} "
+        f"{'Dmg Share':>10} "
+        f"{'Obliv/Use':>10}"
+    )
+
+    for result in report[
+        "results"
+    ]:
+
+        print(
+            f"{result['buff_count']:>5} "
+            f"{result['null_rend_uses']:>7.2f} "
+            f"{result['null_rend_damage']:>10.1f} "
+            f"{result['null_rend_damage_per_use']:>10.1f} "
+            f"{result['null_rend_damage_share']:>9.1f}% "
+            f"{result['oblivions_per_null_rend']:>10.2f}"
+        )
+
+    print()
+    print(
+        "DISMANTLE CONTRIBUTION"
+    )
+
+    print(
+        f"{'Buffs':>5} "
+        f"{'Uses':>7} "
+        f"{'Damage':>10} "
+        f"{'Dmg/Use':>10} "
+        f"{'Buffs/Use':>10}"
+    )
+
+    for result in report[
+        "results"
+    ]:
+
+        print(
+            f"{result['buff_count']:>5} "
+            f"{result['dismantle_uses']:>7.2f} "
+            f"{result['dismantle_damage']:>10.1f} "
+            f"{result['dismantle_damage_per_use']:>10.1f} "
+            f"{result['buffs_removed_per_dismantle']:>10.2f}"
+        )
+
+    print()
+    print(
+        "=============================================================="
+    )
