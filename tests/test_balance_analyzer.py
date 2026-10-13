@@ -5,6 +5,7 @@ import game.combat.balance_analyzer as balance_module
 from game.combat.balance_analyzer import (
     analyze_drake_roster_balance,
     analyze_team_matchup_balance,
+    analyze_void_diagnostics,
     analyze_team_swap_balance,
     analyze_unit_balance,
     get_default_balance_benchmarks
@@ -1148,5 +1149,185 @@ def test_drake_roster_balance_rejects_invalid_resonance():
 
         analyze_drake_roster_balance(
             resonances=(6,),
+            verbose=False
+        )
+
+
+# =========================================================
+#                 VOID DIAGNOSTIC TESTS
+# =========================================================
+
+def test_void_diagnostics_averages_both_sides(
+    monkeypatch
+):
+
+    calls = []
+
+    def fake_simulate_battles(
+        team_a_ids,
+        team_b_ids,
+        **kwargs
+    ):
+
+        calls.append(
+            (
+                list(team_a_ids),
+                list(team_b_ids)
+            )
+        )
+
+        void_is_team_a = (
+            "drake_void" in team_a_ids
+        )
+
+        void_entry = {
+            "slot": 0,
+            "monster_id": "drake_void",
+            "direct_damage": (
+                1000
+                if void_is_team_a
+                else 3000
+            ),
+            "healing": 200,
+            "null_rend_damage": 400,
+            "dismantle_damage": 500,
+            "null_rend_uses": 1,
+            "dismantle_uses": 2,
+            "buffs_removed": (
+                2
+                if void_is_team_a
+                else 4
+            ),
+            "strip_events": 1,
+            "veil_blocks": 1,
+            "bottomless_hunger_activations": 1,
+            "action_gauge_from_bottomless_hunger": 0.16,
+            "voidborn_activations": 0.5,
+            "oblivions_applied": 1,
+            "defense_breaks_applied": 2
+        }
+
+        filler_entry = {
+            key: 0
+            for key in void_entry
+            if key not in (
+                "slot",
+                "monster_id"
+            )
+        }
+
+        filler_entry.update(
+            {
+                "slot": 0,
+                "monster_id": "drake_igneous"
+            }
+        )
+
+        if void_is_team_a:
+
+            team_a_telemetry = [
+                void_entry
+            ]
+
+            team_b_telemetry = [
+                filler_entry
+            ]
+
+            team_a_win_rate = 40
+            team_b_win_rate = 60
+
+        else:
+
+            team_a_telemetry = [
+                filler_entry
+            ]
+
+            team_b_telemetry = [
+                void_entry
+            ]
+
+            team_a_win_rate = 55
+            team_b_win_rate = 45
+
+        return {
+            "team_a_win_rate":
+                team_a_win_rate,
+            "team_b_win_rate":
+                team_b_win_rate,
+            "draw_rate": 0,
+            "average_turns": 10,
+            "team_a_telemetry":
+                team_a_telemetry,
+            "team_b_telemetry":
+                team_b_telemetry
+        }
+
+    monkeypatch.setattr(
+        balance_module,
+        "simulate_battles",
+        fake_simulate_battles
+    )
+
+    report = analyze_void_diagnostics(
+        runs=10,
+        scenarios=[
+            {
+                "name": "Test",
+                "void_team": [
+                    "drake_void"
+                ],
+                "benchmark_team": [
+                    "drake_igneous"
+                ]
+            }
+        ],
+        verbose=False
+    )
+
+    scenario = report[
+        "scenarios"
+    ][0]
+
+    metrics = scenario[
+        "void_metrics"
+    ]
+
+    assert len(calls) == 2
+
+    assert scenario[
+        "void_win_rate"
+    ] == pytest.approx(
+        42.5
+    )
+
+    assert metrics[
+        "direct_damage"
+    ] == pytest.approx(
+        2000
+    )
+
+    assert metrics[
+        "buffs_removed"
+    ] == pytest.approx(
+        3
+    )
+
+
+def test_void_diagnostics_requires_void_team():
+
+    with pytest.raises(ValueError):
+
+        analyze_void_diagnostics(
+            scenarios=[
+                {
+                    "name": "Invalid",
+                    "void_team": [
+                        "drake_igneous"
+                    ],
+                    "benchmark_team": [
+                        "drake_storm"
+                    ]
+                }
+            ],
             verbose=False
         )
