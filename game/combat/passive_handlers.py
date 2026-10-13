@@ -296,6 +296,193 @@ def shattered_fury(owner, context, passive):
 
 
 
+
+
+# =========================================================
+#                  AETHER DRAKE PASSIVES
+# =========================================================
+
+def celestial_authority(owner, context, passive):
+
+    attacker = context.get("attacker")
+
+    if attacker is None or not attacker.is_alive:
+        return
+
+    data = passive.handler_data
+
+    if random.random() > data["chance"]:
+        return
+
+    accuracy = owner.get_effective_stat(
+        "accuracy"
+    )
+
+    resistance = attacker.get_effective_stat(
+        "resistance"
+    )
+
+    resist_chance = max(
+        15,
+        resistance - accuracy
+    )
+
+    resist_chance = min(
+        100,
+        resist_chance
+    )
+
+    if random.uniform(0, 100) < resist_chance:
+        return
+
+    attack_break = create_status_effect(
+        effect_id="attack_break",
+        duration=data["turns"],
+        source=owner
+    )
+
+    applied_effect = attacker.apply_status_effect(
+        attack_break
+    )
+
+    if applied_effect is None:
+        return
+
+    action_gauge = data.get(
+        "action_gauge_to_most_buffed_ally",
+        0
+    )
+
+    if action_gauge <= 0:
+        return
+
+    team = getattr(
+        owner,
+        "_combat_team",
+        [owner]
+    )
+
+    living_team = [
+        ally
+        for ally in team
+        if ally.is_alive
+    ]
+
+    if not living_team:
+        return
+
+    target_ally = max(
+        living_team,
+        key=lambda ally: len(ally.buffs)
+    )
+
+    target_ally.increase_action_gauge(
+        action_gauge
+    )
+
+
+
+def divine_grace(owner, context, passive):
+
+    target = context.get("target")
+
+    if target is None or not target.is_alive:
+        return
+
+    data = passive.handler_data
+
+    heal_amount = int(
+        target.max_health
+        * data["heal_ratio_per_buff"]
+    )
+
+    target.heal(
+        heal_amount
+    )
+
+
+# =========================================================
+#                   VOID DRAKE PASSIVES
+# =========================================================
+
+def bottomless_hunger(owner, context, passive):
+
+    removed_count = context.get(
+        "removed_count",
+        0
+    )
+
+    if removed_count <= 0:
+        return
+
+    data = passive.handler_data
+
+    for _ in range(removed_count):
+
+        heal_amount = int(
+            owner.max_health
+            * data["heal_ratio_per_buff"]
+        )
+
+        owner.heal(
+            heal_amount
+        )
+
+        owner.increase_action_gauge(
+            data["action_gauge_per_buff"]
+        )
+
+
+
+def voidborn(owner, context, passive):
+
+    removed_count = context.get(
+        "removed_count",
+        0
+    )
+
+    if removed_count <= 0:
+        return
+
+    data = passive.handler_data
+
+    max_stacks = data["max_stacks"]
+
+    for _ in range(removed_count):
+
+        owner.add_combat_resource(
+            "voidborn",
+            1,
+            max_stacks
+        )
+
+        if owner.get_combat_resource(
+            "voidborn"
+        ) < max_stacks:
+            continue
+
+        owner.consume_combat_resource(
+            "voidborn",
+            max_stacks
+        )
+
+        if data.get(
+            "full_cleanse_on_activation",
+            False
+        ):
+            owner.reset_debuffs()
+
+        invincibility = create_status_effect(
+            effect_id="invincibility",
+            duration=data["invincibility_turns"],
+            source=owner
+        )
+
+        owner.apply_status_effect(
+            invincibility
+        )
+
+
 # =========================================================
 #                      HANDLER REGISTRY
 # =========================================================
@@ -305,6 +492,10 @@ PASSIVE_HANDLERS = {
     "apply_burn": apply_burn,
     "stun_on_hit_if_buff": stun_on_hit_if_buff,
     "frozen_scales": frozen_scales,
-    "shattered_fury": shattered_fury
+    "shattered_fury": shattered_fury,
+    "celestial_authority": celestial_authority,
+    "divine_grace": divine_grace,
+    "bottomless_hunger": bottomless_hunger,
+    "voidborn": voidborn
 }
 
