@@ -890,6 +890,259 @@ SKILL_DATA = {
             }
         ]
     }
+,
+
+    # ---------------------------------------------------------
+    #                       AETHER DRAKE
+    # ---------------------------------------------------------
+
+    # S2
+    "sovereign_breath": {
+        "name": "Sovereign Breath",
+        "type": SkillType.DAMAGE,
+        "multiplier": 3.00,
+        "hits": 1,
+        "target_type": TargetType.ALL_ENEMIES,
+        "cooldown": 4,
+
+        "after_use_handlers": [
+            {
+                "handler": "apply_scaling_silence",
+                "data": {
+                    "base_chance": 0.30,
+                    "chance_per_buff": 0.10,
+                    "max_chance": 0.80,
+                    "turns": 1
+                }
+            }
+        ]
+    },
+
+    "sovereign_breath_subjugation": {
+        "name": "Sovereign Breath: Subjugation",
+        "type": SkillType.DAMAGE,
+        "multiplier": 3.00,
+        "hits": 1,
+        "target_type": TargetType.ALL_ENEMIES,
+        "cooldown": 3,
+
+        "after_use_handlers": [
+            {
+                "handler": "apply_scaling_silence",
+                "data": {
+                    "base_chance": 0.50,
+                    "chance_per_buff": 0.10,
+                    "max_chance": 1.00,
+                    "turns": 1
+                }
+            }
+        ]
+    },
+
+    # S3
+    "heavens_decree": {
+        "name": "Heaven's Decree",
+        "type": SkillType.SUPPORT,
+        "target_type": TargetType.ALL_ALLIES,
+        "cooldown": 6,
+
+        "after_use_handlers": [
+            {
+                "handler": "apply_aoe_buff",
+                "data": {
+                    "effect_id": "attack_up",
+                    "turns": 2
+                }
+            },
+            {
+                "handler": "apply_aoe_buff",
+                "data": {
+                    "effect_id": "immunity",
+                    "turns": 2
+                }
+            },
+            {
+                "handler": "apply_aoe_buff",
+                "data": {
+                    "effect_id": "veil",
+                    "turns": 2
+                }
+            }
+        ]
+    },
+
+    "heavens_decree_apotheosis": {
+        "name": "Heaven's Decree: Apotheosis",
+        "type": SkillType.SUPPORT,
+        "target_type": TargetType.ALL_ALLIES,
+        "cooldown": 6,
+
+        "after_use_handlers": [
+            {
+                "handler": "apply_aoe_buff",
+                "data": {
+                    "effect_id": "attack_up",
+                    "turns": 3
+                }
+            },
+            {
+                "handler": "apply_aoe_buff",
+                "data": {
+                    "effect_id": "immunity",
+                    "turns": 3
+                }
+            },
+            {
+                "handler": "apply_aoe_buff",
+                "data": {
+                    "effect_id": "veil",
+                    "turns": 3
+                }
+            },
+            {
+                "handler": "grant_extra_turn",
+                "data": {}
+            }
+        ]
+    },
+
+    # ---------------------------------------------------------
+    #                        VOID DRAKE
+    # ---------------------------------------------------------
+
+    # S2
+    "null_rend": {
+        "name": "Null Rend",
+        "type": SkillType.DAMAGE,
+        "multiplier": 2.10,
+        "hits": 2,
+        "target_type": TargetType.SINGLE_ENEMY,
+        "cooldown": 4,
+
+        "on_hit_handlers": [
+            {
+                "handler": "apply_debuff_on_hit_indices",
+                "data": {
+                    "effect_id": "oblivion",
+                    "chance": 0.60,
+                    "turns": 2,
+                    "hit_indices": [1]
+                }
+            }
+        ]
+    },
+
+    "null_rend_obliterate": {
+        "name": "Null Rend: Obliterate",
+        "type": SkillType.DAMAGE,
+        "multiplier": 2.10,
+        "hits": 2,
+        "hit_multipliers": [
+            1.00,
+            1.30
+        ],
+        "target_type": TargetType.SINGLE_ENEMY,
+        "cooldown": 4,
+
+        "on_hit_handlers": [
+            {
+                "handler": "apply_debuff_on_hit_indices",
+                "data": {
+                    "effect_id": "oblivion",
+                    "chance": 0.80,
+                    "turns": 2,
+                    "hit_indices": [1]
+                }
+            }
+        ]
+    },
+
+    "null_rend_annihilation": {
+        "name": "Null Rend: Annihilation",
+        "type": SkillType.DAMAGE,
+        "multiplier": 2.10,
+        "hits": 2,
+        "hit_multipliers": [
+            1.00,
+            1.30
+        ],
+        "target_type": TargetType.SINGLE_ENEMY,
+        "cooldown": 4,
+
+        "on_hit_handlers": [
+            {
+                "handler": "apply_debuff_on_hit_indices",
+                "data": {
+                    "effect_id": "oblivion",
+                    "chance": 0.80,
+                    "turns": 2,
+                    "hit_indices": [1]
+                }
+            }
+        ],
+
+        "after_use_handlers": [
+            {
+                "handler": "banish_killed_oblivion_targets",
+                "data": {}
+            }
+        ]
+    },
+
+    # S3
+    "dismantle": {
+        "name": "Dismantle",
+        "type": SkillType.DAMAGE,
+        "multiplier": 1.45,
+        "hits": 3,
+        "target_type": TargetType.ALL_ENEMIES,
+        "cooldown": 5,
+
+        "on_hit_handlers": [
+            {
+                "handler": "strip_buffs_on_hit",
+                "data": {
+                    "hit_index": 0
+                }
+            },
+            {
+                "handler": "apply_debuff_on_hit_indices",
+                "data": {
+                    "effect_id": "defense_break",
+                    "chance": 0.30,
+                    "turns": 2,
+                    "hit_indices": [1, 2]
+                }
+            }
+        ]
+    },
+
+    "dismantle_decimation": {
+        "name": "Dismantle: Decimation",
+        "type": SkillType.DAMAGE,
+        "multiplier": 1.45,
+        "hits": 3,
+        "target_type": TargetType.ALL_ENEMIES,
+        "cooldown": 4,
+
+        "on_hit_handlers": [
+            {
+                "handler": "strip_buffs_on_hit",
+                "data": {
+                    "hit_index": 0
+                }
+            },
+            {
+                "handler": "apply_debuff_on_hit_indices",
+                "data": {
+                    "effect_id": "defense_break",
+                    "chance": 0.50,
+                    "turns": 2,
+                    "hit_indices": [1, 2]
+                }
+            }
+        ]
+    }
 
 }
 
