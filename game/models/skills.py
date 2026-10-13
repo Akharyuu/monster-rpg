@@ -702,10 +702,27 @@ class DamageSkill(Skill):
                     }
                 )
 
+        if target.is_alive:
+            trigger_passives(
+                "on_receive_hit",
+                target,
+                {
+                    "attacker": caster,
+                    "skill": self
+                }
+            )
+
         # Skill-specific mechanics that happen immediately after each hit.
         for handler_config in self.on_hit_handlers:
             handler_name = handler_config["handler"]
-            data = handler_config.get("data", {})
+            data = dict(
+                handler_config.get(
+                    "data",
+                    {}
+                )
+            )
+
+            data["_hit_index"] = hit_index
 
             handler = ON_HIT_HANDLERS[handler_name]
 
