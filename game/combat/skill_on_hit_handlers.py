@@ -47,6 +47,9 @@ def apply_debuff_on_hit_indices(
     data
 ):
 
+    if not target.is_alive:
+        return
+
     hit_index = data.get(
         "_hit_index"
     )
@@ -99,6 +102,9 @@ def strip_buffs_on_hit(
     skill,
     data
 ):
+
+    if not target.is_alive:
+        return
 
     hit_index = data.get(
         "_hit_index"
