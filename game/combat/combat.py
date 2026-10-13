@@ -806,7 +806,9 @@ def simulate_battles(
                 team_a,
                 team_b,
                 max_turns=max_turns,
-                attribute_targeting=attribute_targeting
+                attribute_targeting=attribute_targeting,
+                team_a_initial_buffs=team_a_initial_buffs,
+                team_b_initial_buffs=team_b_initial_buffs
             )
 
         else:
