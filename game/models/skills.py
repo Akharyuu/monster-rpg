@@ -664,6 +664,26 @@ class DamageSkill(Skill):
             actual_health_damage
         )
 
+        skill_damage_metrics = {
+            "null_rend": "null_rend_damage",
+            "null_rend_obliterate": "null_rend_damage",
+            "null_rend_annihilation": "null_rend_damage",
+            "dismantle": "dismantle_damage",
+            "dismantle_decimation": "dismantle_damage"
+        }
+
+        skill_damage_metric = skill_damage_metrics.get(
+            self.skill_id
+        )
+
+        if skill_damage_metric is not None:
+            record_telemetry(
+                target_result.get("telemetry"),
+                caster,
+                skill_damage_metric,
+                actual_health_damage
+            )
+
         for broken_effect in broken_effects:
 
             if (
