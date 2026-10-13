@@ -2,6 +2,7 @@ import random
 
 from ..data.passive_data import PASSIVE_DATA
 from ..factories.status_effect_factory import create_status_effect
+from ..combat.telemetry import record_telemetry
 
 
 # =========================================================
@@ -396,8 +397,15 @@ def divine_grace(owner, context, passive):
         * data["heal_ratio_per_buff"]
     )
 
-    target.heal(
+    actual_heal = target.heal(
         heal_amount
+    )
+
+    record_telemetry(
+        context.get("telemetry"),
+        owner,
+        "healing",
+        actual_heal
     )
 
 
@@ -424,8 +432,15 @@ def bottomless_hunger(owner, context, passive):
             * data["heal_ratio_per_buff"]
         )
 
-        owner.heal(
+        actual_heal = owner.heal(
             heal_amount
+        )
+
+        record_telemetry(
+            context.get("telemetry"),
+            owner,
+            "healing",
+            actual_heal
         )
 
         owner.increase_action_gauge(
