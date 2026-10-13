@@ -1014,7 +1014,7 @@ SKILL_DATA = {
     "null_rend": {
         "name": "Null Rend",
         "type": SkillType.DAMAGE,
-        "multiplier": 2.10,
+        "multiplier": 2.25,
         "hits": 2,
         "target_type": TargetType.SINGLE_ENEMY,
         "cooldown": 4,
@@ -1035,11 +1035,11 @@ SKILL_DATA = {
     "null_rend_obliterate": {
         "name": "Null Rend: Obliterate",
         "type": SkillType.DAMAGE,
-        "multiplier": 2.10,
+        "multiplier": 2.25,
         "hits": 2,
         "hit_multipliers": [
             1.00,
-            1.30
+            1.35
         ],
         "target_type": TargetType.SINGLE_ENEMY,
         "cooldown": 4,
@@ -1060,11 +1060,11 @@ SKILL_DATA = {
     "null_rend_annihilation": {
         "name": "Null Rend: Annihilation",
         "type": SkillType.DAMAGE,
-        "multiplier": 2.10,
+        "multiplier": 2.25,
         "hits": 2,
         "hit_multipliers": [
             1.00,
-            1.30
+            1.35
         ],
         "target_type": TargetType.SINGLE_ENEMY,
         "cooldown": 4,
