@@ -146,7 +146,10 @@ def strip_buffs_on_hit(
         {
             "target": target,
             "removed_count": removed_count,
-            "skill": skill
+            "skill": skill,
+            "telemetry": data.get(
+                "_telemetry"
+            )
         }
     )
 
