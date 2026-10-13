@@ -9,7 +9,8 @@ from ..models.monster import Monster
 from ..models.skills import (
     DamageSkill,
     HealingSkill,
-    PassiveSkill
+    PassiveSkill,
+    SupportSkill
 )
 
 
@@ -115,6 +116,16 @@ def create_skill(skill_id):
             scaling_stat=skill.get("scaling_stat"),
             base_scaling_ratio=skill.get("base_scaling_ratio", 0),
             scaling_bonus=skill.get("scaling_bonus", 0),
+            cooldown=skill["cooldown"],
+            after_use_handlers=skill.get("after_use_handlers")
+        )
+
+    if skill["type"] == SkillType.SUPPORT:
+
+        return SupportSkill(
+            skill_id=skill_id,
+            name=skill["name"],
+            target_type=skill["target_type"],
             cooldown=skill["cooldown"],
             after_use_handlers=skill.get("after_use_handlers")
         )
