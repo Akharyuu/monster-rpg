@@ -1331,3 +1331,151 @@ def test_void_diagnostics_requires_void_team():
             ],
             verbose=False
         )
+
+
+def test_void_diagnostics_forwards_controlled_initial_buffs(
+    monkeypatch
+):
+
+    calls = []
+
+    def fake_simulate_battles(
+        team_a_ids,
+        team_b_ids,
+        **kwargs
+    ):
+
+        calls.append(
+            {
+                "team_a_ids": list(team_a_ids),
+                "team_b_ids": list(team_b_ids),
+                "team_a_initial_buffs":
+                    kwargs.get(
+                        "team_a_initial_buffs"
+                    ),
+                "team_b_initial_buffs":
+                    kwargs.get(
+                        "team_b_initial_buffs"
+                    )
+            }
+        )
+
+        void_is_team_a = (
+            "drake_void" in team_a_ids
+        )
+
+        void_entry = {
+            "slot": 0,
+            "monster_id": "drake_void",
+            "direct_damage": 0,
+            "healing": 0,
+            "null_rend_damage": 0,
+            "dismantle_damage": 0,
+            "null_rend_uses": 0,
+            "dismantle_uses": 0,
+            "buffs_removed": 0,
+            "strip_events": 0,
+            "veil_blocks": 0,
+            "bottomless_hunger_activations": 0,
+            "action_gauge_from_bottomless_hunger": 0,
+            "voidborn_activations": 0,
+            "oblivions_applied": 0,
+            "defense_breaks_applied": 0
+        }
+
+        filler_entry = dict(
+            void_entry
+        )
+
+        filler_entry[
+            "monster_id"
+        ] = "drake_igneous"
+
+        return {
+            "team_a_win_rate": 50,
+            "team_b_win_rate": 50,
+            "draw_rate": 0,
+            "average_turns": 10,
+            "team_a_telemetry": (
+                [void_entry]
+                if void_is_team_a
+                else [filler_entry]
+            ),
+            "team_b_telemetry": (
+                [filler_entry]
+                if void_is_team_a
+                else [void_entry]
+            )
+        }
+
+    monkeypatch.setattr(
+        balance_module,
+        "simulate_battles",
+        fake_simulate_battles
+    )
+
+    void_buffs = [
+        [
+            {
+                "effect_id": "attack_up",
+                "turns": 3
+            }
+        ]
+    ]
+
+    benchmark_buffs = [
+        [
+            {
+                "effect_id": "speed_up",
+                "turns": 3
+            }
+        ]
+    ]
+
+    analyze_void_diagnostics(
+        runs=10,
+        scenarios=[
+            {
+                "name": "Controlled",
+                "void_team": [
+                    "drake_void"
+                ],
+                "benchmark_team": [
+                    "drake_igneous"
+                ],
+                "void_team_initial_buffs":
+                    void_buffs,
+                "benchmark_team_initial_buffs":
+                    benchmark_buffs
+            }
+        ],
+        verbose=False
+    )
+
+    assert (
+        calls[0][
+            "team_a_initial_buffs"
+        ]
+        == void_buffs
+    )
+
+    assert (
+        calls[0][
+            "team_b_initial_buffs"
+        ]
+        == benchmark_buffs
+    )
+
+    assert (
+        calls[1][
+            "team_a_initial_buffs"
+        ]
+        == benchmark_buffs
+    )
+
+    assert (
+        calls[1][
+            "team_b_initial_buffs"
+        ]
+        == void_buffs
+    )
