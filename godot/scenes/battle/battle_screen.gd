@@ -476,6 +476,16 @@ func play_result_feedback(result: Dictionary) -> void:
                 "burn" if effect_id == "burn" else "debuff"
             )
 
+        var buffs_removed: int = int(
+            target_result.get("buffs_removed", 0)
+        )
+
+        if buffs_removed > 0:
+            await hud.play_status_feedback(
+                "STRIP x%d!" % buffs_removed,
+                "debuff"
+            )
+
         if not target_result.get(
             "resisted_effects",
             []
