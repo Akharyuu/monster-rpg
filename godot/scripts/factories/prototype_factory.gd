@@ -11,6 +11,8 @@ static func create_level_one_monster(monster_id: String):
     match monster_id:
         "drake_igneous":
             return _create_igneous_drake()
+        "drake_abyssal":
+            return _create_abyssal_drake()
         "slime_storm":
             return _create_storm_slime()
         "slime_abyssal":
@@ -116,6 +118,91 @@ static func _create_igneous_drake():
         }
     ]
 
+    return monster
+
+
+static func _create_abyssal_drake():
+    var skills: Array = [
+        DamageSkillScript.new(
+            "draconic_claw",
+            "Draconic Claw",
+            2.5,
+            1,
+            [],
+            "attack",
+            0,
+            [
+                {
+                    "effect_id": "defense_break",
+                    "chance": 0.30,
+                    "turns": 2
+                }
+            ]
+        ),
+
+        DamageSkillScript.new(
+            "rime_breath",
+            "Rime Breath",
+            3.15,
+            2,
+            [],
+            "attack",
+            4,
+            [
+                {
+                    "effect_id": "speed_break",
+                    "chance": 0.50,
+                    "turns": 2,
+                    "trigger": "per_hit"
+                }
+            ],
+            {},
+            {},
+            "all_enemies"
+        ),
+
+        DamageSkillScript.new(
+            "glacial_collapse",
+            "Glacial Collapse",
+            4.10,
+            1,
+            [],
+            "attack",
+            5,
+            [
+                {
+                    "effect_id": "freeze",
+                    "chance": 1.00,
+                    "turns": 1,
+                    "trigger": "per_hit",
+                    "condition": {
+                        "type": "target_has_debuff",
+                        "effect_id": "speed_break"
+                    }
+                }
+            ],
+            {},
+            {},
+            "all_enemies",
+            0.10
+        )
+    ]
+
+    var monster = MonsterScript.new(
+        "drake_abyssal",
+        "Vharak",
+        "Drake",
+        "abyssal",
+        5,
+        _scaled(14075),
+        _scaled(693),
+        _scaled(921),
+        _scaled(216),
+        skills,
+        LEVEL_ONE_MULTIPLIER
+    )
+
+    monster.combat_resources["frozen_scales"] = 0
     return monster
 
 
