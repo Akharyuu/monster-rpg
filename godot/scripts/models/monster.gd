@@ -29,6 +29,7 @@ var skills: Array = []
 
 var buffs: Array = []
 var debuffs: Array = []
+var combat_resources: Dictionary = {}
 
 # Lightweight prototype representation of passive effects that trigger
 # whenever this monster lands a hit. This will later become the full
@@ -82,6 +83,48 @@ func is_silenced() -> bool:
 
 func cannot_act() -> bool:
     return is_stunned() or is_frozen()
+
+
+func has_buff(effect_id: String) -> bool:
+    for buff in buffs:
+        if buff.effect_id == effect_id:
+            return true
+
+    return false
+
+
+func get_combat_resource(
+    resource_id: String,
+    default_value: int = 0
+) -> int:
+    return int(
+        combat_resources.get(resource_id, default_value)
+    )
+
+
+func add_combat_resource(
+    resource_id: String,
+    amount: int,
+    maximum: int
+) -> int:
+    var new_value: int = mini(
+        maximum,
+        get_combat_resource(resource_id) + amount
+    )
+
+    combat_resources[resource_id] = new_value
+    return new_value
+
+
+func consume_combat_resource(
+    resource_id: String,
+    amount: int
+) -> int:
+    var current: int = get_combat_resource(resource_id)
+    var consumed: int = mini(current, amount)
+
+    combat_resources[resource_id] = current - consumed
+    return consumed
 
 
 func get_base_stat(stat: String) -> float:
@@ -174,6 +217,9 @@ func apply_status_effect(effect):
     if effect.effect_type == "buff":
         effects_list = buffs
     elif effect.effect_type == "debuff":
+        if has_buff("immunity"):
+            return null
+
         effects_list = debuffs
     else:
         return null
