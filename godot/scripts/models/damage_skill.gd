@@ -87,7 +87,7 @@ func base_damage_calc(
                 + pow(
                     effective_defense
                     / defense_reference,
-                    1.5
+                    1.1
                 )
             )
         )
