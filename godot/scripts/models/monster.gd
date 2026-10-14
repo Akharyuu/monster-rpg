@@ -68,6 +68,22 @@ func is_alive() -> bool:
     return health > 0
 
 
+func is_stunned() -> bool:
+    return get_debuff("stun") != null
+
+
+func is_frozen() -> bool:
+    return get_debuff("freeze") != null
+
+
+func is_silenced() -> bool:
+    return get_debuff("silence") != null
+
+
+func cannot_act() -> bool:
+    return is_stunned() or is_frozen()
+
+
 func get_base_stat(stat: String) -> float:
     match stat:
         "max_health", "health":
@@ -254,14 +270,14 @@ func apply_damage_over_time() -> Dictionary:
 func reduce_status_effect_turns(
     effects_at_turn_start: Array = []
 ) -> void:
-    var reduce_all := effects_at_turn_start.is_empty()
-
+    # Match Python exactly: only effects that existed when the
+    # turn began lose duration. An empty snapshot means reduce none.
     for buff in buffs:
-        if reduce_all or buff in effects_at_turn_start:
+        if buff in effects_at_turn_start:
             buff.reduce_remaining_turns()
 
     for debuff in debuffs:
-        if reduce_all or debuff in effects_at_turn_start:
+        if debuff in effects_at_turn_start:
             debuff.reduce_remaining_turns()
 
     buffs = buffs.filter(
