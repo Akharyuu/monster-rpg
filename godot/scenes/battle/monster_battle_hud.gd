@@ -5,6 +5,7 @@ signal target_pressed
 
 @onready var turn_indicator: Panel = $"Turn Indicator"
 @onready var target_highlight: Panel = $"Target Highlight"
+@onready var target_prompt: Label = $"Target Prompt"
 @onready var attribute_label: Label = $"Attribute"
 @onready var name_label: Label = $"Name"
 @onready var level_label: Label = $"Level"
@@ -68,6 +69,7 @@ func refresh(is_active: bool) -> void:
     if not bound_monster.is_alive():
         target_button.visible = false
         target_button.disabled = true
+        target_prompt.visible = false
         target_highlight.visible = false
 
     _populate_battle_states()
@@ -95,6 +97,11 @@ func set_target_mode(mode: String) -> void:
     )
 
     target_button.visible = (
+        target_mode == "single"
+        and can_target
+    )
+
+    target_prompt.visible = (
         target_mode == "single"
         and can_target
     )
