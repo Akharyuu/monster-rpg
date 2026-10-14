@@ -1279,6 +1279,9 @@ class Monster:
         self.internal_cooldowns = {}
         self.death_order = None
         self._death_recorded = False
+        self._battle_state = None
+        self._combat_team = []
+        self._combat_opponents = []
 
         for skill in self.skills:
             skill.reset_cooldown()
