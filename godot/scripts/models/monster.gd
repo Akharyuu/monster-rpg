@@ -1,6 +1,8 @@
 class_name Monster
 extends RefCounted
 
+const SkillScript = preload("res://scripts/models/skill.gd")
+
 var monster_id: String
 var monster_name: String
 var family: String
@@ -22,7 +24,7 @@ var crit_rate: float = 15.0
 var crit_damage: float = 50.0
 
 var action_gauge: float = 0.0
-var skills: Array[Skill] = []
+var skills: Array = []
 
 
 func _init(
@@ -35,7 +37,7 @@ func _init(
     p_attack: int,
     p_defense: int,
     p_speed: int,
-    p_skills: Array[Skill] = []
+    p_skills: Array = []
 ) -> void:
     monster_id = p_monster_id
     monster_name = p_name
@@ -56,9 +58,6 @@ func is_alive() -> bool:
 
 
 func get_effective_stat(stat: String) -> float:
-    # First playable slice: no glyph/buff/passive modifiers yet.
-    # This method deliberately mirrors the Python API so those
-    # systems can be ported here without changing callers.
     match stat:
         "max_health", "health":
             return max_health
@@ -81,7 +80,7 @@ func get_effective_stat(stat: String) -> float:
             return 0.0
 
 
-func get_attribute_modifier(defender: Monster) -> float:
+func get_attribute_modifier(defender) -> float:
     if (
         (attribute == "igneous" and defender.attribute == "abyssal")
         or (attribute == "abyssal" and defender.attribute == "storm")
@@ -100,7 +99,7 @@ func get_attribute_modifier(defender: Monster) -> float:
 
 
 func receive_damage(amount: int) -> int:
-    var actual_damage := mini(amount, health)
+    var actual_damage: int = mini(amount, health)
     health = maxi(0, health - amount)
     return actual_damage
 
@@ -109,12 +108,12 @@ func heal(amount: int) -> int:
     if not is_alive():
         return 0
 
-    var old_health := health
+    var old_health: int = health
     health = mini(max_health, health + amount)
     return health - old_health
 
 
-func get_skill(index: int) -> Skill:
+func get_skill(index: int):
     if index < 1 or index > skills.size():
         return null
 
