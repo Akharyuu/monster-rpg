@@ -1,5 +1,9 @@
 extends Control
 
+const PrototypeFactoryScript = preload(
+    "res://scripts/factories/prototype_factory.gd"
+)
+
 @onready var enemy_hp_bar = $"Enemy Monster HP bar"
 @onready var ally_hp_bar = $"Ally Monster HP bar"
 
@@ -13,18 +17,18 @@ extends Control
 @onready var turn_label = $"Turn Label"
 
 
-var player_monster: Monster
-var enemy_monster: Monster
+var player_monster
+var enemy_monster
 
 var battle_finished := false
 
 
 func _ready() -> void:
-    player_monster = PrototypeFactory.create_level_one_monster(
+    player_monster = PrototypeFactoryScript.create_level_one_monster(
         "drake_igneous"
     )
 
-    enemy_monster = PrototypeFactory.create_level_one_monster(
+    enemy_monster = PrototypeFactoryScript.create_level_one_monster(
         "slime_storm"
     )
 
@@ -37,13 +41,11 @@ func _ready() -> void:
     ally_hp_bar.max_value = player_monster.max_health
     ally_hp_bar.value = player_monster.health
 
-    var player_s1 := player_monster.get_skill(1)
+    var player_s1 = player_monster.get_skill(1)
 
     if player_s1 != null:
         skill_1_button.text = player_s1.skill_name
 
-    # S2 and S3 will be enabled when the rest of the Igneous Drake kit
-    # is ported. Keeping them visible lets us preserve the battle layout.
     skill_2_button.text = "S2 (soon)"
     skill_3_button.text = "S3 (soon)"
     skill_2_button.disabled = true
@@ -58,7 +60,7 @@ func _on_skill_1_button_pressed() -> void:
 
     disable_skill_buttons()
 
-    var skill := player_monster.get_skill(1)
+    var skill = player_monster.get_skill(1)
 
     if skill == null:
         return
@@ -68,7 +70,7 @@ func _on_skill_1_button_pressed() -> void:
         skill.skill_name
     ]
 
-    var result := skill.execute(
+    var result: Dictionary = skill.execute(
         player_monster,
         enemy_monster
     )
@@ -101,7 +103,7 @@ func _on_skill_1_button_pressed() -> void:
 
 
 func enemy_turn() -> void:
-    var skill := enemy_monster.get_skill(1)
+    var skill = enemy_monster.get_skill(1)
 
     if skill == null:
         return
@@ -111,7 +113,7 @@ func enemy_turn() -> void:
         skill.skill_name
     ]
 
-    var result := skill.execute(
+    var result: Dictionary = skill.execute(
         enemy_monster,
         player_monster
     )
@@ -135,8 +137,6 @@ func enemy_turn() -> void:
 
     await get_tree().create_timer(0.6).timeout
 
-    # S1 has no cooldown, but this already prepares the screen for
-    # cooldown-bearing skills later.
     player_monster.reduce_skill_cooldowns()
     enemy_monster.reduce_skill_cooldowns()
 
@@ -152,14 +152,13 @@ func disable_skill_buttons() -> void:
 
 
 func enable_skill_buttons() -> void:
-    var s1 := player_monster.get_skill(1)
+    var s1 = player_monster.get_skill(1)
 
     skill_1_button.disabled = (
         s1 == null
         or not s1.is_available()
     )
 
-    # Still intentionally locked until S2/S3 are ported.
     skill_2_button.disabled = true
     skill_3_button.disabled = true
 
