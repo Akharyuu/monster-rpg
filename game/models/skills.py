@@ -7,7 +7,9 @@ from ..factories.status_effect_factory import create_status_effect
 from ..combat.passive_handlers import PASSIVE_HANDLERS
 from ..combat.passive_modifiers import get_passive_damage_multiplier
 from ..combat.passive_triggers import trigger_passives
+from ..combat.skill_before_hit_handlers import BEFORE_HIT_HANDLERS
 from ..combat.skill_damage_handlers import DAMAGE_HANDLERS
+from ..combat.combat_events import notify_monster_death
 from ..combat.skill_after_handlers import AFTER_SKILL_HANDLERS
 from ..combat.skill_on_hit_handlers import ON_HIT_HANDLERS
 from ..combat.skill_effect_conditions import EFFECT_CONDITIONS
@@ -82,7 +84,7 @@ class DamageSkill(Skill):
     # =========================================================
 
     def __init__(self, skill_id, name, multiplier, hits, hit_multipliers, target_type, hit_distribution=None, repeated_target_damage=None, resolve_hits_by_round=False, scaling_stat="attack", cooldown=0,
-                 damage_handler=None, damage_handler_data=None, on_hit_handlers=None, after_skill_handlers=None, after_use_handlers=None,
+                 damage_handler=None, damage_handler_data=None, before_hit_handlers=None, on_hit_handlers=None, after_skill_handlers=None, after_use_handlers=None,
                  effects=None):
         super().__init__(skill_id, name, target_type, cooldown)
 
@@ -112,6 +114,12 @@ class DamageSkill(Skill):
 
         self.damage_handler = damage_handler
         self.damage_handler_data = damage_handler_data
+
+        self.before_hit_handlers = (
+            before_hit_handlers
+            if before_hit_handlers is not None
+            else []
+        )
 
         self.on_hit_handlers = (
             on_hit_handlers
@@ -194,6 +202,13 @@ class DamageSkill(Skill):
 
             passive_damage_multiplier = get_passive_damage_multiplier(attacker)
             bonus_damage *= passive_damage_multiplier
+
+            for debuff in defender.debuffs:
+                bonus_damage *= getattr(
+                    debuff,
+                    "direct_damage_taken_multiplier",
+                    1
+                )
 
             ignore_defense = damage_data.get("ignore_defense", False)
 
@@ -679,6 +694,44 @@ class DamageSkill(Skill):
                     repeated_hit_multiplier
                 )
 
+        if gameplay_active:
+
+            for handler_config in self.before_hit_handlers:
+
+                handler_name = handler_config[
+                    "handler"
+                ]
+
+                data = dict(
+                    handler_config.get(
+                        "data",
+                        {}
+                    )
+                )
+
+                allowed_hits = data.get(
+                    "hit_indices"
+                )
+
+                if (
+                    allowed_hits is not None
+                    and hit_index
+                    not in allowed_hits
+                ):
+                    continue
+
+                handler = BEFORE_HIT_HANDLERS[
+                    handler_name
+                ]
+
+                handler(
+                    caster,
+                    target,
+                    self,
+                    data,
+                    target_result
+                )
+
         damage, critical = self.damage_calc(
             caster,
             target,
@@ -731,6 +784,17 @@ class DamageSkill(Skill):
         actual_health_damage = (
             health_before - target.health
         )
+
+        if (
+            health_before > 0
+            and not target.is_alive
+        ):
+            notify_monster_death(
+                target,
+                target_result.get(
+                    "telemetry"
+                )
+            )
 
         record_telemetry(
             target_result.get("telemetry"),
