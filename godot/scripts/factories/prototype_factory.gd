@@ -39,10 +39,53 @@ static func _create_igneous_drake():
                     "turns": 2
                 }
             ]
+        ),
+
+        DamageSkillScript.new(
+            "scorching_breath",
+            "Scorching Breath",
+            3.75,
+            2,
+            [],
+            "attack",
+            4,
+            [],
+            {
+                "multipliers_by_stacks": {
+                    1: 1.08,
+                    2: 1.16,
+                    3: 1.24
+                }
+            }
+        ),
+
+        DamageSkillScript.new(
+            "flame_devourer",
+            "Flame Devourer",
+            4.6,
+            1,
+            [],
+            "attack",
+            5,
+            [],
+            {
+                "multipliers_by_stacks": {
+                    1: 1.15,
+                    2: 1.30,
+                    3: 1.45
+                }
+            },
+            {
+                "heal_by_stacks": {
+                    1: 0.12,
+                    2: 0.25,
+                    3: 0.40
+                }
+            }
         )
     ]
 
-    return MonsterScript.new(
+    var monster = MonsterScript.new(
         "drake_igneous",
         "Kaelgor",
         "Drake",
@@ -55,6 +98,19 @@ static func _create_igneous_drake():
         skills,
         LEVEL_ONE_MULTIPLIER
     )
+
+    # Cinderblood (base): each landed hit has a 35% chance to attempt
+    # applying one Burn stack for 2 turns.
+    monster.on_hit_effects = [
+        {
+            "effect_id": "burn",
+            "chance": 0.35,
+            "turns": 2,
+            "stacks": 1
+        }
+    ]
+
+    return monster
 
 
 static func _create_storm_slime():
