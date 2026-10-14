@@ -3,7 +3,7 @@ extends Skill
 
 var multiplier: float
 var hits: int
-var hit_multipliers: Array[float]
+var hit_multipliers: Array
 var scaling_stat: String
 
 
@@ -12,7 +12,7 @@ func _init(
     p_name: String,
     p_multiplier: float,
     p_hits: int = 1,
-    p_hit_multipliers: Array[float] = [],
+    p_hit_multipliers: Array = [],
     p_scaling_stat: String = "attack",
     p_cooldown: int = 0
 ) -> void:
@@ -25,22 +25,22 @@ func _init(
 
 
 func base_damage_calc(
-    attacker: Monster,
-    defender: Monster,
+    attacker,
+    defender,
     hit_multiplier: float = 1.0,
     damage_multiplier: float = 1.0,
     ignore_defense: bool = false,
     defense_ignore_ratio: float = 0.0,
     bonus_raw_damage: float = 0.0
 ) -> float:
-    var effective_scaling_stat := attacker.get_effective_stat(
+    var effective_scaling_stat: float = attacker.get_effective_stat(
         scaling_stat
     )
 
     if scaling_stat == "max_health":
         effective_scaling_stat *= 0.08
 
-    var raw_damage := (
+    var raw_damage: float = (
         effective_scaling_stat
         * multiplier
         * damage_multiplier
@@ -51,10 +51,10 @@ func base_damage_calc(
     if raw_damage <= 0:
         return 1.0
 
-    var damage_reduction := 1.0
+    var damage_reduction: float = 1.0
 
     if not ignore_defense:
-        var effective_defense := defender.get_effective_stat(
+        var effective_defense: float = defender.get_effective_stat(
             "defense"
         )
 
@@ -68,7 +68,7 @@ func base_damage_calc(
             / (1000.0 + effective_defense)
         )
 
-    var attribute_modifier := (
+    var attribute_modifier: float = (
         attacker.get_attribute_modifier(defender)
     )
 
@@ -81,11 +81,11 @@ func base_damage_calc(
 
 
 func damage_calc(
-    attacker: Monster,
-    defender: Monster,
+    attacker,
+    defender,
     hit_multiplier: float = 1.0
 ) -> Dictionary:
-    var base_damage := base_damage_calc(
+    var base_damage: float = base_damage_calc(
         attacker,
         defender,
         hit_multiplier
@@ -103,7 +103,7 @@ func damage_calc(
         )
         critical = true
 
-    var final_damage := maxi(
+    var final_damage: int = maxi(
         1,
         int(base_damage * critical_damage_bonus)
     )
@@ -115,8 +115,8 @@ func damage_calc(
 
 
 func execute(
-    attacker: Monster,
-    defender: Monster
+    attacker,
+    defender
 ) -> Dictionary:
     if not is_available():
         return {
@@ -134,7 +134,7 @@ func execute(
         if not hit_multipliers.is_empty():
             hit_multiplier = hit_multipliers[hit_index]
 
-        var result := damage_calc(
+        var result: Dictionary = damage_calc(
             attacker,
             defender,
             hit_multiplier
