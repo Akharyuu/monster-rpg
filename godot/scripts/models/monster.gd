@@ -11,6 +11,7 @@ var rarity: int
 
 var level: int = 1
 var ascended: bool = false
+var stat_scale: float = 1.0
 
 var max_health: int
 var health: int
@@ -40,7 +41,8 @@ func _init(
     p_attack: int,
     p_defense: int,
     p_speed: int,
-    p_skills: Array = []
+    p_skills: Array = [],
+    p_stat_scale: float = 1.0
 ) -> void:
     monster_id = p_monster_id
     monster_name = p_name
@@ -54,6 +56,7 @@ func _init(
     defense = p_defense
     speed = p_speed
     skills = p_skills
+    stat_scale = p_stat_scale
 
 
 func is_alive() -> bool:
