@@ -669,6 +669,56 @@ def follow_up_skill_on_kill(
     }
 
 
+
+def reduce_action_gauge_if_both_debuffs_applied(
+    caster,
+    skill,
+    data,
+    context,
+    skill_result
+):
+
+    if not skill_result.target_results:
+        return None
+
+    required_effects = set(
+        data["effect_ids"]
+    )
+
+    applied_effects = set(
+        getattr(
+            skill,
+            "_applied_effect_ids_this_use",
+            []
+        )
+    )
+
+    if not required_effects.issubset(
+        applied_effects
+    ):
+        return None
+
+    target = skill_result.target_results[
+        0
+    ]["target"]
+
+    if not target.is_alive:
+        return None
+
+    target.reduce_action_gauge(
+        data["amount"]
+    )
+
+    return {
+        "type":
+            "reduce_action_gauge",
+        "target":
+            target,
+        "amount":
+            data["amount"]
+    }
+
+
 # =========================================================
 #                      HANDLER REGISTRY
 # =========================================================
@@ -691,5 +741,7 @@ AFTER_USE_HANDLERS = {
     "apply_team_buff":
         apply_team_buff,
     "follow_up_skill_on_kill":
-        follow_up_skill_on_kill
+        follow_up_skill_on_kill,
+    "reduce_action_gauge_if_both_debuffs_applied":
+        reduce_action_gauge_if_both_debuffs_applied
 }
