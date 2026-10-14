@@ -150,7 +150,7 @@ class DamageSkill(Skill):
     #                    DAMAGE CALCULATION
     # =========================================================
 
-    def base_damage_calc(self, attacker, defender, hit_multiplier, damage_multiplier=1, ignore_defense=False):
+    def base_damage_calc(self, attacker, defender, hit_multiplier, damage_multiplier=1, ignore_defense=False, defense_ignore_ratio=0):
 
         #Gets the effective scaling stat for the skill and applies it to calc raw damage
         scaling_stat = self.scaling_stat
@@ -174,6 +174,11 @@ class DamageSkill(Skill):
 
             effective_defense = defender.get_effective_stat(
                 "defense"
+            )
+
+            effective_defense *= max(
+                0,
+                1 - defense_ignore_ratio
             )
 
             damage_reduction = (1000 / (1000 + effective_defense))
@@ -211,8 +216,19 @@ class DamageSkill(Skill):
                 )
 
             ignore_defense = damage_data.get("ignore_defense", False)
+            defense_ignore_ratio = damage_data.get(
+                "defense_ignore_ratio",
+                0
+            )
 
-            base_damage = self.base_damage_calc(attacker, defender, hit_multiplier, bonus_damage, ignore_defense)
+            base_damage = self.base_damage_calc(
+                attacker,
+                defender,
+                hit_multiplier,
+                bonus_damage,
+                ignore_defense,
+                defense_ignore_ratio
+            )
     
             #Crit Roll
             critical_damage_bonus = 1
