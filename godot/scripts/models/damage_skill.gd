@@ -14,6 +14,7 @@ var effects: Array
 # Optional handler-like data used by the first playable slice.
 var damage_for_burn_stacks: Dictionary = {}
 var consume_burn_and_heal: Dictionary = {}
+var action_gauge_reduction_per_hit: float = 0.0
 
 
 func _init(
@@ -27,7 +28,8 @@ func _init(
     p_effects: Array = [],
     p_damage_for_burn_stacks: Dictionary = {},
     p_consume_burn_and_heal: Dictionary = {},
-    p_target_type: String = "single_enemy"
+    p_target_type: String = "single_enemy",
+    p_action_gauge_reduction_per_hit: float = 0.0
 ) -> void:
     super(
         p_skill_id,
@@ -43,6 +45,9 @@ func _init(
     effects = p_effects
     damage_for_burn_stacks = p_damage_for_burn_stacks
     consume_burn_and_heal = p_consume_burn_and_heal
+    action_gauge_reduction_per_hit = (
+        p_action_gauge_reduction_per_hit
+    )
 
 
 func base_damage_calc(
@@ -171,6 +176,29 @@ func damage_calc(
     }
 
 
+func effect_condition_met(
+    condition: Dictionary,
+    defender
+) -> bool:
+    if condition.is_empty():
+        return true
+
+    var condition_type: String = str(
+        condition.get("type", "")
+    )
+
+    match condition_type:
+        "target_has_debuff":
+            return (
+                defender.get_debuff(
+                    str(condition.get("effect_id", ""))
+                )
+                != null
+            )
+        _:
+            return true
+
+
 func try_apply_effect(
     effect_config: Dictionary,
     attacker,
@@ -180,11 +208,22 @@ func try_apply_effect(
         effect_config["effect_id"]
     )
 
+    var condition: Dictionary = effect_config.get(
+        "condition",
+        {}
+    )
+
     var result := {
         "effect_id": effect_id,
         "applied_effect": null,
         "resisted": false
     }
+
+    if not effect_condition_met(
+        condition,
+        defender
+    ):
+        return result
 
     var chance: float = float(
         effect_config.get("chance", 1.0)
@@ -353,6 +392,42 @@ func execute_on_target(
             defender,
             effects_applied
         )
+
+        if action_gauge_reduction_per_hit > 0.0:
+            defender.action_gauge = maxf(
+                0.0,
+                defender.action_gauge
+                - action_gauge_reduction_per_hit
+            )
+
+        if defender.is_alive():
+            for effect_config in effects:
+                if effect_config.get(
+                    "trigger",
+                    "after_skill"
+                ) != "per_hit":
+                    continue
+
+                var effect_result: Dictionary = (
+                    try_apply_effect(
+                        effect_config,
+                        attacker,
+                        defender
+                    )
+                )
+
+                var applied_effect = effect_result[
+                    "applied_effect"
+                ]
+
+                if applied_effect != null:
+                    effects_applied.append(
+                        applied_effect
+                    )
+                elif effect_result["resisted"]:
+                    resisted_effects.append(
+                        str(effect_result["effect_id"])
+                    )
 
     if defender.is_alive():
         for effect_config in effects:
