@@ -205,6 +205,7 @@ func execute_active_skill(
 
     if (
         active_monster.monster_id == "drake_abyssal"
+        and not active_monster.has_oblivion()
         and skill.skill_id == "glacial_collapse"
     ):
         var current_scales: int = (
@@ -247,6 +248,34 @@ func execute_active_skill(
         active_monster,
         targets
     )
+
+    if (
+        active_monster.monster_id == "drake_void"
+        and not active_monster.has_oblivion()
+    ):
+        var removed_buffs: int = int(
+            result.get("removed_buffs", 0)
+        )
+
+        if removed_buffs > 0:
+            var total_passive_healing := 0
+
+            for _removed_buff in range(removed_buffs):
+                total_passive_healing += active_monster.heal(
+                    int(active_monster.max_health * 0.10)
+                )
+
+                active_monster.increase_action_gauge(
+                    0.08
+                )
+
+            result["healing"] = int(
+                result.get("healing", 0)
+            ) + total_passive_healing
+
+            caster_feedback.append(
+                "BOTTOMLESS HUNGER x%d" % removed_buffs
+            )
 
     if (
         active_monster.monster_id == "drake_storm"
@@ -320,6 +349,7 @@ func execute_active_skill(
 
     if (
         active_monster.monster_id == "drake_abyssal"
+        and not active_monster.has_oblivion()
         and skill.skill_id == "glacial_collapse"
         and not block_frozen_scales_generation
     ):
@@ -375,6 +405,7 @@ func _resolve_receive_hit_passives(
 
         if (
             defender.monster_id != "drake_aether"
+            or defender.has_oblivion()
             or hit_count <= 0
         ):
             continue
