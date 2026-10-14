@@ -172,6 +172,14 @@ def strip_buffs_on_hit(
 
     target.buffs = []
 
+    if data.get(
+        "track_removed_buffs_for_skill_damage",
+        False
+    ):
+        skill._removed_buffs_this_use += (
+            removed_count
+        )
+
     record_telemetry(
         data.get("_telemetry"),
         caster,
