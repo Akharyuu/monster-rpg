@@ -4,6 +4,7 @@ extends Control
 signal target_pressed
 
 @onready var turn_indicator: Panel = $"Turn Indicator"
+@onready var target_highlight: Panel = $"Target Highlight"
 @onready var attribute_label: Label = $"Attribute"
 @onready var name_label: Label = $"Name"
 @onready var level_label: Label = $"Level"
@@ -14,6 +15,7 @@ signal target_pressed
 
 var bound_monster
 var is_enemy := false
+var target_mode: String = "none"
 
 
 func _ready() -> void:
@@ -37,6 +39,7 @@ func bind_monster(monster, enemy_side: bool) -> void:
     action_gauge.max_value = 100.0
 
     _update_turn_style()
+    _update_target_style()
     refresh(false)
 
 
@@ -61,22 +64,70 @@ func refresh(is_active: bool) -> void:
         1.0 if bound_monster.is_alive() else 0.35
     )
 
+    if not bound_monster.is_alive():
+        target_button.visible = false
+        target_button.disabled = true
+        target_highlight.visible = false
+
     _populate_statuses()
 
 
 func set_target_enabled(enabled: bool) -> void:
+    set_target_mode(
+        "single" if enabled else "none"
+    )
+
+
+func set_target_mode(mode: String) -> void:
+    target_mode = mode
+
+    var can_target := (
+        bound_monster != null
+        and bound_monster.is_alive()
+        and is_enemy
+    )
+
     target_button.disabled = (
-        not enabled
-        or bound_monster == null
-        or not bound_monster.is_alive()
-        or not is_enemy
+        target_mode != "single"
+        or not can_target
     )
 
     target_button.visible = (
-        enabled
-        and is_enemy
-        and bound_monster != null
-        and bound_monster.is_alive()
+        target_mode == "single"
+        and can_target
+    )
+
+    target_highlight.visible = (
+        target_mode != "none"
+        and can_target
+    )
+
+    _update_target_style()
+
+
+func _update_target_style() -> void:
+    var style := StyleBoxFlat.new()
+
+    if target_mode == "aoe":
+        style.bg_color = Color(0.78, 0.30, 0.12, 0.12)
+        style.border_color = Color(1.0, 0.58, 0.20, 1.0)
+    else:
+        style.bg_color = Color(0.85, 0.75, 0.18, 0.10)
+        style.border_color = Color(1.0, 0.90, 0.28, 1.0)
+
+    style.border_width_left = 3
+    style.border_width_top = 3
+    style.border_width_right = 3
+    style.border_width_bottom = 3
+
+    style.corner_radius_top_left = 10
+    style.corner_radius_top_right = 10
+    style.corner_radius_bottom_left = 10
+    style.corner_radius_bottom_right = 10
+
+    target_highlight.add_theme_stylebox_override(
+        "panel",
+        style
     )
 
 
