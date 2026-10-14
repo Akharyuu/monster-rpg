@@ -18,6 +18,8 @@ static func create_level_one_monster(monster_id: String):
             return _create_aether_drake()
         "drake_storm":
             return _create_storm_drake()
+        "drake_void":
+            return _create_void_drake()
         "slime_storm":
             return _create_storm_slime()
         "slime_abyssal":
@@ -213,6 +215,87 @@ static func _create_abyssal_drake():
     ] = 3
 
     return monster
+
+
+static func _create_void_drake():
+    var skills: Array = [
+        DamageSkillScript.new(
+            "draconic_claw",
+            "Draconic Claw",
+            2.5,
+            1,
+            [],
+            "attack",
+            0,
+            [
+                {
+                    "effect_id": "defense_break",
+                    "chance": 0.30,
+                    "turns": 2
+                }
+            ]
+        ),
+
+        DamageSkillScript.new(
+            "null_rend",
+            "Null Rend",
+            2.10,
+            2,
+            [],
+            "attack",
+            4,
+            [
+                {
+                    "effect_id": "oblivion",
+                    "chance": 0.60,
+                    "turns": 2,
+                    "hit_indices": [1]
+                }
+            ]
+        ),
+
+        DamageSkillScript.new(
+            "dismantle",
+            "Dismantle",
+            1.45,
+            3,
+            [],
+            "attack",
+            5,
+            [
+                {
+                    "effect_id": "defense_break",
+                    "chance": 0.30,
+                    "turns": 2,
+                    "hit_indices": [1, 2]
+                }
+            ],
+            {},
+            {},
+            "all_enemies",
+            0.0,
+            "",
+            {},
+            true,
+            0,
+            0.08,
+            [1, 2]
+        )
+    ]
+
+    return MonsterScript.new(
+        "drake_void",
+        "Void Drake",
+        "Drake",
+        "void",
+        5,
+        _scaled(10750),
+        _scaled(995),
+        _scaled(670),
+        _scaled(230),
+        skills,
+        LEVEL_ONE_MULTIPLIER
+    )
 
 
 static func _create_storm_drake():
