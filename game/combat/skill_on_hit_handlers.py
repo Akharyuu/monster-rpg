@@ -152,6 +152,20 @@ def apply_debuff_on_hit_indices(
     if applied_effect is None:
         return
 
+    applied_effect_ids = getattr(
+        skill,
+        "_applied_effect_ids_this_use",
+        []
+    )
+
+    applied_effect_ids.append(
+        data["effect_id"]
+    )
+
+    skill._applied_effect_ids_this_use = (
+        applied_effect_ids
+    )
+
     telemetry = data.get(
         "_telemetry"
     )
