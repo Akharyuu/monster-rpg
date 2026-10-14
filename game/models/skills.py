@@ -218,7 +218,7 @@ class DamageSkill(Skill):
                     + (
                         effective_defense
                         / defense_reference
-                    ) ** 1.5
+                    ) ** 1.1
                 )
             )
 
