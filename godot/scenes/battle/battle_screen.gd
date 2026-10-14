@@ -4,6 +4,10 @@ const PrototypeFactoryScript = preload(
     "res://scripts/factories/prototype_factory.gd"
 )
 
+const BattleControllerScript = preload(
+    "res://scripts/battle/battle_controller.gd"
+)
+
 @onready var skill_1_button = $"Skill 1 Button"
 @onready var skill_2_button = $"Skill 2 Button"
 @onready var skill_3_button = $"Skill 3 Button"
@@ -22,8 +26,7 @@ const PrototypeFactoryScript = preload(
 var allies: Array = []
 var enemies: Array = []
 
-var active_monster
-var active_turn_effects: Array = []
+var battle_controller
 var pending_skill_slot := 0
 var battle_finished := false
 
@@ -46,6 +49,12 @@ func _ready() -> void:
             "slime_igneous"
         )
     ]
+
+    battle_controller = BattleControllerScript.new()
+    battle_controller.setup(
+        allies,
+        enemies
+    )
 
     for index in range(ally_huds.size()):
         ally_huds[index].bind_monster(
@@ -70,130 +79,26 @@ func _ready() -> void:
     start_next_turn()
 
 
-func get_living(team: Array) -> Array:
-    return team.filter(
-        func(monster): return monster.is_alive()
-    )
-
-
-func get_living_combatants() -> Array:
-    return get_living(allies) + get_living(enemies)
-
-
-func fill_action_gauges() -> void:
-    var combatants := get_living_combatants()
-
-    if combatants.is_empty():
-        return
-
-    var smallest_time := INF
-
-    for combatant in combatants:
-        var speed: float = combatant.get_effective_stat(
-            "speed"
-        )
-        var gauge_gain: float = speed / 2000.0
-
-        if gauge_gain <= 0.0:
-            continue
-
-        var remaining_gauge: float = (
-            1.0 - combatant.action_gauge
-        )
-
-        smallest_time = minf(
-            smallest_time,
-            remaining_gauge / gauge_gain
-        )
-
-    if smallest_time == INF:
-        return
-
-    for combatant in combatants:
-        var speed: float = combatant.get_effective_stat(
-            "speed"
-        )
-        var gauge_gain: float = speed / 2000.0
-
-        if gauge_gain > 0.0:
-            combatant.increase_action_gauge(
-                gauge_gain * smallest_time
-            )
-
-
-func get_ready_combatant():
-    var ready: Array = []
-
-    for combatant in get_living_combatants():
-        if combatant.action_gauge >= 0.999999:
-            ready.append(combatant)
-
-    if ready.is_empty():
-        return null
-
-    var chosen = ready[0]
-
-    for combatant in ready:
-        if (
-            combatant.get_effective_stat("speed")
-            > chosen.get_effective_stat("speed")
-        ):
-            chosen = combatant
-
-    return chosen
-
-
-func begin_turn(monster) -> Dictionary:
-    var effects_at_turn_start: Array = []
-
-    effects_at_turn_start.append_array(monster.buffs)
-    effects_at_turn_start.append_array(monster.debuffs)
-
-    monster.reduce_skill_cooldowns()
-
-    return {
-        "effects_at_turn_start":
-            effects_at_turn_start,
-        "dot_result":
-            monster.apply_damage_over_time()
-    }
-
-
-func end_turn(monster) -> void:
-    monster.reduce_status_effect_turns(
-        active_turn_effects
-    )
-
-
 func start_next_turn() -> void:
     if battle_finished:
-        return
-
-    if get_living(allies).is_empty():
-        finish_battle(false)
-        return
-
-    if get_living(enemies).is_empty():
-        finish_battle(true)
         return
 
     pending_skill_slot = 0
     set_target_selection(false)
 
-    fill_action_gauges()
-    active_monster = get_ready_combatant()
+    var context: Dictionary = (
+        battle_controller.begin_next_turn()
+    )
 
-    if active_monster == null:
-        push_error("No combatant reached full Action Gauge.")
+    if context.get("battle_over", false):
+        finish_battle(
+            context.get("player_won", false)
+        )
         return
 
-    active_monster.reset_action_gauge()
-
-    var context := begin_turn(active_monster)
-
-    active_turn_effects = context[
-        "effects_at_turn_start"
-    ]
+    if context.has("error"):
+        push_error(context["error"])
+        return
 
     update_battle_ui()
 
@@ -201,30 +106,30 @@ func start_next_turn() -> void:
 
     if dot_result["damage"] > 0:
         turn_label.text = "%s takes %d DoT damage!" % [
-            active_monster.monster_name,
+            battle_controller.battle_controller.active_monster.monster_name,
             dot_result["damage"]
         ]
 
         update_battle_ui()
 
-        if not active_monster.is_alive():
+        if not battle_controller.battle_controller.active_monster.is_alive():
             await get_tree().create_timer(0.5).timeout
-            active_monster = null
+            battle_controller.battle_controller.clear_active_monster()
             start_next_turn()
             return
 
         await get_tree().create_timer(0.5).timeout
 
-    if active_monster in allies:
+    if battle_controller.battle_controller.active_monster in allies:
         turn_label.text = "YOUR TURN - %s" % (
-            active_monster.monster_name
+            battle_controller.battle_controller.active_monster.monster_name
         )
         update_skill_buttons()
     else:
         disable_skill_buttons()
 
         turn_label.text = "ENEMY TURN - %s" % (
-            active_monster.monster_name
+            battle_controller.battle_controller.active_monster.monster_name
         )
 
         await get_tree().create_timer(0.5).timeout
@@ -234,12 +139,12 @@ func start_next_turn() -> void:
 func request_player_skill(slot: int) -> void:
     if (
         battle_finished
-        or active_monster == null
-        or active_monster not in allies
+        or battle_controller.battle_controller.active_monster == null
+        or battle_controller.battle_controller.active_monster not in allies
     ):
         return
 
-    var skill = active_monster.get_skill(slot)
+    var skill = battle_controller.battle_controller.active_monster.get_skill(slot)
 
     if skill == null or not skill.is_available():
         return
@@ -248,7 +153,7 @@ func request_player_skill(slot: int) -> void:
         await preview_aoe_targets()
         execute_player_skill(
             skill,
-            get_living(enemies)
+            battle_controller.get_living(enemies)
         )
         return
 
@@ -269,7 +174,7 @@ func _on_enemy_target_pressed(index: int) -> void:
     if not target.is_alive():
         return
 
-    var skill = active_monster.get_skill(
+    var skill = battle_controller.battle_controller.active_monster.get_skill(
         pending_skill_slot
     )
 
@@ -290,7 +195,7 @@ func execute_player_skill(
     set_target_selection(false)
 
     var result: Dictionary = skill.execute_targets(
-        active_monster,
+        battle_controller.battle_controller.active_monster,
         targets
     )
 
@@ -311,52 +216,54 @@ func execute_player_skill(
             result["healing"]
         )
 
-    end_turn(active_monster)
+    end_turn(battle_controller.battle_controller.active_monster)
     update_battle_ui()
 
-    if get_living(enemies).is_empty():
-        finish_battle(true)
+    if battle_controller.is_battle_over():
+        finish_battle(
+            battle_controller.player_won()
+        )
         return
 
     await get_tree().create_timer(0.6).timeout
 
-    active_monster = null
+    battle_controller.battle_controller.clear_active_monster()
     start_next_turn()
 
 
 func enemy_turn() -> void:
-    if active_monster == null:
+    if battle_controller.battle_controller.active_monster == null:
         return
 
-    var skill = active_monster.get_skill(1)
-    var living_allies := get_living(allies)
+    var skill = battle_controller.battle_controller.active_monster.get_skill(1)
+    var target = battle_controller.choose_enemy_target()
 
-    if skill == null or living_allies.is_empty():
+    if skill == null or target == null:
         return
-
-    var target = living_allies.pick_random()
 
     var result: Dictionary = skill.execute_targets(
-        active_monster,
+        battle_controller.battle_controller.active_monster,
         [target]
     )
 
     turn_label.text = "%s hits %s for %d" % [
-        active_monster.monster_name,
+        battle_controller.battle_controller.active_monster.monster_name,
         target.monster_name,
         result["damage"]
     ]
 
-    end_turn(active_monster)
+    end_turn(battle_controller.battle_controller.active_monster)
     update_battle_ui()
 
-    if get_living(allies).is_empty():
-        finish_battle(false)
+    if battle_controller.is_battle_over():
+        finish_battle(
+            battle_controller.player_won()
+        )
         return
 
     await get_tree().create_timer(0.6).timeout
 
-    active_monster = null
+    battle_controller.battle_controller.clear_active_monster()
     start_next_turn()
 
 
@@ -375,12 +282,12 @@ func _on_skill_3_button_pressed() -> void:
 func update_battle_ui() -> void:
     for index in range(ally_huds.size()):
         ally_huds[index].refresh(
-            active_monster == allies[index]
+            battle_controller.battle_controller.active_monster == allies[index]
         )
 
     for index in range(enemy_huds.size()):
         enemy_huds[index].refresh(
-            active_monster == enemies[index]
+            battle_controller.battle_controller.active_monster == enemies[index]
         )
 
     update_skill_buttons()
@@ -397,14 +304,14 @@ func update_skill_buttons() -> void:
         var button = buttons[index]
 
         if (
-            active_monster == null
-            or active_monster not in allies
+            battle_controller.battle_controller.active_monster == null
+            or battle_controller.battle_controller.active_monster not in allies
         ):
             button.text = "-"
             button.disabled = true
             continue
 
-        var skill = active_monster.get_skill(index + 1)
+        var skill = battle_controller.battle_controller.active_monster.get_skill(index + 1)
 
         if skill == null:
             button.text = "-"
