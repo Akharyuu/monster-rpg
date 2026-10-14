@@ -150,7 +150,7 @@ class DamageSkill(Skill):
     #                    DAMAGE CALCULATION
     # =========================================================
 
-    def base_damage_calc(self, attacker, defender, hit_multiplier, damage_multiplier=1, ignore_defense=False, defense_ignore_ratio=0):
+    def base_damage_calc(self, attacker, defender, hit_multiplier, damage_multiplier=1, ignore_defense=False, defense_ignore_ratio=0, bonus_raw_damage=0):
 
         #Gets the effective scaling stat for the skill and applies it to calc raw damage
         scaling_stat = self.scaling_stat
@@ -162,7 +162,13 @@ class DamageSkill(Skill):
         if scaling_stat == "max_health":
             effective_scaling_stat *= 0.08
 
-        raw_damage = (effective_scaling_stat * self.multiplier * damage_multiplier * hit_multiplier)
+        raw_damage = (
+            effective_scaling_stat
+            * self.multiplier
+            * damage_multiplier
+            * hit_multiplier
+            + bonus_raw_damage
+        )
 
         if raw_damage <= 0:
             return 1
@@ -221,13 +227,19 @@ class DamageSkill(Skill):
                 0
             )
 
+            bonus_raw_damage = damage_data.get(
+                "bonus_raw_damage",
+                0
+            )
+
             base_damage = self.base_damage_calc(
                 attacker,
                 defender,
                 hit_multiplier,
                 bonus_damage,
                 ignore_defense,
-                defense_ignore_ratio
+                defense_ignore_ratio,
+                bonus_raw_damage
             )
     
             #Crit Roll
