@@ -26,5 +26,10 @@ def create_status_effect(effect_id, duration, source=None, stacks=1, value=0):
         max_stacks=effect_data.get("max_stacks", 1),
         source=source,
         modifier_mode=effect_data.get("modifier_mode", "multiplicative"),
-        value=value
+        value=value,
+        extendable=effect_data.get("extendable", True),
+        direct_damage_taken_multiplier=effect_data.get(
+            "direct_damage_taken_multiplier",
+            1
+        )
     )
