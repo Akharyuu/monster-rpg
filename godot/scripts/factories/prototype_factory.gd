@@ -52,7 +52,8 @@ static func _create_igneous_drake():
         _scaled(963),
         _scaled(707),
         _scaled(224),
-        skills
+        skills,
+        LEVEL_ONE_MULTIPLIER
     )
 
 
@@ -80,5 +81,6 @@ static func _create_storm_slime():
         _scaled(455),
         _scaled(320),
         _scaled(150),
-        skills
+        skills,
+        LEVEL_ONE_MULTIPLIER
     )
