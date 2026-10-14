@@ -26,9 +26,15 @@ func _init(
     p_cooldown: int = 0,
     p_effects: Array = [],
     p_damage_for_burn_stacks: Dictionary = {},
-    p_consume_burn_and_heal: Dictionary = {}
+    p_consume_burn_and_heal: Dictionary = {},
+    p_target_type: String = "single_enemy"
 ) -> void:
-    super(p_skill_id, p_name, p_cooldown)
+    super(
+        p_skill_id,
+        p_name,
+        p_cooldown,
+        p_target_type
+    )
 
     multiplier = p_multiplier
     hits = p_hits
@@ -294,25 +300,14 @@ func resolve_after_skill(
     return attacker.heal(heal_amount)
 
 
-func execute(
+func execute_on_target(
     attacker,
     defender
 ) -> Dictionary:
-    if not is_available():
-        return {
-            "success": false,
-            "damage": 0,
-            "critical_hits": 0,
-            "effects_applied": [],
-            "healing": 0
-        }
-
     var total_damage := 0
     var critical_hits := 0
     var effects_applied: Array = []
 
-    # Snapshot Burn before this skill begins. Flame Devourer consumes only
-    # stacks that existed before the attack, matching the Python version.
     var starting_burn_stacks: int = (
         defender.get_debuff_stacks("burn")
     )
@@ -365,6 +360,58 @@ func execute(
         starting_burn_stacks
     )
 
+    return {
+        "damage": total_damage,
+        "critical_hits": critical_hits,
+        "effects_applied": effects_applied,
+        "healing": healing
+    }
+
+
+func execute_targets(
+    attacker,
+    defenders: Array
+) -> Dictionary:
+    if not is_available():
+        return {
+            "success": false,
+            "damage": 0,
+            "critical_hits": 0,
+            "effects_applied": [],
+            "healing": 0,
+            "target_results": []
+        }
+
+    var total_damage := 0
+    var critical_hits := 0
+    var effects_applied: Array = []
+    var total_healing := 0
+    var target_results: Array = []
+
+    for defender in defenders:
+        if defender == null or not defender.is_alive():
+            continue
+
+        var target_result: Dictionary = execute_on_target(
+            attacker,
+            defender
+        )
+
+        total_damage += target_result["damage"]
+        critical_hits += target_result["critical_hits"]
+        total_healing += target_result["healing"]
+        effects_applied.append_array(
+            target_result["effects_applied"]
+        )
+
+        target_results.append({
+            "target": defender,
+            "damage": target_result["damage"],
+            "critical_hits":
+                target_result["critical_hits"],
+            "healing": target_result["healing"]
+        })
+
     trigger_cooldown()
 
     return {
@@ -372,5 +419,16 @@ func execute(
         "damage": total_damage,
         "critical_hits": critical_hits,
         "effects_applied": effects_applied,
-        "healing": healing
+        "healing": total_healing,
+        "target_results": target_results
     }
+
+
+func execute(
+    attacker,
+    defender
+) -> Dictionary:
+    return execute_targets(
+        attacker,
+        [defender]
+    )
