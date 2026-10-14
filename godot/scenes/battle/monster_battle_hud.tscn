@@ -87,15 +87,15 @@ theme_override_constants/separation = 5
 [node name="Target Prompt" type="Label" parent="."]
 visible = false
 layout_mode = 0
-offset_left = 224.0
-offset_top = 8.0
+offset_left = 230.0
+offset_top = -18.0
 offset_right = 304.0
-offset_bottom = 34.0
+offset_bottom = 2.0
 mouse_filter = 2
 text = "TARGET"
 horizontal_alignment = 1
 vertical_alignment = 1
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 11
 
 [node name="Target Button" type="Button" parent="."]
 visible = false
