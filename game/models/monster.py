@@ -634,7 +634,59 @@ class Monster:
                 self.buffs.remove(shield)
 
         # When Shield is consumed // Monster has no Shield: process damage normally
-        self.health -= damage
+        deathless_passive = None
+
+        if (
+            self.is_headless
+            and not self.has_oblivion
+            and self.get_internal_cooldown(
+                "deathless_rider"
+            ) == 0
+        ):
+
+            for passive in self.passives:
+
+                if (
+                    passive.handler
+                    == "deathless_rider"
+                ):
+                    deathless_passive = passive
+                    break
+
+        deathless_active = (
+            deathless_passive is not None
+        )
+
+        already_triggered = (
+            self.special_states.get(
+                "deathless_triggered_this_skill",
+                False
+            )
+        )
+
+        lethal_damage = (
+            self.health - damage
+            <= 0
+        )
+
+        if (
+            deathless_active
+            and (
+                lethal_damage
+                or already_triggered
+            )
+        ):
+            self.special_states[
+                "deathless_triggered_this_skill"
+            ] = True
+
+            self.health = max(
+                1,
+                self.health - damage
+            )
+
+        else:
+            self.health -= damage
 
         broken_effects = []
 
@@ -675,6 +727,39 @@ class Monster:
 
         return broken_effects
 
+
+
+    def finalize_after_enemy_skill(self):
+
+        if not self.special_states.pop(
+            "deathless_triggered_this_skill",
+            False
+        ):
+            return
+
+        passive = next(
+            (
+                passive
+                for passive in self.passives
+                if passive.handler
+                == "deathless_rider"
+            ),
+            None
+        )
+
+        if passive is None:
+            return
+
+        self.clear_named_target()
+        self.reset_debuffs()
+
+        self.set_internal_cooldown(
+            "deathless_rider",
+            passive.handler_data.get(
+                "internal_cooldown",
+                6
+            )
+        )
 
 
     def heal(self, value):
