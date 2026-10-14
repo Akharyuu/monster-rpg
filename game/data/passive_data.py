@@ -325,4 +325,188 @@ PASSIVE_DATA = {
         }
     },
 
+    # =========================================================
+    #                     IGNEOUS DULLAHAN
+    # =========================================================
+
+    "final_omen": {
+        "name": "Final Omen",
+        "trigger": "on_enemy_healed",
+        "handler": "final_omen",
+
+        "handler_data": {
+            "hp_threshold": 0.50,
+            "attack_up_turns": 1
+        }
+    },
+
+    "final_omen_fulfilled": {
+        "name": "Final Omen: Fulfilled",
+        "trigger": "on_enemy_healed",
+        "handler": "final_omen",
+
+        "handler_data": {
+            "hp_threshold": 0.50,
+            "attack_up_turns": 1,
+            "healing_received_multiplier": 0.70
+        }
+    },
+
+    # =========================================================
+    #                     ABYSSAL DULLAHAN
+    # =========================================================
+
+    "chilling_presence": {
+        "name": "Chilling Presence",
+        "trigger": "after_turn",
+        "handler": "chilling_presence",
+
+        "handler_data": {
+            "debuffs_per_enemy": 1
+        }
+    },
+
+    "chilling_presence_suffocation": {
+        "name": "Chilling Presence: Suffocation",
+        "trigger": "after_turn",
+        "handler": "chilling_presence",
+
+        "handler_data": {
+            "debuffs_per_enemy": 2
+        }
+    },
+
+    # =========================================================
+    #                      STORM DULLAHAN
+    # =========================================================
+
+    "the_hunt": {
+        "name": "The Hunt",
+        "trigger": "after_turn",
+        "handler": "the_hunt",
+
+        "handler_data": {
+            "action_gauge_steal": 0.20
+        }
+    },
+
+    # =========================================================
+    #                     AETHER DULLAHAN
+    # =========================================================
+
+    "soul_vessel": {
+        "name": "Soul Vessel",
+        "trigger": [
+            "before_skill",
+            "after_skill",
+            "on_any_death"
+        ],
+        "handler": "soul_vessel",
+
+        "handler_data": {
+            "max_charges": 5,
+            "charges_per_damage_skill": 1,
+            "charges_per_death": 1,
+            "consume_all_on_skill_ids": [
+                "beyond_the_veil",
+                "beyond_the_veil_soul_recall",
+                "beyond_the_veil_convergence"
+            ]
+        }
+    },
+
+    "soul_vessel_last_rites": {
+        "name": "Soul Vessel: Last Rites",
+        "trigger": [
+            "before_skill",
+            "after_skill",
+            "on_any_death"
+        ],
+        "handler": "soul_vessel",
+
+        "handler_data": {
+            "max_charges": 5,
+            "charges_per_damage_skill": 1,
+            "charges_per_death": 1,
+            "consume_all_on_skill_ids": [
+                "beyond_the_veil",
+                "beyond_the_veil_soul_recall",
+                "beyond_the_veil_convergence"
+            ],
+            "last_rites_skill_ids": [
+                "severing_blade"
+            ],
+            "last_rites_threshold": 0.50
+        }
+    },
+
+    "soul_vessel_requiem": {
+        "name": "Soul Vessel: Requiem",
+        "trigger": [
+            "before_skill",
+            "after_skill",
+            "on_any_death"
+        ],
+        "handler": "soul_vessel",
+
+        "handler_data": {
+            "max_charges": 5,
+            "charges_per_damage_skill": 1,
+            "charges_per_death": 2,
+            "consume_all_on_skill_ids": [
+                "beyond_the_veil",
+                "beyond_the_veil_soul_recall",
+                "beyond_the_veil_convergence"
+            ],
+            "last_rites_skill_ids": [
+                "severing_blade"
+            ],
+            "last_rites_threshold": 0.50
+        }
+    },
+
+    # =========================================================
+    #                      VOID DULLAHAN
+    # =========================================================
+
+    "headless_rider": {
+        "name": "Headless Rider",
+        "handler": "headless_rider",
+
+        "handler_data": {
+            "speed_bonus": 0.20
+        }
+    },
+
+    "headless_rider_unbound": {
+        "name": "Headless Rider: Unbound",
+        "handler": "headless_rider",
+
+        "handler_data": {
+            "speed_bonus": 0.30
+        }
+    },
+
+    "deathless_rider": {
+        "name": "Deathless Rider",
+        "trigger": "after_turn",
+        "handler": "deathless_rider",
+
+        "handler_data": {
+            "action_gauge_after_turn": 0.15,
+            "internal_cooldown": 6
+        }
+    },
+
+    "death_march": {
+        "name": "Death's Gaze: Death March",
+        "trigger": "on_any_death",
+        "handler": "death_march",
+
+        "handler_data": {
+            "named_turns": 2,
+            "vulnerability_turns": 3
+        }
+    }
+
 }
