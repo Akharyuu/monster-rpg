@@ -256,7 +256,7 @@ func enemy_turn() -> void:
         result["damage"]
     ]
 
-    end_turn(battle_controller.active_monster)
+    battle_controller.end_active_turn()
     update_battle_ui()
 
     if battle_controller.is_battle_over():
