@@ -8,6 +8,10 @@ const BattleControllerScript = preload(
     "res://scripts/battle/battle_controller.gd"
 )
 
+const StatusEffectFactoryScript = preload(
+    "res://scripts/factories/status_effect_factory.gd"
+)
+
 @onready var skill_1_button = $"Skill 1 Button"
 @onready var skill_2_button = $"Skill 2 Button"
 @onready var skill_3_button = $"Skill 3 Button"
@@ -35,10 +39,10 @@ var action_in_progress := true
 func _ready() -> void:
     allies = [
         PrototypeFactoryScript.create_level_one_monster(
-            "drake_storm"
+            "drake_void"
         ),
         PrototypeFactoryScript.create_level_one_monster(
-            "drake_abyssal"
+            "drake_aether"
         )
     ]
 
@@ -50,6 +54,25 @@ func _ready() -> void:
             "slime_igneous"
         )
     ]
+
+    # Temporary prototype setup so Void Drake's strip mechanics
+    # can be tested immediately.
+    for enemy in enemies:
+        enemy.apply_status_effect(
+            StatusEffectFactoryScript.create_status_effect(
+                "attack_up",
+                3,
+                enemy
+            )
+        )
+
+        enemy.apply_status_effect(
+            StatusEffectFactoryScript.create_status_effect(
+                "speed_up",
+                3,
+                enemy
+            )
+        )
 
     battle_controller = BattleControllerScript.new()
     battle_controller.setup(
@@ -502,6 +525,8 @@ func get_status_feedback_text(effect_id: String) -> String:
             return "FREEZE!"
         "silence":
             return "SILENCE!"
+        "oblivion":
+            return "OBLIVION!"
         _:
             return effect_id.to_upper()
 
