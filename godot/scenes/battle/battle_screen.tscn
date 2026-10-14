@@ -1,0 +1,93 @@
+[gd_scene format=3 uid="uid://3i4tp7fvp1d0"]
+
+[ext_resource type="Script" uid="uid://bx70psvrc64ug" path="res://scenes/battle/battle_screen.gd" id="1_jxgni"]
+
+[node name="Control" type="Control" unique_id=1835732007]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = -2.0
+offset_bottom = -2.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_jxgni")
+
+[node name="Background" type="ColorRect" parent="." unique_id=1041097678]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.12156863, 0.15294118, 0.27450982, 0.5568628)
+
+[node name="Enemy Monster Name" type="Label" parent="." unique_id=2108033729]
+layout_mode = 0
+offset_left = 855.0
+offset_top = 59.0
+offset_right = 949.0
+offset_bottom = 82.0
+text = "Storm Slime"
+
+[node name="Enemy Monster HP bar" type="ProgressBar" parent="." unique_id=2089622782]
+layout_mode = 0
+offset_left = 758.0
+offset_top = 93.0
+offset_right = 1041.0
+offset_bottom = 120.0
+max_value = 2520.0
+value = 2520.0
+
+[node name="Ally Monster HP bar" type="ProgressBar" parent="." unique_id=1763111957]
+layout_mode = 0
+offset_left = 108.0
+offset_top = 423.0
+offset_right = 377.0
+offset_bottom = 450.0
+max_value = 3500.0
+value = 3500.0
+
+[node name="Ally Monster Name" type="Label" parent="." unique_id=524810382]
+layout_mode = 0
+offset_left = 188.0
+offset_top = 381.0
+offset_right = 300.0
+offset_bottom = 404.0
+text = "Igneous Drake"
+
+[node name="Skill 1 Button" type="Button" parent="." unique_id=840974636]
+layout_mode = 0
+offset_left = 141.0
+offset_top = 504.0
+offset_right = 282.0
+offset_bottom = 590.0
+text = "S1
+"
+
+[node name="Skill 2 Button" type="Button" parent="." unique_id=1706583813]
+layout_mode = 0
+offset_left = 586.0
+offset_top = 503.0
+offset_right = 727.0
+offset_bottom = 589.0
+text = "S3
+"
+
+[node name="Skill 3 Button" type="Button" parent="." unique_id=1037637321]
+layout_mode = 0
+offset_left = 364.0
+offset_top = 503.0
+offset_right = 505.0
+offset_bottom = 589.0
+text = "S2"
+
+[node name="Turn Label" type="Label" parent="." unique_id=559603554]
+layout_mode = 0
+offset_left = 516.0
+offset_top = 253.0
+offset_right = 598.0
+offset_bottom = 281.0
+text = "Your Turn"
+
+[connection signal="pressed" from="Skill 1 Button" to="." method="_on_skill_1_button_pressed"]
