@@ -30,6 +30,8 @@ var skills: Array = []
 var buffs: Array = []
 var debuffs: Array = []
 var combat_resources: Dictionary = {}
+var combat_resource_maximums: Dictionary = {}
+var special_states: Dictionary = {}
 
 # Lightweight prototype representation of passive effects that trigger
 # whenever this monster lands a hit. This will later become the full
