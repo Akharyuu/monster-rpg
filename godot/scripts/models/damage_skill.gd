@@ -436,10 +436,10 @@ func execute_on_target(
 
         if defender.is_alive():
             for effect_config in effects:
-                if effect_config.get(
-                    "trigger",
-                    "after_skill"
-                ) != "per_hit":
+                if not _effect_triggers_on_hit(
+                    effect_config,
+                    hit_index
+                ):
                     continue
 
                 var effect_result: Dictionary = (
@@ -465,6 +465,9 @@ func execute_on_target(
 
     if defender.is_alive():
         for effect_config in effects:
+            if effect_config.has("hit_indices"):
+                continue
+
             if effect_config.get(
                 "trigger",
                 "after_skill"
