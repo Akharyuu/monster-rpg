@@ -181,6 +181,20 @@ static func create_status_effect(
                 "multiplicative"
             )
 
+        "oblivion":
+            return StatusEffectScript.new(
+                "oblivion",
+                "Oblivion",
+                null,
+                "debuff",
+                null,
+                duration,
+                stacks,
+                1,
+                source,
+                "multiplicative"
+            )
+
         _:
             push_error("Unknown status effect id: %s" % effect_id)
             return null
