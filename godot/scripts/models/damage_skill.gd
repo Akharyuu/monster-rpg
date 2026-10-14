@@ -361,6 +361,7 @@ func execute_on_target(
 ) -> Dictionary:
     var total_damage := 0
     var critical_hits := 0
+    var hits_landed := 0
     var effects_applied: Array = []
     var resisted_effects: Array[String] = []
 
@@ -380,9 +381,14 @@ func execute_on_target(
             hit_multiplier
         )
 
-        total_damage += defender.receive_damage(
+        var actual_damage: int = defender.receive_damage(
             result["damage"]
         )
+
+        total_damage += actual_damage
+
+        if actual_damage > 0:
+            hits_landed += 1
 
         if result["critical"]:
             critical_hits += 1
@@ -463,6 +469,7 @@ func execute_on_target(
     return {
         "damage": total_damage,
         "critical_hits": critical_hits,
+        "hits_landed": hits_landed,
         "effects_applied": effects_applied,
         "resisted_effects": resisted_effects,
         "healing": healing
@@ -516,6 +523,8 @@ func execute_targets(
             "damage": target_result["damage"],
             "critical_hits":
                 target_result["critical_hits"],
+            "hits_landed":
+                target_result["hits_landed"],
             "effects_applied":
                 target_result["effects_applied"],
             "resisted_effects":
