@@ -546,6 +546,11 @@ func play_status_feedback(
                 "font_color",
                 Color(0.72, 0.82, 1.0)
             )
+        "buff":
+            status_label.add_theme_color_override(
+                "font_color",
+                Color(0.42, 0.78, 1.0)
+            )
         _:
             status_label.add_theme_color_override(
                 "font_color",
