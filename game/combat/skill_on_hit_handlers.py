@@ -79,9 +79,12 @@ def gain_action_gauge_if_target_low_hp(
     if not target.is_alive:
         return
 
-    hp_ratio = (
-        target.health
-        / target.max_health
+    hp_ratio = data.get(
+        "_target_health_ratio_before_hit",
+        (
+            target.health
+            / target.max_health
+        )
     )
 
     if hp_ratio >= data[
