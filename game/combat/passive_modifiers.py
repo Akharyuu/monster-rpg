@@ -102,6 +102,20 @@ def get_passive_stat_bonus(owner, stat):
         data = passive.handler_data
 
         if (
+            stat == "speed"
+            and passive.handler
+            == "headless_rider"
+            and owner.is_headless
+        ):
+            bonus += (
+                owner.speed
+                * data.get(
+                    "speed_bonus",
+                    0
+                )
+            )
+
+        if (
             stat == "crit_rate"
             and passive.handler == "thunderheart"
             and "speed_per_crit" in data
