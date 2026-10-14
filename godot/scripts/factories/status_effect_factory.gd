@@ -41,6 +41,48 @@ static func create_status_effect(
                 "multiplicative"
             )
 
+        "stun":
+            return StatusEffectScript.new(
+                "stun",
+                "Stun",
+                null,
+                "debuff",
+                null,
+                duration,
+                stacks,
+                1,
+                source,
+                "multiplicative"
+            )
+
+        "freeze":
+            return StatusEffectScript.new(
+                "freeze",
+                "Freeze",
+                null,
+                "debuff",
+                null,
+                duration,
+                stacks,
+                1,
+                source,
+                "multiplicative"
+            )
+
+        "silence":
+            return StatusEffectScript.new(
+                "silence",
+                "Silence",
+                null,
+                "debuff",
+                null,
+                duration,
+                stacks,
+                1,
+                source,
+                "multiplicative"
+            )
+
         _:
             push_error("Unknown status effect id: %s" % effect_id)
             return null
