@@ -97,6 +97,10 @@ def create_skill(skill_id):
             repeated_target_damage=skill.get(
                 "repeated_target_damage"
             ),
+            resolve_hits_by_round=skill.get(
+                "resolve_hits_by_round",
+                False
+            ),
             scaling_stat=skill.get("scaling_stat", "attack"),
             cooldown=skill["cooldown"],
             damage_handler=skill.get("damage_handler"),
