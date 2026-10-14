@@ -870,6 +870,13 @@ class Monster:
             effects_list = self.buffs
 
         elif effect.effect_type == EffectType.DEBUFF:
+
+            if (
+                effect.effect_id == "silence"
+                and self.is_headless
+            ):
+                return None
+
             if self.has_immunity:
                 return None
 
