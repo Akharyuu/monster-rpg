@@ -305,7 +305,9 @@ PASSIVE_DATA = {
 
         "handler_data": {
             "max_stacks": 5,
-            "invincibility_turns": 2
+            "invincibility_turns": 2,
+            "extra_activation_invincibility_turns": 1,
+            "extra_activation_damage_bonus": 0.20
         }
     },
 
@@ -317,6 +319,8 @@ PASSIVE_DATA = {
         "handler_data": {
             "max_stacks": 5,
             "invincibility_turns": 2,
+            "extra_activation_invincibility_turns": 1,
+            "extra_activation_damage_bonus": 0.20,
             "full_cleanse_on_activation": True
         }
     },
