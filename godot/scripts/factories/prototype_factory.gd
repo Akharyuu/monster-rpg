@@ -16,6 +16,8 @@ static func create_level_one_monster(monster_id: String):
             return _create_abyssal_drake()
         "drake_aether":
             return _create_aether_drake()
+        "drake_storm":
+            return _create_storm_drake()
         "slime_storm":
             return _create_storm_slime()
         "slime_abyssal":
@@ -211,6 +213,84 @@ static func _create_abyssal_drake():
     ] = 3
 
     return monster
+
+
+static func _create_storm_drake():
+    var skills: Array = [
+        DamageSkillScript.new(
+            "draconic_claw",
+            "Draconic Claw",
+            2.5,
+            1,
+            [],
+            "attack",
+            0,
+            [
+                {
+                    "effect_id": "defense_break",
+                    "chance": 0.30,
+                    "turns": 2
+                }
+            ]
+        ),
+
+        DamageSkillScript.new(
+            "lightning_rush",
+            "Lightning Rush",
+            1.75,
+            2,
+            [],
+            "attack",
+            4,
+            []
+        ),
+
+        DamageSkillScript.new(
+            "stormbreak",
+            "Stormbreak",
+            1.60,
+            10,
+            [],
+            "attack",
+            6,
+            [
+                {
+                    "effect_id": "stun",
+                    "chance": 0.50,
+                    "turns": 1,
+                    "trigger": "hit_count_threshold",
+                    "min_hits": 3
+                }
+            ],
+            {},
+            {},
+            "random_enemies",
+            0.0,
+            "one_each_then_random",
+            {
+                "full_damage_hits": 5,
+                "later_hit_multiplier": 0.25,
+                "first_hit_bonus_if_caster_buff": {
+                    "effect_id": "speed_up",
+                    "multiplier": 1.50
+                }
+            }
+        )
+    ]
+
+    return MonsterScript.new(
+        "drake_storm",
+        "Storm Drake",
+        "Drake",
+        "storm",
+        5,
+        _scaled(9875),
+        _scaled(1047),
+        _scaled(653),
+        _scaled(236),
+        skills,
+        LEVEL_ONE_MULTIPLIER
+    )
 
 
 static func _create_aether_drake():
