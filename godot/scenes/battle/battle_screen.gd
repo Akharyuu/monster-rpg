@@ -112,6 +112,17 @@ func start_next_turn() -> void:
 
         update_battle_ui()
 
+        var dot_hud = get_hud_for_monster(
+            battle_controller.active_monster
+        )
+
+        if dot_hud != null:
+            await dot_hud.play_damage_feedback(
+                int(dot_result["damage"]),
+                false,
+                true
+            )
+
         if not battle_controller.active_monster.is_alive():
             await get_tree().create_timer(0.5).timeout
             battle_controller.clear_active_monster()
@@ -194,6 +205,12 @@ func execute_player_skill(
     disable_skill_buttons()
     set_target_selection(false)
 
+    var attacker = battle_controller.active_monster
+    var attacker_hud = get_hud_for_monster(attacker)
+
+    if attacker_hud != null:
+        await attacker_hud.play_attack_feedback()
+
     var result: Dictionary = (
         battle_controller.execute_active_skill(
             skill,
@@ -202,6 +219,7 @@ func execute_player_skill(
     )
 
     update_battle_ui()
+    await play_result_feedback(result)
 
     turn_label.text = "%s: %d total damage" % [
         skill.skill_name,
@@ -243,12 +261,22 @@ func enemy_turn() -> void:
     if skill == null or target == null:
         return
 
+    var attacker_hud = get_hud_for_monster(
+        battle_controller.active_monster
+    )
+
+    if attacker_hud != null:
+        await attacker_hud.play_attack_feedback()
+
     var result: Dictionary = (
         battle_controller.execute_active_skill(
             skill,
             [target]
         )
     )
+
+    update_battle_ui()
+    await play_result_feedback(result)
 
     turn_label.text = "%s hits %s for %d" % [
         battle_controller.active_monster.monster_name,
@@ -281,6 +309,50 @@ func _on_skill_2_button_pressed() -> void:
 
 func _on_skill_3_button_pressed() -> void:
     request_player_skill(3)
+
+
+func get_hud_for_monster(monster):
+    var ally_index: int = allies.find(monster)
+
+    if ally_index >= 0 and ally_index < ally_huds.size():
+        return ally_huds[ally_index]
+
+    var enemy_index: int = enemies.find(monster)
+
+    if enemy_index >= 0 and enemy_index < enemy_huds.size():
+        return enemy_huds[enemy_index]
+
+    return null
+
+
+func play_result_feedback(result: Dictionary) -> void:
+    var target_results: Array = result.get(
+        "target_results",
+        []
+    )
+
+    if target_results.is_empty():
+        return
+
+    var animations: Array = []
+
+    for target_result in target_results:
+        var target = target_result["target"]
+        var hud = get_hud_for_monster(target)
+
+        if hud == null:
+            continue
+
+        animations.append(
+            hud.play_damage_feedback(
+                int(target_result["damage"]),
+                int(target_result["critical_hits"]) > 0,
+                false
+            )
+        )
+
+    for animation in animations:
+        await animation
 
 
 func update_battle_ui() -> void:
