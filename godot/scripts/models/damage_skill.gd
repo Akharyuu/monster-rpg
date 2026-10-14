@@ -17,6 +17,10 @@ var consume_burn_and_heal: Dictionary = {}
 var action_gauge_reduction_per_hit: float = 0.0
 var hit_distribution: String = ""
 var repeated_target_damage: Dictionary = {}
+var resolve_hits_by_round: bool = false
+var strip_buffs_hit_index: int = -1
+var damage_per_removed_buff: float = 0.0
+var removed_buff_damage_hit_indices: Array = []
 
 
 func _init(
@@ -33,7 +37,11 @@ func _init(
     p_target_type: String = "single_enemy",
     p_action_gauge_reduction_per_hit: float = 0.0,
     p_hit_distribution: String = "",
-    p_repeated_target_damage: Dictionary = {}
+    p_repeated_target_damage: Dictionary = {},
+    p_resolve_hits_by_round: bool = false,
+    p_strip_buffs_hit_index: int = -1,
+    p_damage_per_removed_buff: float = 0.0,
+    p_removed_buff_damage_hit_indices: Array = []
 ) -> void:
     super(
         p_skill_id,
@@ -54,6 +62,12 @@ func _init(
     )
     hit_distribution = p_hit_distribution
     repeated_target_damage = p_repeated_target_damage
+    resolve_hits_by_round = p_resolve_hits_by_round
+    strip_buffs_hit_index = p_strip_buffs_hit_index
+    damage_per_removed_buff = p_damage_per_removed_buff
+    removed_buff_damage_hit_indices = (
+        p_removed_buff_damage_hit_indices
+    )
 
 
 func base_damage_calc(
@@ -299,6 +313,9 @@ func apply_on_hit_passives(
     defender,
     applied_effects: Array
 ) -> void:
+    if attacker.has_oblivion():
+        return
+
     # Cinderblood-style passives do NOT use Accuracy/Resistance in Python.
     # They only roll their own proc chance, then apply the status effect.
     for effect_config in attacker.on_hit_effects:
@@ -484,6 +501,177 @@ func execute_on_target(
         "effects_applied": effects_applied,
         "resisted_effects": resisted_effects,
         "healing": healing
+    }
+
+
+func _effect_triggers_on_hit(
+    effect_config: Dictionary,
+    hit_index: int
+) -> bool:
+    if effect_config.has("hit_indices"):
+        return hit_index in effect_config["hit_indices"]
+
+    return (
+        effect_config.get("trigger", "")
+        == "per_hit"
+    )
+
+
+func execute_round_based_targets(
+    attacker,
+    defenders: Array
+) -> Dictionary:
+    var target_results: Dictionary = {}
+    var removed_buffs_total := 0
+    var total_damage := 0
+    var total_critical_hits := 0
+    var all_effects: Array = []
+    var all_resisted: Array[String] = []
+
+    for defender in defenders:
+        if defender == null or not defender.is_alive():
+            continue
+
+        target_results[defender] = {
+            "target": defender,
+            "damage": 0,
+            "critical_hits": 0,
+            "hits_landed": 0,
+            "effects_applied": [],
+            "resisted_effects": [],
+            "healing": 0
+        }
+
+    for hit_index in range(hits):
+        for defender in target_results:
+            if not defender.is_alive():
+                continue
+
+            var damage_multiplier := 1.0
+
+            if hit_index in removed_buff_damage_hit_indices:
+                damage_multiplier += (
+                    removed_buffs_total
+                    * damage_per_removed_buff
+                )
+
+            var hit_multiplier := 1.0
+
+            if not hit_multipliers.is_empty():
+                hit_multiplier = float(
+                    hit_multipliers[hit_index]
+                )
+
+            var base_damage: float = base_damage_calc(
+                attacker,
+                defender,
+                hit_multiplier,
+                damage_multiplier
+            )
+
+            var critical := false
+            var critical_multiplier := 1.0
+
+            if randi_range(1, 100) <= int(
+                attacker.get_effective_stat("crit_rate")
+            ):
+                critical = true
+                critical_multiplier += (
+                    attacker.get_effective_stat(
+                        "crit_damage"
+                    )
+                    / 100.0
+                )
+
+            var final_damage: int = maxi(
+                1,
+                int(base_damage * critical_multiplier)
+            )
+
+            var actual_damage: int = defender.receive_damage(
+                final_damage
+            )
+
+            var target_result: Dictionary = (
+                target_results[defender]
+            )
+
+            target_result["damage"] += actual_damage
+            total_damage += actual_damage
+
+            if actual_damage > 0:
+                target_result["hits_landed"] += 1
+
+            if critical:
+                target_result["critical_hits"] += 1
+                total_critical_hits += 1
+
+            apply_on_hit_passives(
+                attacker,
+                defender,
+                target_result["effects_applied"]
+            )
+
+            if (
+                hit_index == strip_buffs_hit_index
+                and defender.is_alive()
+            ):
+                removed_buffs_total += (
+                    defender.remove_buffs_for_strip()
+                )
+
+            if defender.is_alive():
+                for effect_config in effects:
+                    if not _effect_triggers_on_hit(
+                        effect_config,
+                        hit_index
+                    ):
+                        continue
+
+                    var effect_result: Dictionary = (
+                        try_apply_effect(
+                            effect_config,
+                            attacker,
+                            defender
+                        )
+                    )
+
+                    var applied_effect = effect_result[
+                        "applied_effect"
+                    ]
+
+                    if applied_effect != null:
+                        target_result[
+                            "effects_applied"
+                        ].append(applied_effect)
+                    elif effect_result["resisted"]:
+                        target_result[
+                            "resisted_effects"
+                        ].append(
+                            str(effect_result["effect_id"])
+                        )
+
+    for defender in target_results:
+        var target_result: Dictionary = (
+            target_results[defender]
+        )
+
+        all_effects.append_array(
+            target_result["effects_applied"]
+        )
+        all_resisted.append_array(
+            target_result["resisted_effects"]
+        )
+
+    return {
+        "success": true,
+        "damage": total_damage,
+        "critical_hits": total_critical_hits,
+        "effects_applied": all_effects,
+        "resisted_effects": all_resisted,
+        "healing": 0,
+        "removed_buffs": removed_buffs_total,
+        "target_results": target_results.values()
     }
 
 
@@ -712,6 +900,14 @@ func execute_targets(
             "healing": 0,
             "target_results": []
         }
+
+    if resolve_hits_by_round:
+        var round_result: Dictionary = execute_round_based_targets(
+            attacker,
+            defenders
+        )
+        trigger_cooldown()
+        return round_result
 
     if target_type == "random_enemies":
         var random_result: Dictionary = execute_random_targets(
