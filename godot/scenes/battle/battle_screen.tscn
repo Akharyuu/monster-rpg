@@ -39,6 +39,15 @@ offset_bottom = 120.0
 max_value = 2520.0
 value = 2520.0
 
+[node name="Enemy Status Label" type="Label" parent="."]
+layout_mode = 0
+offset_left = 758.0
+offset_top = 127.0
+offset_right = 1041.0
+offset_bottom = 150.0
+text = ""
+horizontal_alignment = 1
+
 [node name="Ally Monster HP bar" type="ProgressBar" parent="." unique_id=1763111957]
 layout_mode = 0
 offset_left = 108.0
