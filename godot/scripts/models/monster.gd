@@ -83,6 +83,10 @@ func is_silenced() -> bool:
     return get_debuff("silence") != null
 
 
+func has_oblivion() -> bool:
+    return get_debuff("oblivion") != null
+
+
 func cannot_act() -> bool:
     return is_stunned() or is_frozen()
 
@@ -178,6 +182,9 @@ func get_effective_stat(stat: String) -> float:
 
 
 func get_passive_damage_multiplier() -> float:
+    if has_oblivion():
+        return 1.0
+
     if monster_id != "drake_storm":
         return 1.0
 
@@ -256,6 +263,26 @@ func apply_status_effect(effect):
         return effect
 
     return null
+
+
+func remove_buffs_for_strip() -> int:
+    var veil = null
+
+    for buff in buffs:
+        if buff.effect_id == "veil":
+            veil = buff
+            break
+
+    if veil != null:
+        buffs.erase(veil)
+        return 0
+
+    var removed_count: int = buffs.size()
+
+    if removed_count > 0:
+        buffs.clear()
+
+    return removed_count
 
 
 func get_debuff(effect_id: String):
