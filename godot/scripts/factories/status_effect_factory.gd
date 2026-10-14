@@ -27,6 +27,48 @@ static func create_status_effect(
                 "multiplicative"
             )
 
+        "speed_break":
+            return StatusEffectScript.new(
+                "speed_break",
+                "Speed Break",
+                "speed",
+                "debuff",
+                0.7,
+                duration,
+                stacks,
+                1,
+                source,
+                "multiplicative"
+            )
+
+        "defense_up":
+            return StatusEffectScript.new(
+                "defense_up",
+                "Defense Up",
+                "defense",
+                "buff",
+                1.3,
+                duration,
+                stacks,
+                1,
+                source,
+                "multiplicative"
+            )
+
+        "immunity":
+            return StatusEffectScript.new(
+                "immunity",
+                "Immunity",
+                null,
+                "buff",
+                null,
+                duration,
+                stacks,
+                1,
+                source,
+                "multiplicative"
+            )
+
         "burn":
             return StatusEffectScript.new(
                 "burn",
