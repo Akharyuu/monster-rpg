@@ -31,7 +31,14 @@ static func _create_igneous_drake():
             1,
             [],
             "attack",
-            0
+            0,
+            [
+                {
+                    "effect_id": "defense_break",
+                    "chance": 0.30,
+                    "turns": 2
+                }
+            ]
         )
     ]
 
@@ -58,7 +65,8 @@ static func _create_storm_slime():
             1,
             [],
             "attack",
-            0
+            0,
+            []
         )
     ]
 
