@@ -5,6 +5,7 @@ Monstruos 3*
 - Ogre
 - Sireen
 - Golem
+- Zombie Master
 
 Monstruos 4*
 - Succubus
@@ -18,6 +19,7 @@ Monstruos 4*
 - Vampire
 - Cerberus
 - Valkirie
+- Ent
 
 Monstruos 5*
 - Angel
@@ -27,6 +29,8 @@ Monstruos 5*
 - Chimaera
 - Leviathan
 - Djinn
+- Wyrm
+- Archon
 
 
 Caballos: Pegasus, Unicorn, Nightmare, Hippocamp, Phlegon
