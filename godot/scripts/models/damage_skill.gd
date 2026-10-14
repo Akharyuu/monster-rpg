@@ -370,14 +370,6 @@ func execute_on_target(
     attacker,
     defender
 ) -> Dictionary:
-    if target_type == "random_enemies":
-        var random_result: Dictionary = execute_random_targets(
-            attacker,
-            defenders
-        )
-        trigger_cooldown()
-        return random_result
-
     var total_damage := 0
     var critical_hits := 0
     var hits_landed := 0
@@ -720,6 +712,14 @@ func execute_targets(
             "healing": 0,
             "target_results": []
         }
+
+    if target_type == "random_enemies":
+        var random_result: Dictionary = execute_random_targets(
+            attacker,
+            defenders
+        )
+        trigger_cooldown()
+        return random_result
 
     var total_damage := 0
     var critical_hits := 0
