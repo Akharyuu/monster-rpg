@@ -2805,7 +2805,9 @@ def print_void_diagnostics_report(report):
 VOID_SENSITIVITY_BUFF_ORDER = [
     "attack_up",
     "defense_up",
-    "speed_up"
+    "speed_up",
+    "crit_rate_up",
+    "immunity"
 ]
 
 
@@ -2869,7 +2871,10 @@ def analyze_void_buff_sensitivity(
 
     scenarios = []
 
-    for buff_count in range(4):
+    for buff_count in range(
+        len(VOID_SENSITIVITY_BUFF_ORDER)
+        + 1
+    ):
 
         initial_buffs = (
             _build_team_initial_buffs(
