@@ -17,7 +17,7 @@ STATUS_EFFECT_DATA =  {
         "name": "Defense Break",
         "stat": "defense",
         "effect_type": EffectType.DEBUFF,
-        "modifier": 0.5
+        "modifier": 0.7
     },
 
     "speed_break": {
