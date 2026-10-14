@@ -35,7 +35,7 @@ var action_in_progress := true
 func _ready() -> void:
     allies = [
         PrototypeFactoryScript.create_level_one_monster(
-            "drake_aether"
+            "drake_storm"
         ),
         PrototypeFactoryScript.create_level_one_monster(
             "drake_abyssal"
@@ -178,6 +178,20 @@ func request_player_skill(slot: int) -> void:
     if skill.target_type == "all_enemies":
         action_in_progress = true
         await preview_aoe_targets()
+        execute_player_skill(
+            skill,
+            battle_controller.get_living(enemies)
+        )
+        return
+
+    if skill.target_type == "random_enemies":
+        action_in_progress = true
+        set_aoe_preview(true)
+        turn_label.text = "10 hits will strike random enemies"
+
+        await get_tree().create_timer(0.35).timeout
+        set_aoe_preview(false)
+
         execute_player_skill(
             skill,
             battle_controller.get_living(enemies)
