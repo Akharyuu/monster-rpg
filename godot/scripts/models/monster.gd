@@ -26,6 +26,9 @@ var crit_damage: float = 50.0
 var action_gauge: float = 0.0
 var skills: Array = []
 
+var buffs: Array = []
+var debuffs: Array = []
+
 
 func _init(
     p_monster_id: String,
@@ -57,7 +60,7 @@ func is_alive() -> bool:
     return health > 0
 
 
-func get_effective_stat(stat: String) -> float:
+func get_base_stat(stat: String) -> float:
     match stat:
         "max_health", "health":
             return max_health
@@ -78,6 +81,31 @@ func get_effective_stat(stat: String) -> float:
         _:
             push_error("Unknown stat: %s" % stat)
             return 0.0
+
+
+func get_effective_stat(stat: String) -> float:
+    var multiplicative_modifier := 1.0
+    var additive_modifier := 0.0
+
+    for buff in buffs:
+        if buff.stat == stat:
+            if buff.modifier_mode == "additive":
+                additive_modifier += float(buff.modifier)
+            elif buff.modifier != null:
+                multiplicative_modifier *= float(buff.modifier)
+
+    for debuff in debuffs:
+        if debuff.stat == stat:
+            if debuff.modifier_mode == "additive":
+                additive_modifier += float(debuff.modifier)
+            elif debuff.modifier != null:
+                multiplicative_modifier *= float(debuff.modifier)
+
+    return (
+        get_base_stat(stat)
+        * multiplicative_modifier
+        + additive_modifier
+    )
 
 
 func get_attribute_modifier(defender) -> float:
@@ -111,6 +139,55 @@ func heal(amount: int) -> int:
     var old_health: int = health
     health = mini(max_health, health + amount)
     return health - old_health
+
+
+func apply_status_effect(effect):
+    if effect == null:
+        return null
+
+    var effects_list: Array
+
+    if effect.effect_type == "buff":
+        effects_list = buffs
+    elif effect.effect_type == "debuff":
+        effects_list = debuffs
+    else:
+        return null
+
+    for active_effect in effects_list:
+        if active_effect.effect_id == effect.effect_id:
+            if effect.duration > active_effect.remaining_turns:
+                active_effect.remaining_turns = effect.duration
+
+            active_effect.stacks = mini(
+                active_effect.max_stacks,
+                active_effect.stacks + effect.stacks
+            )
+
+            active_effect.source = effect.source
+            return active_effect
+
+    if effects_list.size() < 5:
+        effects_list.append(effect)
+        return effect
+
+    return null
+
+
+func reduce_status_effect_turns() -> void:
+    for buff in buffs:
+        buff.reduce_remaining_turns()
+
+    for debuff in debuffs:
+        debuff.reduce_remaining_turns()
+
+    buffs = buffs.filter(
+        func(effect): return effect.is_active()
+    )
+
+    debuffs = debuffs.filter(
+        func(effect): return effect.is_active()
+    )
 
 
 func get_skill(index: int):
