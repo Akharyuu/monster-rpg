@@ -15,6 +15,8 @@ var effects: Array
 var damage_for_burn_stacks: Dictionary = {}
 var consume_burn_and_heal: Dictionary = {}
 var action_gauge_reduction_per_hit: float = 0.0
+var hit_distribution: String = ""
+var repeated_target_damage: Dictionary = {}
 
 
 func _init(
@@ -29,7 +31,9 @@ func _init(
     p_damage_for_burn_stacks: Dictionary = {},
     p_consume_burn_and_heal: Dictionary = {},
     p_target_type: String = "single_enemy",
-    p_action_gauge_reduction_per_hit: float = 0.0
+    p_action_gauge_reduction_per_hit: float = 0.0,
+    p_hit_distribution: String = "",
+    p_repeated_target_damage: Dictionary = {}
 ) -> void:
     super(
         p_skill_id,
@@ -48,6 +52,8 @@ func _init(
     action_gauge_reduction_per_hit = (
         p_action_gauge_reduction_per_hit
     )
+    hit_distribution = p_hit_distribution
+    repeated_target_damage = p_repeated_target_damage
 
 
 func base_damage_calc(
@@ -112,11 +118,16 @@ func base_damage_calc(
         attacker.get_attribute_modifier(defender)
     )
 
+    var passive_damage_multiplier: float = (
+        attacker.get_passive_damage_multiplier()
+    )
+
     return maxf(
         1.0,
         raw_damage
         * damage_reduction
         * attribute_modifier
+        * passive_damage_multiplier
     )
 
 
@@ -359,6 +370,14 @@ func execute_on_target(
     attacker,
     defender
 ) -> Dictionary:
+    if target_type == "random_enemies":
+        var random_result: Dictionary = execute_random_targets(
+            attacker,
+            defenders
+        )
+        trigger_cooldown()
+        return random_result
+
     var total_damage := 0
     var critical_hits := 0
     var hits_landed := 0
@@ -473,6 +492,217 @@ func execute_on_target(
         "effects_applied": effects_applied,
         "resisted_effects": resisted_effects,
         "healing": healing
+    }
+
+
+func _get_random_hit_multiplier(
+    attacker,
+    target_hit_number: int
+) -> float:
+    if repeated_target_damage.is_empty():
+        return 1.0
+
+    var multiplier_value := 1.0
+    var full_damage_hits: int = int(
+        repeated_target_damage.get(
+            "full_damage_hits",
+            hits
+        )
+    )
+
+    if target_hit_number > full_damage_hits:
+        multiplier_value *= float(
+            repeated_target_damage.get(
+                "later_hit_multiplier",
+                1.0
+            )
+        )
+
+    if target_hit_number == 1:
+        var first_hit_bonus: Dictionary = (
+            repeated_target_damage.get(
+                "first_hit_bonus_if_caster_buff",
+                {}
+            )
+        )
+
+        if (
+            not first_hit_bonus.is_empty()
+            and attacker.has_buff(
+                str(first_hit_bonus.get(
+                    "effect_id",
+                    ""
+                ))
+            )
+        ):
+            multiplier_value *= float(
+                first_hit_bonus.get(
+                    "multiplier",
+                    1.0
+                )
+            )
+
+    return multiplier_value
+
+
+func execute_random_targets(
+    attacker,
+    defenders: Array
+) -> Dictionary:
+    var living_targets: Array = defenders.filter(
+        func(target): return target != null and target.is_alive()
+    )
+
+    if living_targets.is_empty():
+        return {
+            "success": true,
+            "damage": 0,
+            "critical_hits": 0,
+            "effects_applied": [],
+            "resisted_effects": [],
+            "healing": 0,
+            "target_results": []
+        }
+
+    var guaranteed_targets: Array = []
+
+    if hit_distribution == "one_each_then_random":
+        guaranteed_targets = living_targets.duplicate()
+        guaranteed_targets.shuffle()
+
+    var result_by_target: Dictionary = {}
+    var hit_counts: Dictionary = {}
+    var total_damage := 0
+    var total_critical_hits := 0
+    var all_effects: Array = []
+    var all_resisted: Array[String] = []
+
+    for _hit_index in range(hits):
+        living_targets = defenders.filter(
+            func(target): return target != null and target.is_alive()
+        )
+
+        if living_targets.is_empty():
+            break
+
+        var target = null
+
+        while (
+            not guaranteed_targets.is_empty()
+            and not guaranteed_targets[-1].is_alive()
+        ):
+            guaranteed_targets.pop_back()
+
+        if not guaranteed_targets.is_empty():
+            target = guaranteed_targets.pop_back()
+        else:
+            target = living_targets.pick_random()
+
+        if not result_by_target.has(target):
+            result_by_target[target] = {
+                "target": target,
+                "damage": 0,
+                "critical_hits": 0,
+                "hits_landed": 0,
+                "effects_applied": [],
+                "resisted_effects": [],
+                "healing": 0
+            }
+            hit_counts[target] = 0
+
+        hit_counts[target] = int(hit_counts[target]) + 1
+        var target_hit_number: int = int(hit_counts[target])
+
+        var hit_multiplier: float = (
+            _get_random_hit_multiplier(
+                attacker,
+                target_hit_number
+            )
+        )
+
+        var damage_result: Dictionary = damage_calc(
+            attacker,
+            target,
+            hit_multiplier
+        )
+
+        var actual_damage: int = target.receive_damage(
+            int(damage_result["damage"])
+        )
+
+        var target_result: Dictionary = (
+            result_by_target[target]
+        )
+
+        target_result["damage"] += actual_damage
+
+        if actual_damage > 0:
+            target_result["hits_landed"] += 1
+
+        if damage_result["critical"]:
+            target_result["critical_hits"] += 1
+            total_critical_hits += 1
+
+        total_damage += actual_damage
+
+        apply_on_hit_passives(
+            attacker,
+            target,
+            target_result["effects_applied"]
+        )
+
+    for target in result_by_target:
+        var target_result: Dictionary = result_by_target[
+            target
+        ]
+
+        if target.is_alive():
+            for effect_config in effects:
+                if effect_config.get(
+                    "trigger",
+                    ""
+                ) != "hit_count_threshold":
+                    continue
+
+                if int(target_result["hits_landed"]) < int(
+                    effect_config.get("min_hits", 1)
+                ):
+                    continue
+
+                var effect_result: Dictionary = try_apply_effect(
+                    effect_config,
+                    attacker,
+                    target
+                )
+
+                var applied_effect = effect_result[
+                    "applied_effect"
+                ]
+
+                if applied_effect != null:
+                    target_result["effects_applied"].append(
+                        applied_effect
+                    )
+                elif effect_result["resisted"]:
+                    target_result["resisted_effects"].append(
+                        str(effect_result["effect_id"])
+                    )
+
+        all_effects.append_array(
+            target_result["effects_applied"]
+        )
+        all_resisted.append_array(
+            target_result["resisted_effects"]
+        )
+
+    return {
+        "success": true,
+        "damage": total_damage,
+        "critical_hits": total_critical_hits,
+        "effects_applied": all_effects,
+        "resisted_effects": all_resisted,
+        "healing": 0,
+        "target_results": result_by_target.values()
     }
 
 
