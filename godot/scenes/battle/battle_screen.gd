@@ -3,6 +3,9 @@ extends Control
 @onready var enemy_hp_bar = $"Enemy Monster HP bar"
 @onready var ally_hp_bar = $"Ally Monster HP bar"
 
+@onready var enemy_name_label = $"Enemy Monster Name"
+@onready var ally_name_label = $"Ally Monster Name"
+
 @onready var skill_1_button = $"Skill 1 Button"
 @onready var skill_2_button = $"Skill 2 Button"
 @onready var skill_3_button = $"Skill 3 Button"
@@ -10,98 +13,163 @@ extends Control
 @onready var turn_label = $"Turn Label"
 
 
-var enemy_max_hp := 2520
-var enemy_current_hp := 2520
-
-var ally_max_hp := 3500
-var ally_current_hp := 3500
+var player_monster: Monster
+var enemy_monster: Monster
 
 var battle_finished := false
 
 
-func _ready():
+func _ready() -> void:
+    player_monster = PrototypeFactory.create_level_one_monster(
+        "drake_igneous"
+    )
 
-	enemy_hp_bar.max_value = enemy_max_hp
-	enemy_hp_bar.value = enemy_current_hp
+    enemy_monster = PrototypeFactory.create_level_one_monster(
+        "slime_storm"
+    )
 
-	ally_hp_bar.max_value = ally_max_hp
-	ally_hp_bar.value = ally_current_hp
+    enemy_name_label.text = enemy_monster.monster_name
+    ally_name_label.text = "Igneous Drake"
 
-	turn_label.text = "Your turn"
+    enemy_hp_bar.max_value = enemy_monster.max_health
+    enemy_hp_bar.value = enemy_monster.health
 
+    ally_hp_bar.max_value = player_monster.max_health
+    ally_hp_bar.value = player_monster.health
 
-func _on_skill_1_button_pressed():
+    var player_s1 := player_monster.get_skill(1)
 
-	if battle_finished:
-		return
+    if player_s1 != null:
+        skill_1_button.text = player_s1.skill_name
 
-	disable_skill_buttons()
+    # S2 and S3 will be enabled when the rest of the Igneous Drake kit
+    # is ported. Keeping them visible lets us preserve the battle layout.
+    skill_2_button.text = "S2 (soon)"
+    skill_3_button.text = "S3 (soon)"
+    skill_2_button.disabled = true
+    skill_3_button.disabled = true
 
-	turn_label.text = "Igneous Drake attacks!"
-
-	var damage := 300
-
-	enemy_current_hp -= damage
-
-	if enemy_current_hp < 0:
-		enemy_current_hp = 0
-
-	enemy_hp_bar.value = enemy_current_hp
-
-	if enemy_current_hp <= 0:
-		finish_battle(true)
-		return
-
-	await get_tree().create_timer(0.6).timeout
-
-	enemy_turn()
+    turn_label.text = "Your turn"
 
 
-func enemy_turn():
+func _on_skill_1_button_pressed() -> void:
+    if battle_finished:
+        return
 
-	turn_label.text = "Storm Slime attacks!"
+    disable_skill_buttons()
 
-	var damage := 150
+    var skill := player_monster.get_skill(1)
 
-	ally_current_hp -= damage
+    if skill == null:
+        return
 
-	if ally_current_hp < 0:
-		ally_current_hp = 0
+    turn_label.text = "%s uses %s!" % [
+        ally_name_label.text,
+        skill.skill_name
+    ]
 
-	ally_hp_bar.value = ally_current_hp
+    var result := skill.execute(
+        player_monster,
+        enemy_monster
+    )
 
-	if ally_current_hp <= 0:
-		finish_battle(false)
-		return
+    enemy_hp_bar.value = enemy_monster.health
 
-	await get_tree().create_timer(0.6).timeout
+    if not result["success"]:
+        turn_label.text = "Skill unavailable."
+        enable_skill_buttons()
+        return
 
-	turn_label.text = "Your turn"
+    var message := "%s uses %s: %d damage" % [
+        ally_name_label.text,
+        skill.skill_name,
+        result["damage"]
+    ]
 
-	enable_skill_buttons()
+    if result["critical_hits"] > 0:
+        message += " - CRITICAL!"
+
+    turn_label.text = message
+
+    if not enemy_monster.is_alive():
+        finish_battle(true)
+        return
+
+    await get_tree().create_timer(0.6).timeout
+
+    enemy_turn()
 
 
-func disable_skill_buttons():
+func enemy_turn() -> void:
+    var skill := enemy_monster.get_skill(1)
 
-	skill_1_button.disabled = true
-	skill_2_button.disabled = true
-	skill_3_button.disabled = true
+    if skill == null:
+        return
+
+    turn_label.text = "%s uses %s!" % [
+        enemy_monster.monster_name,
+        skill.skill_name
+    ]
+
+    var result := skill.execute(
+        enemy_monster,
+        player_monster
+    )
+
+    ally_hp_bar.value = player_monster.health
+
+    var message := "%s uses %s: %d damage" % [
+        enemy_monster.monster_name,
+        skill.skill_name,
+        result["damage"]
+    ]
+
+    if result["critical_hits"] > 0:
+        message += " - CRITICAL!"
+
+    turn_label.text = message
+
+    if not player_monster.is_alive():
+        finish_battle(false)
+        return
+
+    await get_tree().create_timer(0.6).timeout
+
+    # S1 has no cooldown, but this already prepares the screen for
+    # cooldown-bearing skills later.
+    player_monster.reduce_skill_cooldowns()
+    enemy_monster.reduce_skill_cooldowns()
+
+    turn_label.text = "Your turn"
+
+    enable_skill_buttons()
 
 
-func enable_skill_buttons():
+func disable_skill_buttons() -> void:
+    skill_1_button.disabled = true
+    skill_2_button.disabled = true
+    skill_3_button.disabled = true
 
-	skill_1_button.disabled = false
-	skill_2_button.disabled = false
-	skill_3_button.disabled = false
+
+func enable_skill_buttons() -> void:
+    var s1 := player_monster.get_skill(1)
+
+    skill_1_button.disabled = (
+        s1 == null
+        or not s1.is_available()
+    )
+
+    # Still intentionally locked until S2/S3 are ported.
+    skill_2_button.disabled = true
+    skill_3_button.disabled = true
 
 
-func finish_battle(player_won):
+func finish_battle(player_won: bool) -> void:
+    battle_finished = true
 
-	battle_finished = true
+    disable_skill_buttons()
 
-	disable_skill_buttons()
-
-	if player_won:
-		turn_label.text = "Victory!"
-	else:
-		turn_label.text = "Defeat!"
+    if player_won:
+        turn_label.text = "Victory!"
+    else:
+        turn_label.text = "Defeat!"
