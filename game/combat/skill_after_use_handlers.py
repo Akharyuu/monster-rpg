@@ -616,6 +616,14 @@ def follow_up_skill_on_kill(
             / opponent.max_health
     )
 
+    # Massacre is a new skill activation, not another hit of
+    # Death Sentence. Resolve any same-skill lethal protection
+    # before the follow-up begins.
+    for target_result in skill_result.target_results:
+        target_result[
+            "target"
+        ].finalize_after_enemy_skill()
+
     follow_up = caster.get_skill(
         data["skill_slot"]
     )
