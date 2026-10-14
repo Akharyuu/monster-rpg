@@ -173,7 +173,7 @@ func update_status_display() -> void:
     var texts: Array[String] = []
 
     for debuff in enemy_monster.debuffs:
-        var text := debuff.effect_name
+        var text: String = str(debuff.effect_name)
 
         if debuff.max_stacks > 1:
             text += " x%d" % debuff.stacks
