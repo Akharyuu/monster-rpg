@@ -30,6 +30,11 @@ var skills: Array = []
 var buffs: Array = []
 var debuffs: Array = []
 
+# Lightweight prototype representation of passive effects that trigger
+# whenever this monster lands a hit. This will later become the full
+# passive system used by Python.
+var on_hit_effects: Array = []
+
 
 func _init(
     p_monster_id: String,
@@ -175,6 +180,75 @@ func apply_status_effect(effect):
         return effect
 
     return null
+
+
+func get_debuff(effect_id: String):
+    for debuff in debuffs:
+        if debuff.effect_id == effect_id:
+            return debuff
+
+    return null
+
+
+func get_debuff_stacks(effect_id: String) -> int:
+    var debuff = get_debuff(effect_id)
+
+    if debuff == null:
+        return 0
+
+    return debuff.stacks
+
+
+func consume_debuff_stacks(
+    effect_id: String,
+    amount: int
+) -> int:
+    var debuff = get_debuff(effect_id)
+
+    if debuff == null:
+        return 0
+
+    var consumed: int = mini(amount, debuff.stacks)
+    debuff.stacks -= consumed
+
+    if debuff.stacks <= 0:
+        debuffs.erase(debuff)
+
+    return consumed
+
+
+func apply_damage_over_time() -> Dictionary:
+    var total_damage := 0
+    var sources: Array[String] = []
+
+    for debuff in debuffs:
+        var damage := 0
+
+        if debuff.effect_id == "burn":
+            match debuff.stacks:
+                1:
+                    damage = int(max_health * 0.03)
+                2:
+                    damage = int(max_health * 0.06)
+                3:
+                    damage = int(max_health * 0.10)
+
+        if damage <= 0:
+            continue
+
+        total_damage += receive_damage(damage)
+
+        sources.append(
+            "%s x%d" % [
+                debuff.effect_name,
+                debuff.stacks
+            ]
+        )
+
+    return {
+        "damage": total_damage,
+        "sources": sources
+    }
 
 
 func reduce_status_effect_turns() -> void:
