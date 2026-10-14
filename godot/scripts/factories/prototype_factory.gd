@@ -203,6 +203,10 @@ static func _create_abyssal_drake():
     )
 
     monster.combat_resources["frozen_scales"] = 0
+    monster.combat_resource_maximums[
+        "frozen_scales"
+    ] = 3
+
     return monster
 
 
