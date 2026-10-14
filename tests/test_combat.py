@@ -29,6 +29,7 @@ from game.combat.passive_modifiers import (
     get_passive_stat_bonus
 )
 from game.combat.passive_triggers import trigger_passives
+from game.combat.combat_events import notify_monster_death
 from game.combat.skill_damage_handlers import DAMAGE_HANDLERS
 from game.combat.telemetry import (
     create_battle_telemetry,
@@ -5784,3 +5785,813 @@ def test_dismantle_has_no_devour_damage_bonus_without_buffs(
         )
 
         assert second_hit_damage == first_hit_damage
+
+
+# =========================================================
+#                       DULLAHANS
+# =========================================================
+
+def test_heal_block_prevents_all_healing():
+
+    target = create_monster(
+        "dullahan_igneous"
+    )
+
+    target.health = int(
+        target.max_health
+        * 0.50
+    )
+
+    heal_block = create_status_effect(
+        effect_id="heal_block",
+        duration=2
+    )
+
+    target.apply_status_effect(
+        heal_block
+    )
+
+    health_before = target.health
+
+    actual_heal = target.heal(
+        5000
+    )
+
+    assert actual_heal == 0
+    assert target.health == health_before
+
+
+
+def test_vulnerability_increases_direct_damage_by_fifteen_percent(
+    monkeypatch
+):
+
+    attacker = create_monster(
+        "dullahan_igneous"
+    )
+
+    target = create_monster(
+        "dullahan_abyssal"
+    )
+
+    skill = create_skill(
+        "severing_blade"
+    )
+
+    monkeypatch.setattr(
+        random,
+        "randint",
+        lambda a, b: 100
+    )
+
+    snapshot = skill.get_target_snapshot(
+        target
+    )
+
+    base_damage, _ = skill.damage_calc(
+        attacker,
+        target,
+        1,
+        snapshot,
+        0
+    )
+
+    vulnerability = create_status_effect(
+        effect_id="vulnerability",
+        duration=2,
+        source=attacker
+    )
+
+    target.apply_status_effect(
+        vulnerability
+    )
+
+    vulnerable_damage, _ = skill.damage_calc(
+        attacker,
+        target,
+        1,
+        snapshot,
+        0
+    )
+
+    assert vulnerable_damage == int(
+        base_damage
+        * 1.15
+    )
+
+
+
+def test_chilling_presence_does_not_extend_hard_incapacitation(
+    monkeypatch
+):
+
+    abyssal = create_monster(
+        "dullahan_abyssal"
+    )
+
+    target = create_monster(
+        "dullahan_igneous"
+    )
+
+    abyssal._combat_opponents = [
+        target
+    ]
+
+    slow = create_status_effect(
+        effect_id="speed_break",
+        duration=2,
+        source=abyssal
+    )
+
+    stun = create_status_effect(
+        effect_id="stun",
+        duration=1,
+        source=abyssal
+    )
+
+    target.apply_status_effect(
+        slow
+    )
+
+    target.apply_status_effect(
+        stun
+    )
+
+    monkeypatch.setattr(
+        random,
+        "shuffle",
+        lambda values: None
+    )
+
+    trigger_passives(
+        "after_turn",
+        abyssal,
+        {
+            "opponents": [
+                target
+            ]
+        }
+    )
+
+    assert slow.remaining_turns == 3
+    assert stun.remaining_turns == 1
+
+
+
+def test_chilling_presence_suffocation_extends_two_distinct_debuffs(
+    monkeypatch
+):
+
+    abyssal = create_monster(
+        "dullahan_abyssal"
+    )
+
+    abyssal.resonance = 3
+    update_resonance_kit(
+        abyssal
+    )
+
+    target = create_monster(
+        "dullahan_igneous"
+    )
+
+    slow = create_status_effect(
+        effect_id="speed_break",
+        duration=2,
+        source=abyssal
+    )
+
+    attack_break = create_status_effect(
+        effect_id="attack_break",
+        duration=2,
+        source=abyssal
+    )
+
+    target.apply_status_effect(
+        slow
+    )
+
+    target.apply_status_effect(
+        attack_break
+    )
+
+    monkeypatch.setattr(
+        random,
+        "shuffle",
+        lambda values: None
+    )
+
+    trigger_passives(
+        "after_turn",
+        abyssal,
+        {
+            "opponents": [
+                target
+            ]
+        }
+    )
+
+    assert slow.remaining_turns == 3
+    assert attack_break.remaining_turns == 3
+
+
+
+def test_final_omen_fulfilled_reduces_healing_and_grants_attack_up():
+
+    igneous = create_monster(
+        "dullahan_igneous"
+    )
+
+    igneous.resonance = 4
+    update_resonance_kit(
+        igneous
+    )
+
+    target = create_monster(
+        "dullahan_abyssal"
+    )
+
+    target.health = int(
+        target.max_health
+        * 0.40
+    )
+
+    target._combat_opponents = [
+        igneous
+    ]
+
+    actual_heal = target.heal(
+        1000
+    )
+
+    assert actual_heal == 700
+
+    assert any(
+        buff.effect_id == "attack_up"
+        for buff in igneous.buffs
+    )
+
+
+
+def test_massacre_follow_up_does_not_change_s2_cooldown(
+    monkeypatch
+):
+
+    igneous = create_monster(
+        "dullahan_igneous"
+    )
+
+    igneous.resonance = 5
+    update_resonance_kit(
+        igneous
+    )
+
+    first_target = create_monster(
+        "slime_storm"
+    )
+
+    second_target = create_monster(
+        "slime_abyssal"
+    )
+
+    first_target.health = 1
+
+    igneous._combat_opponents = [
+        first_target,
+        second_target
+    ]
+
+    igneous._combat_team = [
+        igneous
+    ]
+
+    s2 = igneous.get_skill(
+        2
+    )
+
+    s3 = igneous.get_skill(
+        3
+    )
+
+    s2.current_cooldown = 3
+
+    monkeypatch.setattr(
+        random,
+        "randint",
+        lambda a, b: 100
+    )
+
+    igneous.use_skill(
+        [
+            first_target
+        ],
+        s3,
+        combat_context={
+            "team": [
+                igneous
+            ],
+            "opponents": [
+                first_target,
+                second_target
+            ]
+        }
+    )
+
+    assert not first_target.is_alive
+    assert second_target.health < (
+        second_target.max_health
+    )
+    assert s2.current_cooldown == 3
+
+
+
+def test_storm_r2_unlocks_the_hunt_and_steals_action_gauge():
+
+    storm = create_monster(
+        "dullahan_storm"
+    )
+
+    storm.resonance = 2
+    update_resonance_kit(
+        storm
+    )
+
+    low = create_monster(
+        "slime_igneous"
+    )
+
+    high = create_monster(
+        "slime_abyssal"
+    )
+
+    low.action_gauge = 0.30
+    high.action_gauge = 0.80
+
+    trigger_passives(
+        "after_turn",
+        storm,
+        {
+            "opponents": [
+                low,
+                high
+            ]
+        }
+    )
+
+    assert high.action_gauge == pytest.approx(
+        0.60
+    )
+
+    assert storm.action_gauge == pytest.approx(
+        0.20
+    )
+
+
+
+def test_stampede_forces_lowest_gauge_ally_turn_without_consuming_gauge():
+
+    storm = create_monster(
+        "dullahan_storm"
+    )
+
+    storm.resonance = 5
+    update_resonance_kit(
+        storm
+    )
+
+    ally_low = create_monster(
+        "slime_igneous"
+    )
+
+    ally_high = create_monster(
+        "slime_abyssal"
+    )
+
+    ally_low.action_gauge = 0.10
+    ally_high.action_gauge = 0.60
+
+    skill = storm.get_skill(
+        3
+    )
+
+    storm.use_skill(
+        [
+            storm
+        ],
+        skill,
+        combat_context={
+            "team": [
+                storm,
+                ally_low,
+                ally_high
+            ],
+            "opponents": []
+        }
+    )
+
+    assert ally_low.action_gauge == pytest.approx(
+        0.40
+    )
+
+    assert ally_low.forced_turn_pending is True
+
+    assert any(
+        buff.effect_id == "attack_up"
+        for buff in ally_low.buffs
+    )
+
+    assert any(
+        buff.effect_id == "speed_up"
+        for buff in ally_low.buffs
+    )
+
+
+
+def test_aether_soul_recall_requires_charges_and_revives_most_recent():
+
+    aether = create_monster(
+        "dullahan_aether"
+    )
+
+    aether.resonance = 2
+    update_resonance_kit(
+        aether
+    )
+
+    older_dead = create_monster(
+        "slime_igneous"
+    )
+
+    recent_dead = create_monster(
+        "slime_abyssal"
+    )
+
+    enemy = create_monster(
+        "slime_storm"
+    )
+
+    older_dead.health = 0
+    older_dead.death_order = 1
+    older_dead._death_recorded = True
+
+    recent_dead.health = 0
+    recent_dead.death_order = 2
+    recent_dead._death_recorded = True
+
+    team = [
+        aether,
+        older_dead,
+        recent_dead
+    ]
+
+    opponents = [
+        enemy
+    ]
+
+    aether._combat_team = team
+    aether._combat_opponents = opponents
+
+    skill = aether.get_skill(
+        3
+    )
+
+    # Zero charges: S3 still attacks but cannot revive.
+    aether.use_skill(
+        opponents,
+        skill,
+        combat_context={
+            "team": team,
+            "opponents": opponents
+        }
+    )
+
+    assert not older_dead.is_alive
+    assert not recent_dead.is_alive
+
+    skill.current_cooldown = 0
+
+    aether.add_combat_resource(
+        "soul_charges",
+        3,
+        5
+    )
+
+    aether.use_skill(
+        opponents,
+        skill,
+        combat_context={
+            "team": team,
+            "opponents": opponents
+        }
+    )
+
+    assert not older_dead.is_alive
+    assert recent_dead.is_alive
+
+    assert recent_dead.health == int(
+        recent_dead.max_health
+        * 0.50
+    )
+
+    assert recent_dead.action_gauge == pytest.approx(
+        0.30
+    )
+
+
+
+def test_deaths_gaze_named_ignores_immunity_but_vulnerability_does_not(
+    monkeypatch
+):
+
+    void = create_monster(
+        "dullahan_void"
+    )
+
+    target = create_monster(
+        "dullahan_aether"
+    )
+
+    immunity = create_status_effect(
+        effect_id="immunity",
+        duration=2,
+        source=target
+    )
+
+    target.apply_status_effect(
+        immunity
+    )
+
+    monkeypatch.setattr(
+        random,
+        "random",
+        lambda: 0.0
+    )
+
+    monkeypatch.setattr(
+        random,
+        "uniform",
+        lambda a, b: 100
+    )
+
+    monkeypatch.setattr(
+        random,
+        "randint",
+        lambda a, b: 100
+    )
+
+    skill = void.get_skill(
+        3
+    )
+
+    void.use_skill(
+        [
+            target
+        ],
+        skill,
+        combat_context={
+            "team": [
+                void
+            ],
+            "opponents": [
+                target
+            ]
+        }
+    )
+
+    assert target.special_states.get(
+        "named_by"
+    ) is void
+
+    assert void.is_headless is True
+
+    assert all(
+        debuff.effect_id
+        != "vulnerability"
+        for debuff in target.debuffs
+    )
+
+
+
+def test_headless_rider_grants_speed_and_blocks_silence():
+
+    void = create_monster(
+        "dullahan_void"
+    )
+
+    target = create_monster(
+        "slime_igneous"
+    )
+
+    base_speed = void.get_effective_stat(
+        "speed"
+    )
+
+    void.apply_named(
+        target,
+        turns=2
+    )
+
+    assert void.get_effective_stat(
+        "speed"
+    ) == pytest.approx(
+        base_speed
+        + void.speed * 0.20
+    )
+
+    silence = create_status_effect(
+        effect_id="silence",
+        duration=2,
+        source=target
+    )
+
+    applied = void.apply_status_effect(
+        silence
+    )
+
+    assert applied is None
+    assert void.is_silenced is False
+
+
+
+def test_deathless_rider_survives_full_multihit_skill_then_enters_cooldown(
+    monkeypatch
+):
+
+    void = create_monster(
+        "dullahan_void"
+    )
+
+    void.resonance = 2
+    update_resonance_kit(
+        void
+    )
+
+    named_target = create_monster(
+        "slime_igneous"
+    )
+
+    void.apply_named(
+        named_target,
+        turns=2
+    )
+
+    poison = create_status_effect(
+        effect_id="poison",
+        duration=2,
+        source=named_target
+    )
+
+    void.apply_status_effect(
+        poison
+    )
+
+    attacker = create_monster(
+        "drake_storm"
+    )
+
+    attack = create_skill(
+        "stormbreak"
+    )
+
+    void.health = 1
+
+    monkeypatch.setattr(
+        random,
+        "randint",
+        lambda a, b: 100
+    )
+
+    attack.execute(
+        attacker,
+        [
+            void
+        ],
+        {
+            "team": [
+                attacker
+            ],
+            "opponents": [
+                void
+            ]
+        }
+    )
+
+    assert void.health == 1
+
+    assert void.is_headless is False
+
+    assert void.debuffs == []
+
+    assert void.get_internal_cooldown(
+        "deathless_rider"
+    ) == 6
+
+
+
+def test_death_march_transfers_named_to_lowest_hp_enemy(
+    monkeypatch
+):
+
+    void = create_monster(
+        "dullahan_void"
+    )
+
+    void.resonance = 5
+    update_resonance_kit(
+        void
+    )
+
+    dead_target = create_monster(
+        "slime_igneous"
+    )
+
+    low_target = create_monster(
+        "slime_abyssal"
+    )
+
+    high_target = create_monster(
+        "slime_storm"
+    )
+
+    low_target.health = int(
+        low_target.max_health
+        * 0.30
+    )
+
+    high_target.health = int(
+        high_target.max_health
+        * 0.80
+    )
+
+    void._combat_team = [
+        void
+    ]
+
+    void._combat_opponents = [
+        dead_target,
+        low_target,
+        high_target
+    ]
+
+    dead_target._combat_team = [
+        dead_target,
+        low_target,
+        high_target
+    ]
+
+    dead_target._combat_opponents = [
+        void
+    ]
+
+    low_target._combat_team = (
+        dead_target._combat_team
+    )
+
+    low_target._combat_opponents = [
+        void
+    ]
+
+    high_target._combat_team = (
+        dead_target._combat_team
+    )
+
+    high_target._combat_opponents = [
+        void
+    ]
+
+    void.apply_named(
+        dead_target,
+        turns=2
+    )
+
+    dead_target.health = 0
+
+    monkeypatch.setattr(
+        random,
+        "uniform",
+        lambda a, b: 100
+    )
+
+    notify_monster_death(
+        dead_target
+    )
+
+    assert void.special_states.get(
+        "named_target"
+    ) is low_target
+
+    assert low_target.special_states.get(
+        "named_by"
+    ) is void
+
+    assert any(
+        debuff.effect_id
+        == "vulnerability"
+        for debuff in low_target.debuffs
+    )
+
+    assert low_target.health == int(
+        low_target.max_health
+        * 0.30
+    )
+
