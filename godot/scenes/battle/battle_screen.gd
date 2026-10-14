@@ -37,7 +37,7 @@ func _ready() -> void:
             "drake_igneous"
         ),
         PrototypeFactoryScript.create_level_one_monster(
-            "slime_abyssal"
+            "drake_abyssal"
         )
     ]
 
@@ -231,6 +231,7 @@ func execute_player_skill(
 
     update_battle_ui()
     await play_result_feedback(result)
+    await play_caster_feedback(result)
 
     turn_label.text = "%s: %d total damage" % [
         skill.skill_name,
@@ -288,6 +289,7 @@ func enemy_turn() -> void:
 
     update_battle_ui()
     await play_result_feedback(result)
+    await play_caster_feedback(result)
 
     turn_label.text = "%s hits %s for %d" % [
         battle_controller.active_monster.monster_name,
@@ -428,6 +430,29 @@ func play_result_feedback(result: Dictionary) -> void:
                 "RESIST!",
                 "resist"
             )
+
+
+func play_caster_feedback(result: Dictionary) -> void:
+    var feedback: Array = result.get(
+        "caster_feedback",
+        []
+    )
+
+    if feedback.is_empty():
+        return
+
+    var hud = get_hud_for_monster(
+        battle_controller.active_monster
+    )
+
+    if hud == null:
+        return
+
+    for message in feedback:
+        await hud.play_status_feedback(
+            str(message),
+            "buff"
+        )
 
 
 func get_status_feedback_text(effect_id: String) -> String:
