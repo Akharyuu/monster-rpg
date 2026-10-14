@@ -506,21 +506,91 @@ def voidborn(owner, context, passive):
             1
         )
 
+        skill = context.get(
+            "skill"
+        )
+
+        activation_number = 1
+
+        if skill is not None:
+
+            current_activations = getattr(
+                skill,
+                "_voidborn_activations_this_use",
+                0
+            )
+
+            activation_number = (
+                current_activations
+                + 1
+            )
+
+            skill._voidborn_activations_this_use = (
+                activation_number
+            )
+
+            if activation_number > 1:
+
+                bonus_damage = data.get(
+                    "extra_activation_damage_bonus",
+                    0
+                )
+
+                current_bonus = getattr(
+                    skill,
+                    "_voidborn_damage_bonus_this_use",
+                    0
+                )
+
+                skill._voidborn_damage_bonus_this_use = (
+                    current_bonus
+                    + bonus_damage
+                )
+
         if data.get(
             "full_cleanse_on_activation",
             False
         ):
             owner.reset_debuffs()
 
-        invincibility = create_status_effect(
-            effect_id="invincibility",
-            duration=data["invincibility_turns"],
-            source=owner
-        )
+        if activation_number == 1:
 
-        owner.apply_status_effect(
-            invincibility
-        )
+            invincibility = create_status_effect(
+                effect_id="invincibility",
+                duration=data["invincibility_turns"],
+                source=owner
+            )
+
+            owner.apply_status_effect(
+                invincibility
+            )
+
+        else:
+
+            existing_invincibility = next(
+                (
+                    buff
+                    for buff in owner.buffs
+                    if buff.effect_id
+                    == "invincibility"
+                ),
+                None
+            )
+
+            if existing_invincibility is not None:
+
+                extra_turns = data.get(
+                    "extra_activation_invincibility_turns",
+                    0
+                )
+
+                existing_invincibility.remaining_turns += (
+                    extra_turns
+                )
+
+                existing_invincibility.duration += (
+                    extra_turns
+                )
 
 
 # =========================================================
