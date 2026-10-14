@@ -131,6 +131,10 @@ func start_next_turn() -> void:
 
         await get_tree().create_timer(0.5).timeout
 
+    if battle_controller.active_monster_cannot_act():
+        await handle_incapacitated_turn()
+        return
+
     if battle_controller.active_monster in allies:
         turn_label.text = "YOUR TURN - %s" % (
             battle_controller.active_monster.monster_name
@@ -156,6 +160,13 @@ func request_player_skill(slot: int) -> void:
         return
 
     var skill = battle_controller.active_monster.get_skill(slot)
+
+    if (
+        battle_controller.active_monster.is_silenced()
+        and slot != 1
+    ):
+        turn_label.text = "Silence: only S1 can be used"
+        return
 
     if skill == null or not skill.is_available():
         return
@@ -294,6 +305,48 @@ func enemy_turn() -> void:
         return
 
     await get_tree().create_timer(0.6).timeout
+
+    battle_controller.clear_active_monster()
+    start_next_turn()
+
+
+func handle_incapacitated_turn() -> void:
+    var monster = battle_controller.active_monster
+
+    if monster == null:
+        return
+
+    disable_skill_buttons()
+    set_target_selection(false)
+
+    var effect_id: String = (
+        battle_controller.get_active_control_effect_id()
+    )
+
+    var message: String = "cannot act and loses the turn"
+
+    if effect_id == "stun":
+        message = "is STUNNED and loses the turn!"
+    elif effect_id == "freeze":
+        message = "is FROZEN and loses the turn!"
+
+    turn_label.text = "%s %s" % [
+        monster.monster_name,
+        message
+    ]
+
+    var hud = get_hud_for_monster(monster)
+
+    if hud != null:
+        await hud.play_status_feedback(
+            "STUNNED!" if effect_id == "stun" else "FROZEN!",
+            "debuff"
+        )
+
+    battle_controller.end_active_turn()
+    update_battle_ui()
+
+    await get_tree().create_timer(0.55).timeout
 
     battle_controller.clear_active_monster()
     start_next_turn()
@@ -443,8 +496,14 @@ func update_skill_buttons() -> void:
                 skill.current_cooldown
             )
 
+        var blocked_by_silence: bool = (
+            battle_controller.active_monster.is_silenced()
+            and index > 0
+        )
+
         button.disabled = (
             battle_finished
+            or blocked_by_silence
             or not skill.is_available()
         )
 
