@@ -8,6 +8,7 @@ from game.combat.balance_analyzer import (
     analyze_void_buff_sensitivity,
     analyze_void_diagnostics,
     analyze_void_null_rend_ab,
+    analyze_five_drake_contextual_balance,
     analyze_team_swap_balance,
     analyze_unit_balance,
     get_default_balance_benchmarks
@@ -1930,4 +1931,278 @@ def test_void_buff_sensitivity_can_use_neutral_benchmark_buffs(
         for monster_buffs in five_buff_scenario[
             "void_team_initial_buffs"
         ]
+    )
+
+
+# =========================================================
+#          FIVE DRAKE CONTEXTUAL BALANCE TESTS
+# =========================================================
+
+def test_five_drake_contextual_balance_builds_all_scenarios(
+    monkeypatch
+):
+
+    calls = []
+
+    def fake_simulate_battles(
+        team_a_ids,
+        team_b_ids,
+        **kwargs
+    ):
+
+        calls.append(
+            {
+                "team_a_ids":
+                    list(team_a_ids),
+                "team_b_ids":
+                    list(team_b_ids),
+                "team_a_initial_buffs":
+                    kwargs.get(
+                        "team_a_initial_buffs"
+                    ),
+                "team_b_initial_buffs":
+                    kwargs.get(
+                        "team_b_initial_buffs"
+                    )
+            }
+        )
+
+        return {
+            "team_a_win_rate": 50,
+            "team_b_win_rate": 50,
+            "draw_rate": 0
+        }
+
+    monkeypatch.setattr(
+        balance_module,
+        "simulate_battles",
+        fake_simulate_battles
+    )
+
+    report = (
+        analyze_five_drake_contextual_balance(
+            runs=1,
+            core_team_sets=[
+                [
+                    "thornet_igneous",
+                    "thornet_abyssal"
+                ]
+            ],
+            verbose=False
+        )
+    )
+
+    assert [
+        scenario["name"]
+        for scenario in report[
+            "scenarios"
+        ]
+    ] == [
+        "Buffless",
+        "Low buffs",
+        "Buff-heavy",
+        "Veil protected"
+    ]
+
+    assert len(calls) == 80
+
+
+def test_five_drake_contextual_balance_applies_context_to_enemy_only(
+    monkeypatch
+):
+
+    calls = []
+
+    def fake_simulate_battles(
+        team_a_ids,
+        team_b_ids,
+        **kwargs
+    ):
+
+        calls.append(
+            {
+                "team_a_ids":
+                    list(team_a_ids),
+                "team_b_ids":
+                    list(team_b_ids),
+                "team_a_initial_buffs":
+                    kwargs.get(
+                        "team_a_initial_buffs"
+                    ),
+                "team_b_initial_buffs":
+                    kwargs.get(
+                        "team_b_initial_buffs"
+                    )
+            }
+        )
+
+        return {
+            "team_a_win_rate": 50,
+            "team_b_win_rate": 50,
+            "draw_rate": 0
+        }
+
+    monkeypatch.setattr(
+        balance_module,
+        "simulate_battles",
+        fake_simulate_battles
+    )
+
+    analyze_five_drake_contextual_balance(
+        runs=1,
+        scenarios=[
+            {
+                "name": "Veil protected",
+                "neutral_enemy_buffs": 3,
+                "veil": True
+            }
+        ],
+        core_team_sets=[
+            [
+                "thornet_igneous",
+                "thornet_abyssal"
+            ]
+        ],
+        verbose=False
+    )
+
+    first_side = calls[0]
+    mirrored_side = calls[1]
+
+    assert (
+        first_side[
+            "team_a_initial_buffs"
+        ]
+        is None
+    )
+
+    assert len(
+        first_side[
+            "team_b_initial_buffs"
+        ][0]
+    ) == 4
+
+    assert (
+        first_side[
+            "team_b_initial_buffs"
+        ][0][0]["effect_id"]
+        == "veil"
+    )
+
+    assert len(
+        mirrored_side[
+            "team_a_initial_buffs"
+        ][0]
+    ) == 4
+
+    assert (
+        mirrored_side[
+            "team_b_initial_buffs"
+        ]
+        is None
+    )
+
+
+def test_five_drake_contextual_balance_calculates_delta_from_baseline(
+    monkeypatch
+):
+
+    current_context = {
+        "buffs": 0
+    }
+
+    def fake_simulate_battles(
+        team_a_ids,
+        team_b_ids,
+        **kwargs
+    ):
+
+        buffs = kwargs.get(
+            "team_a_initial_buffs"
+        )
+
+        if buffs is None:
+            buffs = kwargs.get(
+                "team_b_initial_buffs"
+            )
+
+        if buffs is None:
+            buff_count = 0
+        else:
+            buff_count = len(
+                buffs[0]
+            )
+
+        current_context[
+            "buffs"
+        ] = buff_count
+
+        candidate_is_team_a = (
+            kwargs.get(
+                "team_b_initial_buffs"
+            )
+            is not None
+        )
+
+        candidate_win_rate = (
+            40
+            + buff_count
+        )
+
+        return {
+            "team_a_win_rate": (
+                candidate_win_rate
+                if candidate_is_team_a
+                else 100 - candidate_win_rate
+            ),
+            "team_b_win_rate": (
+                100 - candidate_win_rate
+                if candidate_is_team_a
+                else candidate_win_rate
+            ),
+            "draw_rate": 0
+        }
+
+    monkeypatch.setattr(
+        balance_module,
+        "simulate_battles",
+        fake_simulate_battles
+    )
+
+    report = (
+        analyze_five_drake_contextual_balance(
+            runs=1,
+            scenarios=[
+                {
+                    "name": "Buffless",
+                    "neutral_enemy_buffs": 0,
+                    "veil": False
+                },
+                {
+                    "name": "Low buffs",
+                    "neutral_enemy_buffs": 1,
+                    "veil": False
+                }
+            ],
+            core_team_sets=[
+                [
+                    "thornet_igneous",
+                    "thornet_abyssal"
+                ]
+            ],
+            verbose=False
+        )
+    )
+
+    igneous_low = report[
+        "scenarios"
+    ][1]["results"][
+        "drake_igneous"
+    ]
+
+    assert (
+        igneous_low[
+            "delta_from_baseline"
+        ]
+        == pytest.approx(1)
     )
