@@ -272,9 +272,119 @@ MONSTER_DATA = {
         ]
     },
 
+
+    # =========================================================
+    #                        DULLAHANS
+    # =========================================================
+
+    "dullahan_igneous": {
+        "name": "???",
+        "family": "Dullahan",
+        "attribute": Attribute.IGNEOUS,
+        "rarity": 4,
+
+        "max_health": 9200,
+        "attack": 915,
+        "defense": 610,
+        "speed": 218,
+
+        "skills": [
+            "severing_blade",
+            "relentless_pursuit",
+            "death_sentence"
+        ]
+    },
+
+    "dullahan_abyssal": {
+        "name": "???",
+        "family": "Dullahan",
+        "attribute": Attribute.ABYSSAL,
+        "rarity": 4,
+
+        "max_health": 10800,
+        "attack": 650,
+        "defense": 790,
+        "speed": 212,
+
+        "skills": [
+            "severing_blade",
+            "spectral_shackles"
+        ],
+
+        "passives": [
+            "chilling_presence"
+        ]
+    },
+
+    "dullahan_storm": {
+        "name": "???",
+        "family": "Dullahan",
+        "attribute": Attribute.STORM,
+        "rarity": 4,
+
+        "max_health": 9800,
+        "attack": 700,
+        "defense": 650,
+        "speed": 236,
+
+        "skills": [
+            "severing_blade",
+            "gale_pursuit",
+            "headlong_charge"
+        ]
+    },
+
     # ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
     #                      ★ RARITY 5 ★
     # ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+
+    # =========================================================
+    #                        DULLAHANS
+    # =========================================================
+
+    "dullahan_aether": {
+        "name": "???",
+        "family": "Dullahan",
+        "attribute": Attribute.AETHER,
+        "rarity": 5,
+
+        "max_health": 11200,
+        "attack": 900,
+        "defense": 720,
+        "speed": 222,
+
+        "skills": [
+            "severing_blade",
+            "soulpiercer",
+            "beyond_the_veil"
+        ],
+
+        "passives": [
+            "soul_vessel"
+        ]
+    },
+
+    "dullahan_void": {
+        "name": "???",
+        "family": "Dullahan",
+        "attribute": Attribute.VOID,
+        "rarity": 5,
+
+        "max_health": 10500,
+        "attack": 1015,
+        "defense": 650,
+        "speed": 228,
+
+        "skills": [
+            "severing_blade",
+            "spinal_scourge",
+            "deaths_gaze"
+        ],
+
+        "passives": [
+            "headless_rider"
+        ]
+    },
 
     # =========================================================
     #                         DRAKES
