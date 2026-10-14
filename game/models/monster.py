@@ -149,7 +149,10 @@ class Monster:
     @property
     def is_silenced(self):
 
-        if self.is_headless:
+        if (
+            self.is_headless
+            and not self.has_oblivion
+        ):
             return False
 
         for debuff in self.debuffs:
@@ -874,6 +877,7 @@ class Monster:
             if (
                 effect.effect_id == "silence"
                 and self.is_headless
+                and not self.has_oblivion
             ):
                 return None
 
