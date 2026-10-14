@@ -115,6 +115,15 @@ def damage_for_removed_buffs(
             "damage_multiplier": 1
         }
 
+    if not getattr(
+        skill,
+        "_is_executing",
+        False
+    ):
+        return {
+            "damage_multiplier": 1
+        }
+
     removed_buffs = getattr(
         skill,
         "_removed_buffs_this_use",
