@@ -1835,3 +1835,92 @@ def test_void_null_rend_ab_restores_skill_data(
         ]["hit_multipliers"]
         == original_hit_multipliers
     )
+
+
+def test_void_buff_sensitivity_can_use_neutral_benchmark_buffs(
+    monkeypatch
+):
+
+    captured_scenarios = []
+
+    def fake_void_diagnostics(
+        **kwargs
+    ):
+
+        captured_scenarios.extend(
+            kwargs["scenarios"]
+        )
+
+        scenario_reports = []
+
+        for scenario in kwargs[
+            "scenarios"
+        ]:
+
+            scenario_reports.append(
+                {
+                    "name": scenario["name"],
+                    "void_win_rate": 50,
+                    "benchmark_win_rate": 50,
+                    "draw_rate": 0,
+                    "average_turns": 10,
+                    "void_metrics": {
+                        "direct_damage": 1000,
+                        "healing": 0,
+                        "null_rend_damage": 200,
+                        "dismantle_damage": 600,
+                        "null_rend_uses": 0.5,
+                        "dismantle_uses": 1,
+                        "buffs_removed": 0,
+                        "strip_events": 0,
+                        "veil_blocks": 0,
+                        "bottomless_hunger_activations": 0,
+                        "action_gauge_from_bottomless_hunger": 0,
+                        "voidborn_activations": 0,
+                        "oblivions_applied": 0.2,
+                        "defense_breaks_applied": 1
+                    }
+                }
+            )
+
+        return {
+            "scenarios":
+                scenario_reports
+        }
+
+    monkeypatch.setattr(
+        balance_module,
+        "analyze_void_diagnostics",
+        fake_void_diagnostics
+    )
+
+    report = analyze_void_buff_sensitivity(
+        runs=10,
+        neutral_buffs=True,
+        verbose=False
+    )
+
+    assert report[
+        "neutral_buffs"
+    ] is True
+
+    five_buff_scenario = (
+        captured_scenarios[5]
+    )
+
+    first_monster_buffs = (
+        five_buff_scenario[
+            "benchmark_team_initial_buffs"
+        ][0]
+    )
+
+    assert len(
+        first_monster_buffs
+    ) == 5
+
+    assert all(
+        buff[
+            "benchmark_neutral"
+        ] is True
+        for buff in first_monster_buffs
+    )
