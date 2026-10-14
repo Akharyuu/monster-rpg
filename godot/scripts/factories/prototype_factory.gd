@@ -3,6 +3,7 @@ extends RefCounted
 
 const MonsterScript = preload("res://scripts/models/monster.gd")
 const DamageSkillScript = preload("res://scripts/models/damage_skill.gd")
+const SupportSkillScript = preload("res://scripts/models/support_skill.gd")
 
 const LEVEL_ONE_MULTIPLIER := 0.35
 
@@ -13,6 +14,8 @@ static func create_level_one_monster(monster_id: String):
             return _create_igneous_drake()
         "drake_abyssal":
             return _create_abyssal_drake()
+        "drake_aether":
+            return _create_aether_drake()
         "slime_storm":
             return _create_storm_slime()
         "slime_abyssal":
@@ -208,6 +211,76 @@ static func _create_abyssal_drake():
     ] = 3
 
     return monster
+
+
+static func _create_aether_drake():
+    var skills: Array = [
+        DamageSkillScript.new(
+            "draconic_claw",
+            "Draconic Claw",
+            2.5,
+            1,
+            [],
+            "attack",
+            0,
+            [
+                {
+                    "effect_id": "defense_break",
+                    "chance": 0.30,
+                    "turns": 2
+                }
+            ]
+        ),
+
+        DamageSkillScript.new(
+            "sovereign_breath",
+            "Sovereign Breath",
+            3.00,
+            1,
+            [],
+            "attack",
+            4,
+            [],
+            {},
+            {},
+            "all_enemies"
+        ),
+
+        SupportSkillScript.new(
+            "heavens_decree",
+            "Heaven's Decree",
+            6,
+            [
+                {
+                    "effect_id": "attack_up",
+                    "turns": 2
+                },
+                {
+                    "effect_id": "immunity",
+                    "turns": 2
+                },
+                {
+                    "effect_id": "veil",
+                    "turns": 2
+                }
+            ],
+            "all_allies"
+        )
+    ]
+
+    return MonsterScript.new(
+        "drake_aether",
+        "Aether Drake",
+        "Drake",
+        "aether",
+        5,
+        _scaled(12850),
+        _scaled(725),
+        _scaled(815),
+        _scaled(230),
+        skills,
+        LEVEL_ONE_MULTIPLIER
+    )
 
 
 static func _create_storm_slime():
