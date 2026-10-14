@@ -225,6 +225,8 @@ class DamageSkill(Skill):
 
         # Temporary per-use values for mechanics that grow during a skill.
         self._removed_buffs_this_use = 0
+        self._voidborn_activations_this_use = 0
+        self._voidborn_damage_bonus_this_use = 0
         self._is_executing = True
 
         # RANDOM_ENEMIES can choose a different living target on every hit.
