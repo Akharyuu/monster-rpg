@@ -13,6 +13,10 @@ static func create_level_one_monster(monster_id: String):
             return _create_igneous_drake()
         "slime_storm":
             return _create_storm_slime()
+        "slime_abyssal":
+            return _create_abyssal_slime()
+        "slime_igneous":
+            return _create_igneous_slime()
         _:
             push_error("Unknown prototype monster id: %s" % monster_id)
             return null
@@ -56,7 +60,9 @@ static func _create_igneous_drake():
                     2: 1.16,
                     3: 1.24
                 }
-            }
+            },
+            {},
+            "all_enemies"
         ),
 
         DamageSkillScript.new(
@@ -137,6 +143,64 @@ static func _create_storm_slime():
         _scaled(455),
         _scaled(320),
         _scaled(150),
+        skills,
+        LEVEL_ONE_MULTIPLIER
+    )
+
+
+static func _create_abyssal_slime():
+    var skills: Array = [
+        DamageSkillScript.new(
+            "ooze_slam",
+            "Ooze Slam",
+            2.3,
+            1,
+            [],
+            "attack",
+            0,
+            []
+        )
+    ]
+
+    return MonsterScript.new(
+        "slime_abyssal",
+        "Abyssal Slime",
+        "Slime",
+        "abyssal",
+        1,
+        _scaled(8300),
+        _scaled(420),
+        _scaled(390),
+        _scaled(130),
+        skills,
+        LEVEL_ONE_MULTIPLIER
+    )
+
+
+static func _create_igneous_slime():
+    var skills: Array = [
+        DamageSkillScript.new(
+            "ooze_slam",
+            "Ooze Slam",
+            2.3,
+            1,
+            [],
+            "attack",
+            0,
+            []
+        )
+    ]
+
+    return MonsterScript.new(
+        "slime_igneous",
+        "Igneous Slime",
+        "Slime",
+        "igneous",
+        1,
+        _scaled(7600),
+        _scaled(485),
+        _scaled(330),
+        _scaled(138),
         skills,
         LEVEL_ONE_MULTIPLIER
     )
