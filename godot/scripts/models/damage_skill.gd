@@ -1,10 +1,15 @@
 class_name DamageSkill
 extends Skill
 
+const StatusEffectFactoryScript = preload(
+    "res://scripts/factories/status_effect_factory.gd"
+)
+
 var multiplier: float
 var hits: int
 var hit_multipliers: Array
 var scaling_stat: String
+var effects: Array
 
 
 func _init(
@@ -14,7 +19,8 @@ func _init(
     p_hits: int = 1,
     p_hit_multipliers: Array = [],
     p_scaling_stat: String = "attack",
-    p_cooldown: int = 0
+    p_cooldown: int = 0,
+    p_effects: Array = []
 ) -> void:
     super(p_skill_id, p_name, p_cooldown)
 
@@ -22,6 +28,7 @@ func _init(
     hits = p_hits
     hit_multipliers = p_hit_multipliers
     scaling_stat = p_scaling_stat
+    effects = p_effects
 
 
 func base_damage_calc(
@@ -51,7 +58,7 @@ func base_damage_calc(
     if raw_damage <= 0:
         return 1.0
 
-    var damage_reduction: float = 1.0
+    var damage_reduction := 1.0
 
     if not ignore_defense:
         var effective_defense: float = defender.get_effective_stat(
@@ -114,6 +121,63 @@ func damage_calc(
     }
 
 
+func try_apply_effect(
+    effect_config: Dictionary,
+    attacker,
+    defender
+):
+    var chance: float = float(
+        effect_config.get("chance", 1.0)
+    )
+
+    if randf() > chance:
+        return null
+
+    var effect_id: String = effect_config["effect_id"]
+    var is_debuff: bool = (
+        effect_config.get("effect_type", "debuff")
+        == "debuff"
+    )
+
+    if (
+        is_debuff
+        and not effect_config.get("ignore_resistance", false)
+    ):
+        var accuracy: float = attacker.get_effective_stat(
+            "accuracy"
+        )
+
+        var resistance: float = defender.get_effective_stat(
+            "resistance"
+        )
+
+        var resist_chance: float = clampf(
+            resistance - accuracy,
+            15.0,
+            100.0
+        )
+
+        if randf_range(0.0, 100.0) < resist_chance:
+            return null
+
+    var status_effect = (
+        StatusEffectFactoryScript.create_status_effect(
+            effect_id,
+            int(effect_config["turns"]),
+            attacker,
+            int(effect_config.get("stacks", 1))
+        )
+    )
+
+    if status_effect == null:
+        return null
+
+    if status_effect.effect_type == "buff":
+        return attacker.apply_status_effect(status_effect)
+
+    return defender.apply_status_effect(status_effect)
+
+
 func execute(
     attacker,
     defender
@@ -122,11 +186,13 @@ func execute(
         return {
             "success": false,
             "damage": 0,
-            "critical_hits": 0
+            "critical_hits": 0,
+            "effects_applied": []
         }
 
     var total_damage := 0
     var critical_hits := 0
+    var effects_applied: Array = []
 
     for hit_index in range(hits):
         var hit_multiplier := 1.0
@@ -147,10 +213,28 @@ func execute(
         if result["critical"]:
             critical_hits += 1
 
+    if defender.is_alive():
+        for effect_config in effects:
+            if effect_config.get(
+                "trigger",
+                "after_skill"
+            ) != "after_skill":
+                continue
+
+            var applied_effect = try_apply_effect(
+                effect_config,
+                attacker,
+                defender
+            )
+
+            if applied_effect != null:
+                effects_applied.append(applied_effect)
+
     trigger_cooldown()
 
     return {
         "success": true,
         "damage": total_damage,
-        "critical_hits": critical_hits
+        "critical_hits": critical_hits,
+        "effects_applied": effects_applied
     }
