@@ -34,7 +34,7 @@ var battle_finished := false
 func _ready() -> void:
     allies = [
         PrototypeFactoryScript.create_level_one_monster(
-            "drake_igneous"
+            "drake_abyssal"
         ),
         PrototypeFactoryScript.create_level_one_monster(
             "drake_abyssal"
