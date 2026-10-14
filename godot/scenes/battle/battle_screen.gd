@@ -347,6 +347,55 @@ func play_result_feedback(result: Dictionary) -> void:
             false
         )
 
+        var shown_effects: Array[String] = []
+
+        for effect in target_result.get(
+            "effects_applied",
+            []
+        ):
+            var effect_id: String = str(
+                effect.effect_id
+            )
+
+            if effect_id in shown_effects:
+                continue
+
+            shown_effects.append(effect_id)
+
+            await hud.play_status_feedback(
+                get_status_feedback_text(effect_id),
+                "burn" if effect_id == "burn" else "debuff"
+            )
+
+        if not target_result.get(
+            "resisted_effects",
+            []
+        ).is_empty():
+            await hud.play_status_feedback(
+                "RESIST!",
+                "resist"
+            )
+
+
+func get_status_feedback_text(effect_id: String) -> String:
+    match effect_id:
+        "burn":
+            return "BURN!"
+        "defense_break":
+            return "DEF DOWN!"
+        "attack_break":
+            return "ATK DOWN!"
+        "speed_break":
+            return "SPD DOWN!"
+        "stun":
+            return "STUN!"
+        "freeze":
+            return "FREEZE!"
+        "silence":
+            return "SILENCE!"
+        _:
+            return effect_id.to_upper()
+
 
 func update_battle_ui() -> void:
     for index in range(ally_huds.size()):
