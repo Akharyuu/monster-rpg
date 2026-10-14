@@ -81,7 +81,7 @@ func set_target_enabled(enabled: bool) -> void:
 func set_target_mode(mode: String) -> void:
     target_mode = mode
 
-    var can_target := (
+    var can_target: bool = (
         bound_monster != null
         and bound_monster.is_alive()
         and is_enemy
