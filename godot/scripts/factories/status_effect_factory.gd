@@ -55,6 +55,48 @@ static func create_status_effect(
                 "multiplicative"
             )
 
+        "attack_up":
+            return StatusEffectScript.new(
+                "attack_up",
+                "Attack Up",
+                "attack",
+                "buff",
+                1.3,
+                duration,
+                stacks,
+                1,
+                source,
+                "multiplicative"
+            )
+
+        "veil":
+            return StatusEffectScript.new(
+                "veil",
+                "Veil",
+                null,
+                "buff",
+                null,
+                duration,
+                stacks,
+                1,
+                source,
+                "multiplicative"
+            )
+
+        "attack_break":
+            return StatusEffectScript.new(
+                "attack_break",
+                "Attack Break",
+                "attack",
+                "debuff",
+                0.7,
+                duration,
+                stacks,
+                1,
+                source,
+                "multiplicative"
+            )
+
         "immunity":
             return StatusEffectScript.new(
                 "immunity",
