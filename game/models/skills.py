@@ -7,7 +7,9 @@ from ..factories.status_effect_factory import create_status_effect
 from ..combat.passive_handlers import PASSIVE_HANDLERS
 from ..combat.passive_modifiers import get_passive_damage_multiplier
 from ..combat.passive_triggers import trigger_passives
+from ..combat.skill_before_hit_handlers import BEFORE_HIT_HANDLERS
 from ..combat.skill_damage_handlers import DAMAGE_HANDLERS
+from ..combat.combat_events import notify_monster_death
 from ..combat.skill_after_handlers import AFTER_SKILL_HANDLERS
 from ..combat.skill_on_hit_handlers import ON_HIT_HANDLERS
 from ..combat.skill_effect_conditions import EFFECT_CONDITIONS
@@ -82,7 +84,7 @@ class DamageSkill(Skill):
     # =========================================================
 
     def __init__(self, skill_id, name, multiplier, hits, hit_multipliers, target_type, hit_distribution=None, repeated_target_damage=None, resolve_hits_by_round=False, scaling_stat="attack", cooldown=0,
-                 damage_handler=None, damage_handler_data=None, on_hit_handlers=None, after_skill_handlers=None, after_use_handlers=None,
+                 damage_handler=None, damage_handler_data=None, before_hit_handlers=None, on_hit_handlers=None, after_skill_handlers=None, after_use_handlers=None,
                  effects=None):
         super().__init__(skill_id, name, target_type, cooldown)
 
@@ -113,6 +115,12 @@ class DamageSkill(Skill):
         self.damage_handler = damage_handler
         self.damage_handler_data = damage_handler_data
 
+        self.before_hit_handlers = (
+            before_hit_handlers
+            if before_hit_handlers is not None
+            else []
+        )
+
         self.on_hit_handlers = (
             on_hit_handlers
             if on_hit_handlers is not None
@@ -142,7 +150,7 @@ class DamageSkill(Skill):
     #                    DAMAGE CALCULATION
     # =========================================================
 
-    def base_damage_calc(self, attacker, defender, hit_multiplier, damage_multiplier=1, ignore_defense=False):
+    def base_damage_calc(self, attacker, defender, hit_multiplier, damage_multiplier=1, ignore_defense=False, defense_ignore_ratio=0, bonus_raw_damage=0):
 
         #Gets the effective scaling stat for the skill and applies it to calc raw damage
         scaling_stat = self.scaling_stat
@@ -154,7 +162,13 @@ class DamageSkill(Skill):
         if scaling_stat == "max_health":
             effective_scaling_stat *= 0.08
 
-        raw_damage = (effective_scaling_stat * self.multiplier * damage_multiplier * hit_multiplier)
+        raw_damage = (
+            effective_scaling_stat
+            * self.multiplier
+            * damage_multiplier
+            * hit_multiplier
+            + bonus_raw_damage
+        )
 
         if raw_damage <= 0:
             return 1
@@ -166,6 +180,11 @@ class DamageSkill(Skill):
 
             effective_defense = defender.get_effective_stat(
                 "defense"
+            )
+
+            effective_defense *= max(
+                0,
+                1 - defense_ignore_ratio
             )
 
             damage_reduction = (1000 / (1000 + effective_defense))
@@ -195,9 +214,33 @@ class DamageSkill(Skill):
             passive_damage_multiplier = get_passive_damage_multiplier(attacker)
             bonus_damage *= passive_damage_multiplier
 
-            ignore_defense = damage_data.get("ignore_defense", False)
+            for debuff in defender.debuffs:
+                bonus_damage *= getattr(
+                    debuff,
+                    "direct_damage_taken_multiplier",
+                    1
+                )
 
-            base_damage = self.base_damage_calc(attacker, defender, hit_multiplier, bonus_damage, ignore_defense)
+            ignore_defense = damage_data.get("ignore_defense", False)
+            defense_ignore_ratio = damage_data.get(
+                "defense_ignore_ratio",
+                0
+            )
+
+            bonus_raw_damage = damage_data.get(
+                "bonus_raw_damage",
+                0
+            )
+
+            base_damage = self.base_damage_calc(
+                attacker,
+                defender,
+                hit_multiplier,
+                bonus_damage,
+                ignore_defense,
+                defense_ignore_ratio,
+                bonus_raw_damage
+            )
     
             #Crit Roll
             critical_damage_bonus = 1
@@ -210,6 +253,20 @@ class DamageSkill(Skill):
             final_damage = base_damage * critical_damage_bonus
 
             return max(1, int(final_damage)), critical
+
+
+    def finalize_target_skill_states(
+        self,
+        target_results
+    ):
+
+        for target_result in target_results:
+
+            target = target_result[
+                "target"
+            ]
+
+            target.finalize_after_enemy_skill()
 
 
     # =========================================================
@@ -227,6 +284,7 @@ class DamageSkill(Skill):
         self._removed_buffs_this_use = 0
         self._voidborn_activations_this_use = 0
         self._voidborn_damage_bonus_this_use = 0
+        self._applied_effect_ids_this_use = []
         self._is_executing = True
 
         # RANDOM_ENEMIES can choose a different living target on every hit.
@@ -337,6 +395,10 @@ class DamageSkill(Skill):
 
             self._is_executing = False
 
+            self.finalize_target_skill_states(
+                target_results
+            )
+
             return skill_result
 
 
@@ -398,6 +460,10 @@ class DamageSkill(Skill):
 
             self._is_executing = False
 
+            self.finalize_target_skill_states(
+                target_results
+            )
+
             return skill_result
 
 
@@ -447,6 +513,10 @@ class DamageSkill(Skill):
         )
 
         self._is_executing = False
+
+        self.finalize_target_skill_states(
+            target_results
+        )
 
         return skill_result
 
@@ -572,7 +642,15 @@ class DamageSkill(Skill):
             }
 
         return {
-            "debuffs": debuffs
+            "debuffs": debuffs,
+            "health_ratio": (
+                target.health
+                / target.max_health
+                if target.max_health > 0
+                else 0
+            ),
+            "action_gauge":
+                target.action_gauge
         }
 
 
@@ -679,6 +757,44 @@ class DamageSkill(Skill):
                     repeated_hit_multiplier
                 )
 
+        if gameplay_active:
+
+            for handler_config in self.before_hit_handlers:
+
+                handler_name = handler_config[
+                    "handler"
+                ]
+
+                data = dict(
+                    handler_config.get(
+                        "data",
+                        {}
+                    )
+                )
+
+                allowed_hits = data.get(
+                    "hit_indices"
+                )
+
+                if (
+                    allowed_hits is not None
+                    and hit_index
+                    not in allowed_hits
+                ):
+                    continue
+
+                handler = BEFORE_HIT_HANDLERS[
+                    handler_name
+                ]
+
+                handler(
+                    caster,
+                    target,
+                    self,
+                    data,
+                    target_result
+                )
+
         damage, critical = self.damage_calc(
             caster,
             target,
@@ -731,6 +847,17 @@ class DamageSkill(Skill):
         actual_health_damage = (
             health_before - target.health
         )
+
+        if (
+            health_before > 0
+            and not target.is_alive
+        ):
+            notify_monster_death(
+                target,
+                target_result.get(
+                    "telemetry"
+                )
+            )
 
         record_telemetry(
             target_result.get("telemetry"),
@@ -820,6 +947,12 @@ class DamageSkill(Skill):
             data["_hit_index"] = hit_index
             data["_telemetry"] = target_result.get(
                 "telemetry"
+            )
+            data["_target_health_ratio_before_hit"] = (
+                health_before
+                / target.max_health
+                if target.max_health > 0
+                else 0
             )
 
             handler = ON_HIT_HANDLERS[handler_name]

@@ -1,6 +1,7 @@
 import random
 
 from ..data.passive_data import PASSIVE_DATA
+from ..models.enums import SkillType
 from ..factories.status_effect_factory import create_status_effect
 from ..combat.telemetry import record_telemetry
 
@@ -593,6 +594,388 @@ def voidborn(owner, context, passive):
                 )
 
 
+
+# =========================================================
+#                    DULLAHAN PASSIVES
+# =========================================================
+
+def final_omen(owner, context, passive):
+
+    target = context.get(
+        "target"
+    )
+
+    if target is None:
+        return
+
+    hp_ratio_before = context.get(
+        "hp_ratio_before",
+        1
+    )
+
+    data = passive.handler_data
+
+    if hp_ratio_before >= data[
+        "hp_threshold"
+    ]:
+        return
+
+    attack_up = create_status_effect(
+        effect_id="attack_up",
+        duration=data.get(
+            "attack_up_turns",
+            1
+        ),
+        source=owner
+    )
+
+    owner.apply_status_effect(
+        attack_up
+    )
+
+
+
+def chilling_presence(owner, context, passive):
+
+    opponents = context.get(
+        "opponents",
+        getattr(
+            owner,
+            "_combat_opponents",
+            []
+        )
+    )
+
+    extend_count = passive.handler_data.get(
+        "debuffs_per_enemy",
+        1
+    )
+
+    for enemy in opponents:
+
+        if not enemy.is_alive:
+            continue
+
+        eligible = [
+            debuff
+            for debuff in enemy.debuffs
+            if getattr(
+                debuff,
+                "extendable",
+                True
+            )
+        ]
+
+        if not eligible:
+            continue
+
+        random.shuffle(
+            eligible
+        )
+
+        for debuff in eligible[
+            :extend_count
+        ]:
+            debuff.remaining_turns += 1
+            debuff.duration += 1
+
+
+
+def the_hunt(owner, context, passive):
+
+    opponents = [
+        opponent
+        for opponent in context.get(
+            "opponents",
+            getattr(
+                owner,
+                "_combat_opponents",
+                []
+            )
+        )
+        if opponent.is_alive
+    ]
+
+    if not opponents:
+        return
+
+    highest_gauge = max(
+        opponent.action_gauge
+        for opponent in opponents
+    )
+
+    candidates = [
+        opponent
+        for opponent in opponents
+        if opponent.action_gauge
+        == highest_gauge
+    ]
+
+    target = random.choice(
+        candidates
+    )
+
+    amount = passive.handler_data[
+        "action_gauge_steal"
+    ]
+
+    actual_steal = min(
+        amount,
+        target.action_gauge
+    )
+
+    target.reduce_action_gauge(
+        actual_steal
+    )
+
+    owner.increase_action_gauge(
+        actual_steal
+    )
+
+
+
+def soul_vessel(owner, context, passive):
+
+    trigger = context.get(
+        "trigger"
+    )
+
+    data = passive.handler_data
+
+    if trigger == "before_skill":
+
+        skill = context.get(
+            "skill"
+        )
+
+        if (
+            skill is not None
+            and skill.skill_id in data.get(
+                "consume_all_on_skill_ids",
+                []
+            )
+        ):
+            charges = owner.get_combat_resource(
+                "soul_charges"
+            )
+
+            skill._soul_charges_consumed = (
+                charges
+            )
+
+            if charges > 0:
+                owner.consume_combat_resource(
+                    "soul_charges",
+                    charges
+                )
+
+        return
+
+    if trigger == "after_skill":
+
+        skill = context.get(
+            "skill"
+        )
+
+        if (
+            skill is None
+            or skill.skill_type
+            != SkillType.DAMAGE
+        ):
+            return
+
+        owner.add_combat_resource(
+            "soul_charges",
+            data.get(
+                "charges_per_damage_skill",
+                1
+            ),
+            data.get(
+                "max_charges",
+                5
+            )
+        )
+
+        if (
+            skill.skill_id
+            in data.get(
+                "last_rites_skill_ids",
+                []
+            )
+        ):
+
+            skill_result = context.get(
+                "skill_result"
+            )
+
+            if (
+                skill_result is not None
+                and skill_result.target_results
+            ):
+
+                target_result = (
+                    skill_result.target_results[
+                        0
+                    ]
+                )
+
+                starting_health = (
+                    target_result.get(
+                        "snapshot",
+                        {}
+                    ).get(
+                        "health_ratio",
+                        1
+                    )
+                )
+
+                if starting_health < data.get(
+                    "last_rites_threshold",
+                    0.5
+                ):
+                    owner.add_combat_resource(
+                        "soul_charges",
+                        1,
+                        data.get(
+                            "max_charges",
+                            5
+                        )
+                    )
+
+        return
+
+    if trigger == "on_any_death":
+
+        owner.add_combat_resource(
+            "soul_charges",
+            data.get(
+                "charges_per_death",
+                1
+            ),
+            data.get(
+                "max_charges",
+                5
+            )
+        )
+
+
+
+def deathless_rider(owner, context, passive):
+
+    if context.get(
+        "trigger"
+    ) != "after_turn":
+        return
+
+    if owner.get_internal_cooldown(
+        "deathless_rider"
+    ) > 0:
+        return
+
+    owner.increase_action_gauge(
+        passive.handler_data.get(
+            "action_gauge_after_turn",
+            0.15
+        )
+    )
+
+
+
+def headless_rider(owner, context, passive):
+
+    # Headless itself is represented as a special combat state.
+    # The passive modifier layer supplies its Speed bonus.
+    return
+
+
+
+def death_march(owner, context, passive):
+
+    dead_monster = context.get(
+        "dead_monster"
+    )
+
+    if dead_monster is None:
+        return
+
+    if (
+        owner.special_states.get(
+            "named_target"
+        )
+        is not dead_monster
+    ):
+        return
+
+    opponents = [
+        opponent
+        for opponent in getattr(
+            owner,
+            "_combat_opponents",
+            []
+        )
+        if opponent.is_alive
+        and opponent is not dead_monster
+    ]
+
+    if not opponents:
+        return
+
+    target = min(
+        opponents,
+        key=lambda opponent:
+            opponent.health
+            / opponent.max_health
+    )
+
+    owner.apply_named(
+        target,
+        turns=passive.handler_data.get(
+            "named_turns",
+            2
+        )
+    )
+
+    vulnerability = create_status_effect(
+        effect_id="vulnerability",
+        duration=passive.handler_data.get(
+            "vulnerability_turns",
+            2
+        ),
+        source=owner
+    )
+
+    # Death March uses normal debuff application rules except
+    # that Accuracy/Resistance is resolved here explicitly.
+    accuracy = owner.get_effective_stat(
+        "accuracy"
+    )
+
+    resistance = target.get_effective_stat(
+        "resistance"
+    )
+
+    resist_chance = max(
+        15,
+        resistance - accuracy
+    )
+
+    resist_chance = min(
+        100,
+        resist_chance
+    )
+
+    if (
+        random.uniform(
+            0,
+            100
+        )
+        >= resist_chance
+    ):
+        target.apply_status_effect(
+            vulnerability
+        )
+
+
 # =========================================================
 #                      HANDLER REGISTRY
 # =========================================================
@@ -606,6 +989,13 @@ PASSIVE_HANDLERS = {
     "celestial_authority": celestial_authority,
     "divine_grace": divine_grace,
     "bottomless_hunger": bottomless_hunger,
-    "voidborn": voidborn
+    "voidborn": voidborn,
+    "final_omen": final_omen,
+    "chilling_presence": chilling_presence,
+    "the_hunt": the_hunt,
+    "soul_vessel": soul_vessel,
+    "deathless_rider": deathless_rider,
+    "headless_rider": headless_rider,
+    "death_march": death_march
 }
 

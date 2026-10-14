@@ -298,6 +298,215 @@ RESONANCE_DATA = {
                 "new": "null_rend_annihilation"
             }
         ]
+    },
+
+    # =========================================================
+    #                         DULLAHAN
+    # =========================================================
+
+    "dullahan_igneous": {
+        1: [
+            {
+                "action": "replace_skill",
+                "slot": 2,
+                "new": "relentless_pursuit_blood_trail"
+            }
+        ],
+
+        2: [
+            {
+                "action": "add_passive",
+                "passive": "final_omen"
+            }
+        ],
+
+        3: [
+            {
+                "action": "replace_skill",
+                "slot": 3,
+                "new": "death_sentence_execution"
+            }
+        ],
+
+        4: [
+            {
+                "action": "replace_passive",
+                "old": "final_omen",
+                "new": "final_omen_fulfilled"
+            }
+        ],
+
+        5: [
+            {
+                "action": "replace_skill",
+                "slot": 3,
+                "new": "death_sentence_massacre"
+            }
+        ]
+    },
+
+    "dullahan_abyssal": {
+        1: [
+            {
+                "action": "replace_skill",
+                "slot": 2,
+                "new": "spectral_shackles_binding"
+            }
+        ],
+
+        2: [
+            {
+                "action": "add_skill",
+                "skill": "inescapable_fate"
+            }
+        ],
+
+        3: [
+            {
+                "action": "replace_passive",
+                "old": "chilling_presence",
+                "new": "chilling_presence_suffocation"
+            }
+        ],
+
+        4: [
+            {
+                "action": "replace_skill",
+                "slot": 2,
+                "new": "spectral_shackles_lockdown"
+            }
+        ],
+
+        5: [
+            {
+                "action": "replace_skill",
+                "slot": 3,
+                "new": "inescapable_fate_ironbound"
+            }
+        ]
+    },
+
+    "dullahan_storm": {
+        1: [
+            {
+                "action": "replace_skill",
+                "slot": 2,
+                "new": "gale_pursuit_crosswind"
+            }
+        ],
+
+        2: [
+            {
+                "action": "add_passive",
+                "passive": "the_hunt"
+            }
+        ],
+
+        3: [
+            {
+                "action": "replace_skill",
+                "slot": 3,
+                "new": "headlong_charge_rally"
+            }
+        ],
+
+        4: [
+            {
+                "action": "replace_skill",
+                "slot": 2,
+                "new": "gale_pursuit_tempest"
+            }
+        ],
+
+        5: [
+            {
+                "action": "replace_skill",
+                "slot": 3,
+                "new": "headlong_charge_stampede"
+            }
+        ]
+    },
+
+    "dullahan_aether": {
+        1: [
+            {
+                "action": "replace_passive",
+                "old": "soul_vessel",
+                "new": "soul_vessel_last_rites"
+            }
+        ],
+
+        2: [
+            {
+                "action": "replace_skill",
+                "slot": 3,
+                "new": "beyond_the_veil_soul_recall"
+            }
+        ],
+
+        3: [
+            {
+                "action": "replace_skill",
+                "slot": 2,
+                "new": "soulpiercer_ascension"
+            }
+        ],
+
+        4: [
+            {
+                "action": "replace_passive",
+                "old": "soul_vessel_last_rites",
+                "new": "soul_vessel_requiem"
+            }
+        ],
+
+        5: [
+            {
+                "action": "replace_skill",
+                "slot": 3,
+                "new": "beyond_the_veil_convergence"
+            }
+        ]
+    },
+
+    "dullahan_void": {
+        1: [
+            {
+                "action": "replace_skill",
+                "slot": 2,
+                "new": "spinal_scourge_ossuary"
+            }
+        ],
+
+        2: [
+            {
+                "action": "add_passive",
+                "passive": "deathless_rider"
+            }
+        ],
+
+        3: [
+            {
+                "action": "replace_passive",
+                "old": "headless_rider",
+                "new": "headless_rider_unbound"
+            }
+        ],
+
+        4: [
+            {
+                "action": "replace_skill",
+                "slot": 3,
+                "new": "deaths_gaze_last_name"
+            }
+        ],
+
+        5: [
+            {
+                "action": "add_passive",
+                "passive": "death_march"
+            }
+        ]
     }
 
 }

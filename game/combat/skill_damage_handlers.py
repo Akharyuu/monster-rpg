@@ -149,6 +149,235 @@ def damage_for_removed_buffs(
     }
 
 
+
+# =========================================================
+#                   DULLAHAN DAMAGE
+# =========================================================
+
+def damage_by_missing_health(
+    attacker,
+    target,
+    skill,
+    snapshot,
+    hit_index
+):
+
+    data = skill.damage_handler_data
+
+    health_ratio = (
+        target.health
+        / target.max_health
+        if target.max_health > 0
+        else 0
+    )
+
+    missing_health_ratio = max(
+        0,
+        1 - health_ratio
+    )
+
+    bonus = (
+        missing_health_ratio
+        * data["max_bonus_damage"]
+    )
+
+    bonus = min(
+        bonus,
+        data["max_bonus_damage"]
+    )
+
+    return {
+        "damage_multiplier":
+            1 + bonus
+    }
+
+
+
+def execute_below_health_threshold(
+    attacker,
+    target,
+    skill,
+    snapshot,
+    hit_index
+):
+
+    data = skill.damage_handler_data
+
+    health_ratio = snapshot.get(
+        "health_ratio",
+        (
+            target.health
+            / target.max_health
+        )
+    )
+
+    if health_ratio >= data[
+        "health_threshold"
+    ]:
+        return {
+            "damage_multiplier": 1
+        }
+
+    return {
+        "damage_multiplier": 1,
+        "defense_ignore_ratio":
+            data.get(
+                "defense_ignore_ratio",
+                0
+            )
+    }
+
+
+
+def damage_for_soul_charges(
+    attacker,
+    target,
+    skill,
+    snapshot,
+    hit_index
+):
+
+    data = skill.damage_handler_data
+
+    if data.get(
+        "use_consumed_charges",
+        False
+    ):
+        charges = getattr(
+            skill,
+            "_soul_charges_consumed",
+            0
+        )
+    else:
+        charges = attacker.get_combat_resource(
+            "soul_charges"
+        )
+
+    charges = min(
+        charges,
+        data.get(
+            "max_charges",
+            5
+        )
+    )
+
+    if (
+        data.get(
+            "disable_bonus_if_ally_dead",
+            False
+        )
+        and any(
+            not ally.is_alive
+            for ally in getattr(
+                attacker,
+                "_combat_team",
+                []
+            )
+            if ally is not attacker
+        )
+    ):
+
+        allow_convergence = (
+            data.get(
+                "allow_bonus_with_dead_at_max",
+                False
+            )
+            and charges
+            >= data.get(
+                "max_charges",
+                5
+            )
+        )
+
+        if not allow_convergence:
+            charges = 0
+
+    return {
+        "damage_multiplier": (
+            1
+            + charges
+            * data[
+                "damage_per_charge"
+            ]
+        )
+    }
+
+
+
+def damage_for_dead_monsters(
+    attacker,
+    target,
+    skill,
+    snapshot,
+    hit_index
+):
+
+    data = skill.damage_handler_data
+
+    battle_state = getattr(
+        attacker,
+        "_battle_state",
+        {}
+    )
+
+    deaths = len(
+        battle_state.get(
+            "dead_monster_ids",
+            set()
+        )
+    )
+
+    deaths = min(
+        deaths,
+        data.get(
+            "max_dead_monsters",
+            5
+        )
+    )
+
+    bonus = (
+        deaths
+        * data[
+            "damage_per_dead_monster"
+        ]
+    )
+
+    bonus = min(
+        bonus,
+        data[
+            "max_bonus_damage"
+        ]
+    )
+
+    return {
+        "damage_multiplier":
+            1 + bonus
+    }
+
+
+
+def damage_with_bonus_stat(
+    attacker,
+    target,
+    skill,
+    snapshot,
+    hit_index
+):
+
+    data = skill.damage_handler_data
+
+    bonus_stat = attacker.get_effective_stat(
+        data["bonus_stat"]
+    )
+
+    return {
+        "bonus_raw_damage": (
+            bonus_stat
+            * data["bonus_scaling"]
+        )
+    }
+
+
 # =========================================================
 #                     HANDLER REGISTRY
 # =========================================================
@@ -157,6 +386,15 @@ DAMAGE_HANDLERS = {
     "damage_for_burn_stacks": damage_for_burn_stacks,
     "damage_if_condition": damage_if_condition,
     "damage_with_speed_scaling": damage_with_speed_scaling,
-    "damage_for_removed_buffs": damage_for_removed_buffs
+    "damage_for_removed_buffs": damage_for_removed_buffs,
+    "damage_by_missing_health": damage_by_missing_health,
+    "execute_below_health_threshold":
+        execute_below_health_threshold,
+    "damage_for_soul_charges":
+        damage_for_soul_charges,
+    "damage_for_dead_monsters":
+        damage_for_dead_monsters,
+    "damage_with_bonus_stat":
+        damage_with_bonus_stat
 }
 

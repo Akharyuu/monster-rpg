@@ -410,6 +410,8 @@ def estimate_damage(active_enemy, target, skill):
 
         damage_multiplier = 1
         ignore_defense = False
+        defense_ignore_ratio = 0
+        bonus_raw_damage = 0
 
         if skill.damage_handler:
 
@@ -439,16 +441,39 @@ def estimate_damage(active_enemy, target, skill):
                 )
             )
 
+            defense_ignore_ratio = (
+                damage_data.get(
+                    "defense_ignore_ratio",
+                    0
+                )
+            )
+
+            bonus_raw_damage = (
+                damage_data.get(
+                    "bonus_raw_damage",
+                    0
+                )
+            )
+
         damage_multiplier *= (
             passive_damage_multiplier
         )
+
+        for debuff in target.debuffs:
+            damage_multiplier *= getattr(
+                debuff,
+                "direct_damage_taken_multiplier",
+                1
+            )
 
         total_damage += skill.base_damage_calc(
             active_enemy,
             target,
             hit_multiplier,
             damage_multiplier,
-            ignore_defense
+            ignore_defense,
+            defense_ignore_ratio,
+            bonus_raw_damage
         )
 
     return total_damage

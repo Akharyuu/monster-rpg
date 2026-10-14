@@ -35,14 +35,16 @@ STATUS_EFFECT_DATA =  {
         "name": "Stun",
         "stat": None,
         "effect_type": EffectType.DEBUFF,
-        "modifier" : None
+        "modifier" : None,
+        "extendable": False
     },
 
     "freeze": {
         "name": "Freeze",
         "stat": None,
         "effect_type": EffectType.DEBUFF,
-        "modifier" : None
+        "modifier" : None,
+        "extendable": False
     },
 
     "silence": {
@@ -57,6 +59,21 @@ STATUS_EFFECT_DATA =  {
         "stat": None,
         "effect_type": EffectType.DEBUFF,
         "modifier": None
+    },
+
+    "heal_block": {
+        "name": "Heal Block",
+        "stat": None,
+        "effect_type": EffectType.DEBUFF,
+        "modifier": None
+    },
+
+    "vulnerability": {
+        "name": "Vulnerability",
+        "stat": None,
+        "effect_type": EffectType.DEBUFF,
+        "modifier": None,
+        "direct_damage_taken_multiplier": 1.15
     },
 
     # =========================================================

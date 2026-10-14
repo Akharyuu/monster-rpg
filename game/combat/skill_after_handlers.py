@@ -96,6 +96,65 @@ def add_burn_if_target_started_with_burn(
     )
 
 
+
+# =========================================================
+#                  DULLAHAN DEBUFF HANDLERS
+# =========================================================
+
+def extend_target_debuffs(
+    caster,
+    target,
+    skill,
+    data,
+    context
+):
+
+    if not target.is_alive:
+        return
+
+    eligible = [
+        debuff
+        for debuff in target.debuffs
+        if getattr(
+            debuff,
+            "extendable",
+            True
+        )
+    ]
+
+    for debuff in eligible:
+        debuff.remaining_turns += data.get(
+            "turns",
+            1
+        )
+        debuff.duration += data.get(
+            "turns",
+            1
+        )
+
+    if (
+        len(target.debuffs)
+        < data.get(
+            "silence_required_debuffs",
+            999
+        )
+    ):
+        return
+
+    silence = create_status_effect(
+        effect_id="silence",
+        duration=data.get(
+            "silence_turns",
+            1
+        ),
+        source=caster
+    )
+
+    target.apply_status_effect(
+        silence
+    )
+
+
 # =========================================================
 #                      HANDLER REGISTRY
 # =========================================================
@@ -105,6 +164,8 @@ AFTER_SKILL_HANDLERS = {
     "reset_cooldown_by_burn_stacks":
         reset_cooldown_by_burn_stacks,
     "add_burn_if_target_started_with_burn":
-        add_burn_if_target_started_with_burn
+        add_burn_if_target_started_with_burn,
+    "extend_target_debuffs":
+        extend_target_debuffs
 }
 

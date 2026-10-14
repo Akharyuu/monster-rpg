@@ -40,6 +40,15 @@ def add_passive(monster, new_skill_id):
     return True
 
 
+def add_skill(monster, new_skill_id):
+
+    monster.skills.append(
+        create_skill(new_skill_id)
+    )
+
+    return True
+
+
 # =========================================================
 #                    RESONANCE ACTIONS
 # =========================================================
@@ -56,6 +65,9 @@ def apply_resonance_action(monster, action):
 
         case "add_passive":
             return add_passive(monster, action["passive"])
+
+        case "add_skill":
+            return add_skill(monster, action["skill"])
 
         case _:
             return False
