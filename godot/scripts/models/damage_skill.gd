@@ -542,7 +542,8 @@ func execute_round_based_targets(
             "hits_landed": 0,
             "effects_applied": [],
             "resisted_effects": [],
-            "healing": 0
+            "healing": 0,
+            "buffs_removed": 0
         }
 
     for hit_index in range(hits):
@@ -619,8 +620,13 @@ func execute_round_based_targets(
                 hit_index == strip_buffs_hit_index
                 and defender.is_alive()
             ):
-                removed_buffs_total += (
+                var removed_from_target: int = (
                     defender.remove_buffs_for_strip()
+                )
+
+                removed_buffs_total += removed_from_target
+                target_result["buffs_removed"] += (
+                    removed_from_target
                 )
 
             if defender.is_alive():
