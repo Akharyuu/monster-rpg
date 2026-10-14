@@ -302,3 +302,117 @@ def test_same_attribute_damage_modifier_is_neutral():
         )
         == pytest.approx(1.0)
     )
+
+
+# =========================================================
+#                       DULLAHANS
+# =========================================================
+
+@pytest.mark.parametrize(
+    "monster_id, expected_rarity",
+    [
+        ("dullahan_igneous", 4),
+        ("dullahan_abyssal", 4),
+        ("dullahan_storm", 4),
+        ("dullahan_aether", 5),
+        ("dullahan_void", 5)
+    ]
+)
+def test_dullahan_family_can_be_created(
+    monster_id,
+    expected_rarity
+):
+
+    monster = create_monster(
+        monster_id
+    )
+
+    assert monster.family == "Dullahan"
+    assert monster.rarity == expected_rarity
+
+
+
+def test_abyssal_dullahan_unlocks_third_skill_at_r2():
+
+    from game.systems.resonance import (
+        update_resonance_kit
+    )
+
+    abyssal = create_monster(
+        "dullahan_abyssal"
+    )
+
+    assert len(
+        abyssal.skills
+    ) == 2
+
+    abyssal.resonance = 2
+
+    update_resonance_kit(
+        abyssal
+    )
+
+    assert len(
+        abyssal.skills
+    ) == 3
+
+    assert abyssal.get_skill(
+        3
+    ).skill_id == "inescapable_fate"
+
+
+
+def test_storm_dullahan_unlocks_the_hunt_at_r2():
+
+    from game.systems.resonance import (
+        update_resonance_kit
+    )
+
+    storm = create_monster(
+        "dullahan_storm"
+    )
+
+    assert all(
+        passive.skill_id != "the_hunt"
+        for passive in storm.passives
+    )
+
+    storm.resonance = 2
+
+    update_resonance_kit(
+        storm
+    )
+
+    assert any(
+        passive.skill_id == "the_hunt"
+        for passive in storm.passives
+    )
+
+
+
+def test_aether_dullahan_soul_recall_is_r2_unlock():
+
+    from game.systems.resonance import (
+        update_resonance_kit
+    )
+
+    aether = create_monster(
+        "dullahan_aether"
+    )
+
+    assert aether.get_skill(
+        3
+    ).skill_id == "beyond_the_veil"
+
+    aether.resonance = 2
+
+    update_resonance_kit(
+        aether
+    )
+
+    assert aether.get_skill(
+        3
+    ).skill_id == (
+        "beyond_the_veil_soul_recall"
+    )
+
