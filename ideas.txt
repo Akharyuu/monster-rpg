@@ -30,3 +30,11 @@ Monstruos 5*
 
 
 Caballos: Pegasus, Unicorn, Nightmare, Hippocamp, Phlegon
+
+
+
+Balance pendiente
+- Void Drake: pendiente de balance final.
+  Motivo: es una unidad extremadamente especializada contra equipos con buffs y los benchmarks actuales dependen demasiado de escenarios artificiales o de un roster todavía pequeño.
+  Próxima revisión: cuando haya más monstruos 3*, 4* y 5* implementados, probarlo en múltiples composiciones reales con distintos roles (damage, bruiser, control, support, healer, buffer, debuffer, etc.), incluyendo escenarios favorables y desfavorables para Void.
+  No cerrar números de Void hasta disponer de ese contexto de roster.
