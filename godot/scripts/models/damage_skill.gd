@@ -11,6 +11,10 @@ var hit_multipliers: Array
 var scaling_stat: String
 var effects: Array
 
+# Optional handler-like data used by the first playable slice.
+var damage_for_burn_stacks: Dictionary = {}
+var consume_burn_and_heal: Dictionary = {}
+
 
 func _init(
     p_skill_id: String,
@@ -20,7 +24,9 @@ func _init(
     p_hit_multipliers: Array = [],
     p_scaling_stat: String = "attack",
     p_cooldown: int = 0,
-    p_effects: Array = []
+    p_effects: Array = [],
+    p_damage_for_burn_stacks: Dictionary = {},
+    p_consume_burn_and_heal: Dictionary = {}
 ) -> void:
     super(p_skill_id, p_name, p_cooldown)
 
@@ -29,6 +35,8 @@ func _init(
     hit_multipliers = p_hit_multipliers
     scaling_stat = p_scaling_stat
     effects = p_effects
+    damage_for_burn_stacks = p_damage_for_burn_stacks
+    consume_burn_and_heal = p_consume_burn_and_heal
 
 
 func base_damage_calc(
@@ -70,9 +78,6 @@ func base_damage_calc(
             1.0 - defense_ignore_ratio
         )
 
-        # Calibrated against the current level-50 roster.
-        # The reference scales with monster level so DEF remains
-        # relevant at low levels instead of collapsing toward zero.
         var defense_reference: float = (
             744.0 * defender.stat_scale
         )
@@ -104,15 +109,37 @@ func base_damage_calc(
     )
 
 
+func get_burn_damage_multiplier(defender) -> float:
+    if damage_for_burn_stacks.is_empty():
+        return 1.0
+
+    var stacks: int = defender.get_debuff_stacks("burn")
+
+    if stacks <= 0:
+        return 1.0
+
+    var multipliers: Dictionary = damage_for_burn_stacks.get(
+        "multipliers_by_stacks",
+        {}
+    )
+
+    return float(multipliers.get(stacks, 1.0))
+
+
 func damage_calc(
     attacker,
     defender,
     hit_multiplier: float = 1.0
 ) -> Dictionary:
+    var bonus_damage: float = get_burn_damage_multiplier(
+        defender
+    )
+
     var base_damage: float = base_damage_calc(
         attacker,
         defender,
-        hit_multiplier
+        hit_multiplier,
+        bonus_damage
     )
 
     var critical := false
@@ -195,6 +222,62 @@ func try_apply_effect(
     return defender.apply_status_effect(status_effect)
 
 
+func apply_on_hit_passives(
+    attacker,
+    defender,
+    applied_effects: Array
+) -> void:
+    if not defender.is_alive():
+        return
+
+    for effect_config in attacker.on_hit_effects:
+        var applied_effect = try_apply_effect(
+            effect_config,
+            attacker,
+            defender
+        )
+
+        if applied_effect != null:
+            applied_effects.append(applied_effect)
+
+
+func resolve_after_skill(
+    attacker,
+    defender,
+    starting_burn_stacks: int
+) -> int:
+    if (
+        consume_burn_and_heal.is_empty()
+        or starting_burn_stacks <= 0
+    ):
+        return 0
+
+    defender.consume_debuff_stacks(
+        "burn",
+        starting_burn_stacks
+    )
+
+    var heal_by_stacks: Dictionary = (
+        consume_burn_and_heal.get(
+            "heal_by_stacks",
+            {}
+        )
+    )
+
+    var heal_ratio: float = float(
+        heal_by_stacks.get(
+            starting_burn_stacks,
+            0.0
+        )
+    )
+
+    var heal_amount := int(
+        attacker.max_health * heal_ratio
+    )
+
+    return attacker.heal(heal_amount)
+
+
 func execute(
     attacker,
     defender
@@ -204,12 +287,19 @@ func execute(
             "success": false,
             "damage": 0,
             "critical_hits": 0,
-            "effects_applied": []
+            "effects_applied": [],
+            "healing": 0
         }
 
     var total_damage := 0
     var critical_hits := 0
     var effects_applied: Array = []
+
+    # Snapshot Burn before this skill begins. Flame Devourer consumes only
+    # stacks that existed before the attack, matching the Python version.
+    var starting_burn_stacks: int = (
+        defender.get_debuff_stacks("burn")
+    )
 
     for hit_index in range(hits):
         var hit_multiplier := 1.0
@@ -230,6 +320,12 @@ func execute(
         if result["critical"]:
             critical_hits += 1
 
+        apply_on_hit_passives(
+            attacker,
+            defender,
+            effects_applied
+        )
+
     if defender.is_alive():
         for effect_config in effects:
             if effect_config.get(
@@ -247,11 +343,18 @@ func execute(
             if applied_effect != null:
                 effects_applied.append(applied_effect)
 
+    var healing: int = resolve_after_skill(
+        attacker,
+        defender,
+        starting_burn_stacks
+    )
+
     trigger_cooldown()
 
     return {
         "success": true,
         "damage": total_damage,
         "critical_hits": critical_hits,
-        "effects_applied": effects_applied
+        "effects_applied": effects_applied,
+        "healing": healing
     }
