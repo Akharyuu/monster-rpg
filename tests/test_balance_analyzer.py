@@ -1924,3 +1924,10 @@ def test_void_buff_sensitivity_can_use_neutral_benchmark_buffs(
         ] is True
         for buff in first_monster_buffs
     )
+
+    assert all(
+        len(monster_buffs) == 0
+        for monster_buffs in five_buff_scenario[
+            "void_team_initial_buffs"
+        ]
+    )
