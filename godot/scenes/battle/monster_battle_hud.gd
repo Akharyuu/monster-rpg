@@ -220,6 +220,8 @@ func _status_short_name(effect_id: String) -> String:
             return "FRZ"
         "silence":
             return "SIL"
+        "oblivion":
+            return "OBL"
         _:
             return effect_id.left(4).to_upper()
 
