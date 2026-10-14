@@ -148,6 +148,10 @@ class Monster:
 
     @property
     def is_silenced(self):
+
+        if self.is_headless:
+            return False
+
         for debuff in self.debuffs:
             if debuff.effect_id == "silence":
                 return True
