@@ -130,10 +130,17 @@ def damage_for_removed_buffs(
         0
     )
 
+    voidborn_damage_bonus = getattr(
+        skill,
+        "_voidborn_damage_bonus_this_use",
+        0
+    )
+
     damage_multiplier = (
         1
         + removed_buffs
         * data["damage_per_removed_buff"]
+        + voidborn_damage_bonus
     )
 
     return {
