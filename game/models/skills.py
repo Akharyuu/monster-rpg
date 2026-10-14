@@ -81,7 +81,7 @@ class DamageSkill(Skill):
     #                       INITIALIZATION
     # =========================================================
 
-    def __init__(self, skill_id, name, multiplier, hits, hit_multipliers, target_type, hit_distribution=None, repeated_target_damage=None, scaling_stat="attack", cooldown=0,
+    def __init__(self, skill_id, name, multiplier, hits, hit_multipliers, target_type, hit_distribution=None, repeated_target_damage=None, resolve_hits_by_round=False, scaling_stat="attack", cooldown=0,
                  damage_handler=None, damage_handler_data=None, on_hit_handlers=None, after_skill_handlers=None, after_use_handlers=None,
                  effects=None):
         super().__init__(skill_id, name, target_type, cooldown)
@@ -96,6 +96,10 @@ class DamageSkill(Skill):
             repeated_target_damage
             if repeated_target_damage is not None
             else {}
+        )
+
+        self.resolve_hits_by_round = (
+            resolve_hits_by_round
         )
 
         if self.hit_multipliers and len(self.hit_multipliers) != self.hits:
@@ -219,6 +223,9 @@ class DamageSkill(Skill):
     
         target_results = []
 
+        # Temporary per-use value for mechanics that grow during a skill.
+        self._removed_buffs_this_use = 0
+
         # RANDOM_ENEMIES can choose a different living target on every hit.
         # If all enemies die before the skill ends, the remaining hits keep
         # targeting the last monster hit, but only as visual overkill hits.
@@ -328,7 +335,66 @@ class DamageSkill(Skill):
             return skill_result
 
 
-        # SINGLE_ENEMY and ALL_ENEMIES:
+        # Some AoE skills resolve one hit across the whole enemy
+        # team before moving to the next hit. This lets later hits react
+        # to state created by the first hit across every target.
+        if (
+            self.target_type == TargetType.ALL_ENEMIES
+            and self.resolve_hits_by_round
+        ):
+
+            for target in targets:
+
+                target_result = self.create_target_result(
+                    target
+                )
+
+                target_result["telemetry"] = (
+                    context.get("telemetry")
+                )
+
+                target_results.append(
+                    target_result
+                )
+
+            for hit in range(self.hits):
+
+                for target_result in target_results:
+
+                    target = target_result["target"]
+
+                    gameplay_active = target.is_alive
+
+                    self.resolve_hit(
+                        caster,
+                        target,
+                        hit,
+                        target_result,
+                        gameplay_active=gameplay_active
+                    )
+
+            for target_result in target_results:
+
+                self.resolve_after_skill_for_target(
+                    caster,
+                    target_result
+                )
+
+            skill_result = SkillResult(
+                success=True,
+                target_results=target_results
+            )
+
+            self.resolve_after_use(
+                caster,
+                skill_result,
+                context
+            )
+
+            return skill_result
+
+
+        # SINGLE_ENEMY and standard ALL_ENEMIES:
         # every configured hit continues visually even if the target dies
         # before the skill animation has finished.
         for target in targets:
