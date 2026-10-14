@@ -9,6 +9,7 @@ const PrototypeFactoryScript = preload(
 
 @onready var enemy_name_label = $"Enemy Monster Name"
 @onready var ally_name_label = $"Ally Monster Name"
+@onready var enemy_status_label = $"Enemy Status Label"
 
 @onready var skill_1_button = $"Skill 1 Button"
 @onready var skill_2_button = $"Skill 2 Button"
@@ -51,6 +52,7 @@ func _ready() -> void:
     skill_2_button.disabled = true
     skill_3_button.disabled = true
 
+    update_status_display()
     turn_label.text = "Your turn"
 
 
@@ -65,17 +67,13 @@ func _on_skill_1_button_pressed() -> void:
     if skill == null:
         return
 
-    turn_label.text = "%s uses %s!" % [
-        ally_name_label.text,
-        skill.skill_name
-    ]
-
     var result: Dictionary = skill.execute(
         player_monster,
         enemy_monster
     )
 
     enemy_hp_bar.value = enemy_monster.health
+    update_status_display()
 
     if not result["success"]:
         turn_label.text = "Skill unavailable."
@@ -90,6 +88,10 @@ func _on_skill_1_button_pressed() -> void:
 
     if result["critical_hits"] > 0:
         message += " - CRITICAL!"
+
+    if not result["effects_applied"].is_empty():
+        var applied = result["effects_applied"][0]
+        message += " - %s!" % applied.effect_name
 
     turn_label.text = message
 
@@ -107,11 +109,6 @@ func enemy_turn() -> void:
 
     if skill == null:
         return
-
-    turn_label.text = "%s uses %s!" % [
-        enemy_monster.monster_name,
-        skill.skill_name
-    ]
 
     var result: Dictionary = skill.execute(
         enemy_monster,
@@ -135,6 +132,11 @@ func enemy_turn() -> void:
         finish_battle(false)
         return
 
+    # Status effects lose duration at the end of the affected
+    # monster's own turn, matching the Python combat flow.
+    enemy_monster.reduce_status_effect_turns()
+    update_status_display()
+
     await get_tree().create_timer(0.6).timeout
 
     player_monster.reduce_skill_cooldowns()
@@ -143,6 +145,24 @@ func enemy_turn() -> void:
     turn_label.text = "Your turn"
 
     enable_skill_buttons()
+
+
+func update_status_display() -> void:
+    if enemy_monster.debuffs.is_empty():
+        enemy_status_label.text = ""
+        return
+
+    var texts: Array[String] = []
+
+    for debuff in enemy_monster.debuffs:
+        texts.append(
+            "%s (%d)" % [
+                debuff.effect_name,
+                debuff.remaining_turns
+            ]
+        )
+
+    enemy_status_label.text = " | ".join(texts)
 
 
 func disable_skill_buttons() -> void:
