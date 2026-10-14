@@ -175,15 +175,24 @@ func try_apply_effect(
     effect_config: Dictionary,
     attacker,
     defender
-):
+) -> Dictionary:
+    var effect_id: String = str(
+        effect_config["effect_id"]
+    )
+
+    var result := {
+        "effect_id": effect_id,
+        "applied_effect": null,
+        "resisted": false
+    }
+
     var chance: float = float(
         effect_config.get("chance", 1.0)
     )
 
     if randf() > chance:
-        return null
+        return result
 
-    var effect_id: String = effect_config["effect_id"]
     var is_debuff: bool = (
         effect_config.get("effect_type", "debuff")
         == "debuff"
@@ -208,7 +217,8 @@ func try_apply_effect(
         )
 
         if randf_range(0.0, 100.0) < resist_chance:
-            return null
+            result["resisted"] = true
+            return result
 
     var status_effect = (
         StatusEffectFactoryScript.create_status_effect(
@@ -220,12 +230,18 @@ func try_apply_effect(
     )
 
     if status_effect == null:
-        return null
+        return result
 
     if status_effect.effect_type == "buff":
-        return attacker.apply_status_effect(status_effect)
+        result["applied_effect"] = (
+            attacker.apply_status_effect(status_effect)
+        )
+    else:
+        result["applied_effect"] = (
+            defender.apply_status_effect(status_effect)
+        )
 
-    return defender.apply_status_effect(status_effect)
+    return result
 
 
 func apply_on_hit_passives(
@@ -307,6 +323,7 @@ func execute_on_target(
     var total_damage := 0
     var critical_hits := 0
     var effects_applied: Array = []
+    var resisted_effects: Array[String] = []
 
     var starting_burn_stacks: int = (
         defender.get_debuff_stacks("burn")
@@ -345,14 +362,22 @@ func execute_on_target(
             ) != "after_skill":
                 continue
 
-            var applied_effect = try_apply_effect(
+            var effect_result: Dictionary = try_apply_effect(
                 effect_config,
                 attacker,
                 defender
             )
 
+            var applied_effect = effect_result[
+                "applied_effect"
+            ]
+
             if applied_effect != null:
                 effects_applied.append(applied_effect)
+            elif effect_result["resisted"]:
+                resisted_effects.append(
+                    str(effect_result["effect_id"])
+                )
 
     var healing: int = resolve_after_skill(
         attacker,
@@ -364,6 +389,7 @@ func execute_on_target(
         "damage": total_damage,
         "critical_hits": critical_hits,
         "effects_applied": effects_applied,
+        "resisted_effects": resisted_effects,
         "healing": healing
     }
 
@@ -378,6 +404,7 @@ func execute_targets(
             "damage": 0,
             "critical_hits": 0,
             "effects_applied": [],
+            "resisted_effects": [],
             "healing": 0,
             "target_results": []
         }
@@ -385,6 +412,7 @@ func execute_targets(
     var total_damage := 0
     var critical_hits := 0
     var effects_applied: Array = []
+    var resisted_effects: Array[String] = []
     var total_healing := 0
     var target_results: Array = []
 
@@ -404,11 +432,19 @@ func execute_targets(
             target_result["effects_applied"]
         )
 
+        resisted_effects.append_array(
+            target_result["resisted_effects"]
+        )
+
         target_results.append({
             "target": defender,
             "damage": target_result["damage"],
             "critical_hits":
                 target_result["critical_hits"],
+            "effects_applied":
+                target_result["effects_applied"],
+            "resisted_effects":
+                target_result["resisted_effects"],
             "healing": target_result["healing"]
         })
 
@@ -419,6 +455,7 @@ func execute_targets(
         "damage": total_damage,
         "critical_hits": critical_hits,
         "effects_applied": effects_applied,
+        "resisted_effects": resisted_effects,
         "healing": total_healing,
         "target_results": target_results
     }
