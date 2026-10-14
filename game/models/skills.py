@@ -223,8 +223,9 @@ class DamageSkill(Skill):
     
         target_results = []
 
-        # Temporary per-use value for mechanics that grow during a skill.
+        # Temporary per-use values for mechanics that grow during a skill.
         self._removed_buffs_this_use = 0
+        self._is_executing = True
 
         # RANDOM_ENEMIES can choose a different living target on every hit.
         # If all enemies die before the skill ends, the remaining hits keep
@@ -332,6 +333,8 @@ class DamageSkill(Skill):
                 context
             )
 
+            self._is_executing = False
+
             return skill_result
 
 
@@ -391,6 +394,8 @@ class DamageSkill(Skill):
                 context
             )
 
+            self._is_executing = False
+
             return skill_result
 
 
@@ -438,6 +443,8 @@ class DamageSkill(Skill):
             skill_result,
             context
         )
+
+        self._is_executing = False
 
         return skill_result
 
