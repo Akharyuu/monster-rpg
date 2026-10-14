@@ -320,9 +320,11 @@ def damage_for_dead_monsters(
         {}
     )
 
-    deaths = battle_state.get(
-        "death_counter",
-        0
+    deaths = len(
+        battle_state.get(
+            "dead_monster_ids",
+            set()
+        )
     )
 
     deaths = min(
