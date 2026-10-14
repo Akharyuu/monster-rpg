@@ -334,8 +334,6 @@ func play_result_feedback(result: Dictionary) -> void:
     if target_results.is_empty():
         return
 
-    var animations: Array = []
-
     for target_result in target_results:
         var target = target_result["target"]
         var hud = get_hud_for_monster(target)
@@ -343,16 +341,11 @@ func play_result_feedback(result: Dictionary) -> void:
         if hud == null:
             continue
 
-        animations.append(
-            hud.play_damage_feedback(
-                int(target_result["damage"]),
-                int(target_result["critical_hits"]) > 0,
-                false
-            )
+        await hud.play_damage_feedback(
+            int(target_result["damage"]),
+            int(target_result["critical_hits"]) > 0,
+            false
         )
-
-    for animation in animations:
-        await animation
 
 
 func update_battle_ui() -> void:
