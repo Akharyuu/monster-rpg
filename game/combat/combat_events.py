@@ -37,6 +37,15 @@ def notify_monster_death(monster, telemetry=None):
             ]
         )
 
+        dead_monster_ids = battle_state.setdefault(
+            "dead_monster_ids",
+            set()
+        )
+
+        dead_monster_ids.add(
+            monster.instance_id
+        )
+
     named_by = monster.special_states.get(
         "named_by"
     )
