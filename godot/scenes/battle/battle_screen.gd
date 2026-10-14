@@ -425,7 +425,9 @@ func create_status_badge(effect) -> Label:
     badge.custom_minimum_size = Vector2(58.0, 25.0)
     badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
-    var short_name := effect.effect_id.left(4).to_upper()
+    var short_name: String = str(
+        effect.effect_id
+    ).left(4).to_upper()
 
     if effect.effect_id == "burn":
         short_name = "BRN"
