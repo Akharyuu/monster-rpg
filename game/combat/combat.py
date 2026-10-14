@@ -3,6 +3,10 @@ import io
 import math
 import random
 
+from ..combat.combat_events import (
+    notify_monster_death
+)
+
 from ..combat.enemy_ai import (
     choose_enemy_target,
     choose_healing_target,
@@ -13,6 +17,7 @@ from ..factories.monster_factory import create_monster
 from ..factories.status_effect_factory import create_status_effect
 from ..systems.resonance import update_resonance_kit
 
+from ..combat.passive_triggers import trigger_passives
 from ..combat.telemetry import (
     add_team_telemetry,
     average_team_telemetry,
@@ -107,11 +112,19 @@ def battle(allies, enemies):
     for monster in all_combatants:
         monster.reset_combat_state()
 
+    battle_state = {
+        "death_counter": 0
+    }
+
     for monster in allies:
         monster._combat_team = allies
+        monster._combat_opponents = enemies
+        monster._battle_state = battle_state
 
     for monster in enemies:
         monster._combat_team = enemies
+        monster._combat_opponents = allies
+        monster._battle_state = battle_state
 
     try:
         # Combat continues while both teams have at least one living monster.
@@ -144,7 +157,12 @@ def battle(allies, enemies):
                 continue
 
             # Gauge resets before the turn so any gauge gained during the action is preserved for the next turn.
-            active_combatant.reset_action_gauge()
+            if (
+                active_combatant._preserve_action_gauge_forced_turn
+            ):
+                active_combatant._preserve_action_gauge_forced_turn = False
+            else:
+                active_combatant.reset_action_gauge()
 
             # Predict which combatant is currently closest to the next turn.
             upcoming_combatant = get_upcoming_combatant(
@@ -466,11 +484,19 @@ def simulate_battle(
     for monster in all_combatants:
         monster.reset_combat_state()
 
+    battle_state = {
+        "death_counter": 0
+    }
+
     for monster in team_a:
         monster._combat_team = team_a
+        monster._combat_opponents = team_b
+        monster._battle_state = battle_state
 
     for monster in team_b:
         monster._combat_team = team_b
+        monster._combat_opponents = team_a
+        monster._battle_state = battle_state
 
     apply_initial_buffs(
         team_a,
@@ -525,7 +551,12 @@ def simulate_battle(
             if active_combatant is None:
                 continue
 
-            active_combatant.reset_action_gauge()
+            if (
+                active_combatant._preserve_action_gauge_forced_turn
+            ):
+                active_combatant._preserve_action_gauge_forced_turn = False
+            else:
+                active_combatant.reset_action_gauge()
 
             turns += 1
 
@@ -1126,9 +1157,25 @@ def begin_turn(monster, telemetry=None):
     # Cooldowns and damage-over-time are processed
     # before the monster can take its action.
     monster.reduce_skill_cooldowns()
+    monster.reduce_internal_cooldowns()
+
+    was_alive_before_dot = (
+        monster.is_alive
+    )
+
     monster.apply_damage_over_time(
         telemetry
     )
+
+    if (
+        was_alive_before_dot
+        and not monster.is_alive
+    ):
+        notify_monster_death(
+            monster,
+            telemetry
+        )
+
     monster.apply_healing_over_time(
         telemetry
     )
@@ -1143,9 +1190,28 @@ def end_turn(monster, turn_context):
 
     # Resolves mechanics that happen when the monster's turn ends.
 
+    trigger_passives(
+        "after_turn",
+        monster,
+        {
+            "team": getattr(
+                monster,
+                "_combat_team",
+                []
+            ),
+            "opponents": getattr(
+                monster,
+                "_combat_opponents",
+                []
+            )
+        }
+    )
+
     monster.reduce_remaining_turns(
         turn_context["effects_at_turn_start"]
     )
+
+    monster.reduce_special_state_turns()
 
 
 
@@ -1242,7 +1308,10 @@ def fill_action_gauges(combatants):
 
     if any(
         combatant.is_alive
-        and combatant.extra_turn_pending
+        and (
+            combatant.forced_turn_pending
+            or combatant.extra_turn_pending
+        )
         for combatant in combatants
     ):
         return
@@ -1283,6 +1352,24 @@ def fill_action_gauges(combatants):
 
 
 def get_ready_combatant(combatants):
+
+    forced_turn_ready = [
+        combatant
+        for combatant in combatants
+        if combatant.is_alive
+        and combatant.forced_turn_pending
+    ]
+
+    if forced_turn_ready:
+
+        chosen = random.choice(
+            forced_turn_ready
+        )
+
+        chosen.forced_turn_pending = False
+        chosen._preserve_action_gauge_forced_turn = True
+
+        return chosen
 
     extra_turn_ready = [
         combatant
