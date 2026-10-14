@@ -5581,8 +5581,8 @@ def test_dismantle_later_hits_scale_with_all_buffs_devoured(
 
         for effect_id in (
             "attack_up",
-            "defense_up",
-            "speed_up"
+            "speed_up",
+            "crit_rate_up"
         ):
 
             target.apply_status_effect(
