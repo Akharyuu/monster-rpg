@@ -9,8 +9,15 @@ const PrototypeFactoryScript = preload(
 @onready var skill_3_button = $"Skill 3 Button"
 @onready var turn_label = $"Turn Label"
 
-@onready var enemy_target_1 = $"Enemy 1/Target Button"
-@onready var enemy_target_2 = $"Enemy 2/Target Button"
+@onready var ally_huds: Array = [
+    $"Ally HUD 1",
+    $"Ally HUD 2"
+]
+
+@onready var enemy_huds: Array = [
+    $"Enemy HUD 1",
+    $"Enemy HUD 2"
+]
 
 var allies: Array = []
 var enemies: Array = []
@@ -40,12 +47,22 @@ func _ready() -> void:
         )
     ]
 
-    enemy_target_1.pressed.connect(
-        func(): _on_enemy_target_pressed(0)
-    )
-    enemy_target_2.pressed.connect(
-        func(): _on_enemy_target_pressed(1)
-    )
+    for index in range(ally_huds.size()):
+        ally_huds[index].bind_monster(
+            allies[index],
+            false
+        )
+
+    for index in range(enemy_huds.size()):
+        enemy_huds[index].bind_monster(
+            enemies[index],
+            true
+        )
+
+        enemy_huds[index].target_pressed.connect(
+            func(index_copy = index):
+                _on_enemy_target_pressed(index_copy)
+        )
 
     update_battle_ui()
 
@@ -128,6 +145,7 @@ func get_ready_combatant():
 
 func begin_turn(monster) -> Dictionary:
     var effects_at_turn_start: Array = []
+
     effects_at_turn_start.append_array(monster.buffs)
     effects_at_turn_start.append_array(monster.debuffs)
 
@@ -172,6 +190,7 @@ func start_next_turn() -> void:
     active_monster.reset_action_gauge()
 
     var context := begin_turn(active_monster)
+
     active_turn_effects = context[
         "effects_at_turn_start"
     ]
@@ -185,6 +204,7 @@ func start_next_turn() -> void:
             active_monster.monster_name,
             dot_result["damage"]
         ]
+
         update_battle_ui()
 
         if not active_monster.is_alive():
@@ -202,9 +222,11 @@ func start_next_turn() -> void:
         update_skill_buttons()
     else:
         disable_skill_buttons()
+
         turn_label.text = "ENEMY TURN - %s" % (
             active_monster.monster_name
         )
+
         await get_tree().create_timer(0.5).timeout
         enemy_turn()
 
@@ -253,7 +275,10 @@ func _on_enemy_target_pressed(index: int) -> void:
     pending_skill_slot = 0
     set_target_selection(false)
 
-    execute_player_skill(skill, [target])
+    execute_player_skill(
+        skill,
+        [target]
+    )
 
 
 func execute_player_skill(
@@ -293,6 +318,7 @@ func execute_player_skill(
         return
 
     await get_tree().create_timer(0.6).timeout
+
     active_monster = null
     start_next_turn()
 
@@ -328,6 +354,7 @@ func enemy_turn() -> void:
         return
 
     await get_tree().create_timer(0.6).timeout
+
     active_monster = null
     start_next_turn()
 
@@ -344,135 +371,18 @@ func _on_skill_3_button_pressed() -> void:
     request_player_skill(3)
 
 
-func setup_hud(
-    root: Control,
-    monster
-) -> void:
-    root.get_node("Name").text = monster.monster_name
-    root.get_node("Level").text = "Lv. %d" % monster.level
-
-    update_attribute_label(
-        root.get_node("Attribute"),
-        monster.attribute
-    )
-
-    root.get_node("HP").max_value = monster.max_health
-    root.get_node("AG").max_value = 100.0
-
-
-func update_monster_hud(
-    root: Control,
-    monster
-) -> void:
-    setup_hud(root, monster)
-
-    root.get_node("HP").value = monster.health
-    root.get_node("AG").value = (
-        monster.action_gauge * 100.0
-    )
-
-    root.get_node("Turn Indicator").visible = (
-        not battle_finished
-        and active_monster == monster
-    )
-
-    root.modulate.a = (
-        1.0 if monster.is_alive() else 0.35
-    )
-
-    populate_status_container(
-        root.get_node("Status"),
-        monster
-    )
-
-
 func update_battle_ui() -> void:
-    update_monster_hud($"Ally 1", allies[0])
-    update_monster_hud($"Ally 2", allies[1])
-    update_monster_hud($"Enemy 1", enemies[0])
-    update_monster_hud($"Enemy 2", enemies[1])
+    for index in range(ally_huds.size()):
+        ally_huds[index].refresh(
+            active_monster == allies[index]
+        )
+
+    for index in range(enemy_huds.size()):
+        enemy_huds[index].refresh(
+            active_monster == enemies[index]
+        )
 
     update_skill_buttons()
-
-
-func update_attribute_label(
-    label: Label,
-    attribute: String
-) -> void:
-    var display_name := attribute.to_upper()
-    var attribute_color := Color.WHITE
-
-    match attribute:
-        "igneous":
-            display_name = "IGN"
-            attribute_color = Color(1.0, 0.42, 0.22)
-        "abyssal":
-            display_name = "ABY"
-            attribute_color = Color(0.30, 0.56, 1.0)
-        "storm":
-            display_name = "STM"
-            attribute_color = Color(0.90, 0.82, 0.24)
-
-    label.text = "◆ %s" % display_name
-    label.add_theme_color_override(
-        "font_color",
-        attribute_color
-    )
-
-
-func create_status_badge(effect) -> Label:
-    var badge := Label.new()
-    badge.custom_minimum_size = Vector2(58.0, 25.0)
-    badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-
-    var short_name: String = str(
-        effect.effect_id
-    ).left(4).to_upper()
-
-    if effect.effect_id == "burn":
-        short_name = "BRN"
-    elif effect.effect_id == "defense_break":
-        short_name = "DEF↓"
-
-    if effect.max_stacks > 1:
-        short_name += " x%d" % effect.stacks
-
-    badge.text = "%s · %d" % [
-        short_name,
-        effect.remaining_turns
-    ]
-
-    var style := StyleBoxFlat.new()
-    style.bg_color = (
-        Color(0.20, 0.46, 0.78, 0.92)
-        if effect.effect_type == "buff"
-        else Color(0.65, 0.22, 0.18, 0.92)
-    )
-    style.corner_radius_top_left = 5
-    style.corner_radius_top_right = 5
-    style.corner_radius_bottom_left = 5
-    style.corner_radius_bottom_right = 5
-
-    badge.add_theme_stylebox_override(
-        "normal",
-        style
-    )
-
-    return badge
-
-
-func populate_status_container(
-    container: HBoxContainer,
-    monster
-) -> void:
-    for child in container.get_children():
-        child.queue_free()
-
-    for buff in monster.buffs:
-        container.add_child(create_status_badge(buff))
-
-    for debuff in monster.debuffs:
-        container.add_child(create_status_badge(debuff))
 
 
 func update_skill_buttons() -> void:
@@ -514,12 +424,8 @@ func update_skill_buttons() -> void:
 
 
 func set_target_selection(enabled: bool) -> void:
-    enemy_target_1.disabled = (
-        not enabled or not enemies[0].is_alive()
-    )
-    enemy_target_2.disabled = (
-        not enabled or not enemies[1].is_alive()
-    )
+    for hud in enemy_huds:
+        hud.set_target_enabled(enabled)
 
 
 func disable_skill_buttons() -> void:
