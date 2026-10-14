@@ -284,6 +284,7 @@ class DamageSkill(Skill):
         self._removed_buffs_this_use = 0
         self._voidborn_activations_this_use = 0
         self._voidborn_damage_bonus_this_use = 0
+        self._applied_effect_ids_this_use = []
         self._is_executing = True
 
         # RANDOM_ENEMIES can choose a different living target on every hit.
