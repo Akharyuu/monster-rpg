@@ -1,10 +1,13 @@
 class_name PrototypeFactory
 extends RefCounted
 
+const MonsterScript = preload("res://scripts/models/monster.gd")
+const DamageSkillScript = preload("res://scripts/models/damage_skill.gd")
+
 const LEVEL_ONE_MULTIPLIER := 0.35
 
 
-static func create_level_one_monster(monster_id: String) -> Monster:
+static func create_level_one_monster(monster_id: String):
     match monster_id:
         "drake_igneous":
             return _create_igneous_drake()
@@ -19,9 +22,9 @@ static func _scaled(value: float) -> int:
     return int(round(value * LEVEL_ONE_MULTIPLIER))
 
 
-static func _create_igneous_drake() -> Monster:
-    var skills: Array[Skill] = [
-        DamageSkill.new(
+static func _create_igneous_drake():
+    var skills: Array = [
+        DamageSkillScript.new(
             "draconic_claw",
             "Draconic Claw",
             2.5,
@@ -32,7 +35,7 @@ static func _create_igneous_drake() -> Monster:
         )
     ]
 
-    return Monster.new(
+    return MonsterScript.new(
         "drake_igneous",
         "Kaelgor",
         "Drake",
@@ -46,9 +49,9 @@ static func _create_igneous_drake() -> Monster:
     )
 
 
-static func _create_storm_slime() -> Monster:
-    var skills: Array[Skill] = [
-        DamageSkill.new(
+static func _create_storm_slime():
+    var skills: Array = [
+        DamageSkillScript.new(
             "ooze_slam",
             "Ooze Slam",
             2.3,
@@ -59,7 +62,7 @@ static func _create_storm_slime() -> Monster:
         )
     ]
 
-    return Monster.new(
+    return MonsterScript.new(
         "slime_storm",
         "Storm Slime",
         "Slime",
