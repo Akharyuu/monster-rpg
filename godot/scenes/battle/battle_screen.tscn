@@ -1,6 +1,30 @@
-[gd_scene format=3 uid="uid://3i4tp7fvp1d0"]
+[gd_scene load_steps=3 format=3 uid="uid://3i4tp7fvp1d0"]
 
 [ext_resource type="Script" uid="uid://bx70psvrc64ug" path="res://scenes/battle/battle_screen.gd" id="1_jxgni"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxTurnAlly"]
+bg_color = Color(0.16, 0.42, 0.54, 0.12)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.38, 0.88, 1, 0.95)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxTurnEnemy"]
+bg_color = Color(0.54, 0.22, 0.20, 0.10)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.52, 0.38, 0.95)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
 
 [node name="Control" type="Control"]
 layout_mode = 3
@@ -22,13 +46,50 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.12156863, 0.15294118, 0.27450982, 0.5568628)
 
+[node name="Enemy Turn Indicator" type="Panel" parent="."]
+visible = false
+layout_mode = 0
+offset_left = 738.0
+offset_top = 43.0
+offset_right = 1060.0
+offset_bottom = 191.0
+theme_override_styles/panel = SubResource("StyleBoxTurnEnemy")
+mouse_filter = 2
+
+[node name="Ally Turn Indicator" type="Panel" parent="."]
+visible = false
+layout_mode = 0
+offset_left = 88.0
+offset_top = 365.0
+offset_right = 397.0
+offset_bottom = 494.0
+theme_override_styles/panel = SubResource("StyleBoxTurnAlly")
+mouse_filter = 2
+
 [node name="Enemy Monster Name" type="Label" parent="."]
 layout_mode = 0
-offset_left = 855.0
-offset_top = 59.0
-offset_right = 949.0
+offset_left = 827.0
+offset_top = 57.0
+offset_right = 950.0
 offset_bottom = 82.0
 text = "Storm Slime"
+theme_override_font_sizes/font_size = 18
+
+[node name="Enemy Level" type="Label" parent="."]
+layout_mode = 0
+offset_left = 958.0
+offset_top = 60.0
+offset_right = 1005.0
+offset_bottom = 83.0
+text = "Lv. 1"
+
+[node name="Enemy Attribute" type="Label" parent="."]
+layout_mode = 0
+offset_left = 758.0
+offset_top = 60.0
+offset_right = 821.0
+offset_bottom = 83.0
+text = "◆ STM"
 
 [node name="Enemy Monster HP bar" type="ProgressBar" parent="."]
 layout_mode = 0
@@ -48,21 +109,39 @@ offset_bottom = 135.0
 max_value = 100.0
 show_percentage = false
 
-[node name="Enemy Status Label" type="Label" parent="."]
+[node name="Enemy Status Container" type="HBoxContainer" parent="."]
 layout_mode = 0
 offset_left = 758.0
-offset_top = 140.0
+offset_top = 143.0
 offset_right = 1041.0
-offset_bottom = 163.0
-horizontal_alignment = 1
+offset_bottom = 175.0
+theme_override_constants/separation = 6
+alignment = 1
 
 [node name="Ally Monster Name" type="Label" parent="."]
 layout_mode = 0
-offset_left = 188.0
-offset_top = 381.0
-offset_right = 300.0
+offset_left = 177.0
+offset_top = 379.0
+offset_right = 287.0
 offset_bottom = 404.0
-text = "Igneous Drake"
+text = "Kaelgor"
+theme_override_font_sizes/font_size = 18
+
+[node name="Ally Level" type="Label" parent="."]
+layout_mode = 0
+offset_left = 294.0
+offset_top = 382.0
+offset_right = 341.0
+offset_bottom = 405.0
+text = "Lv. 1"
+
+[node name="Ally Attribute" type="Label" parent="."]
+layout_mode = 0
+offset_left = 108.0
+offset_top = 382.0
+offset_right = 171.0
+offset_bottom = 405.0
+text = "◆ IGN"
 
 [node name="Ally Monster HP bar" type="ProgressBar" parent="."]
 layout_mode = 0
@@ -82,38 +161,47 @@ offset_bottom = 466.0
 max_value = 100.0
 show_percentage = false
 
+[node name="Ally Status Container" type="HBoxContainer" parent="."]
+layout_mode = 0
+offset_left = 108.0
+offset_top = 470.0
+offset_right = 377.0
+offset_bottom = 498.0
+theme_override_constants/separation = 6
+
 [node name="Skill 1 Button" type="Button" parent="."]
 layout_mode = 0
 offset_left = 141.0
-offset_top = 504.0
+offset_top = 522.0
 offset_right = 282.0
-offset_bottom = 590.0
+offset_bottom = 608.0
 text = "S1"
 
 [node name="Skill 2 Button" type="Button" parent="."]
 layout_mode = 0
 offset_left = 364.0
-offset_top = 503.0
+offset_top = 522.0
 offset_right = 505.0
-offset_bottom = 589.0
+offset_bottom = 608.0
 text = "S2"
 
 [node name="Skill 3 Button" type="Button" parent="."]
 layout_mode = 0
 offset_left = 586.0
-offset_top = 503.0
+offset_top = 522.0
 offset_right = 727.0
-offset_bottom = 589.0
+offset_bottom = 608.0
 text = "S3"
 
 [node name="Turn Label" type="Label" parent="."]
 layout_mode = 0
-offset_left = 450.0
+offset_left = 415.0
 offset_top = 253.0
-offset_right = 680.0
-offset_bottom = 281.0
+offset_right = 715.0
+offset_bottom = 285.0
 text = "Preparing battle..."
 horizontal_alignment = 1
+theme_override_font_sizes/font_size = 18
 
 [connection signal="pressed" from="Skill 1 Button" to="." method="_on_skill_1_button_pressed"]
 [connection signal="pressed" from="Skill 2 Button" to="." method="_on_skill_2_button_pressed"]
