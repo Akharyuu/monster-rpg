@@ -1,6 +1,10 @@
 class_name BattleController
 extends RefCounted
 
+const StatusEffectFactoryScript = preload(
+    "res://scripts/factories/status_effect_factory.gd"
+)
+
 var allies: Array = []
 var enemies: Array = []
 
@@ -196,10 +200,93 @@ func execute_active_skill(
             "success": false
         }
 
-    return skill.execute_targets(
+    var caster_feedback: Array[String] = []
+    var block_frozen_scales_generation := false
+
+    if (
+        active_monster.monster_id == "drake_abyssal"
+        and skill.skill_id == "glacial_collapse"
+    ):
+        var current_scales: int = (
+            active_monster.get_combat_resource(
+                "frozen_scales"
+            )
+        )
+
+        if current_scales >= 3:
+            active_monster.consume_combat_resource(
+                "frozen_scales",
+                3
+            )
+            block_frozen_scales_generation = true
+
+            var defense_up = (
+                StatusEffectFactoryScript.create_status_effect(
+                    "defense_up",
+                    2,
+                    active_monster
+                )
+            )
+
+            var immunity = (
+                StatusEffectFactoryScript.create_status_effect(
+                    "immunity",
+                    2,
+                    active_monster
+                )
+            )
+
+            active_monster.apply_status_effect(defense_up)
+            active_monster.apply_status_effect(immunity)
+
+            caster_feedback.append("FROZEN SCALES CONSUMED")
+            caster_feedback.append("DEF UP!")
+            caster_feedback.append("IMMUNITY!")
+
+    var result: Dictionary = skill.execute_targets(
         active_monster,
         targets
     )
+
+    if (
+        active_monster.monster_id == "drake_abyssal"
+        and skill.skill_id == "glacial_collapse"
+        and not block_frozen_scales_generation
+    ):
+        var scales_gained := 0
+
+        for target_result in result.get(
+            "target_results",
+            []
+        ):
+            var froze_target := false
+
+            for effect in target_result.get(
+                "effects_applied",
+                []
+            ):
+                if effect.effect_id == "freeze":
+                    froze_target = true
+                    break
+
+            if froze_target:
+                scales_gained += 1
+
+        if scales_gained > 0:
+            var new_total: int = (
+                active_monster.add_combat_resource(
+                    "frozen_scales",
+                    scales_gained,
+                    3
+                )
+            )
+
+            caster_feedback.append(
+                "FROZEN SCALES %d/3" % new_total
+            )
+
+    result["caster_feedback"] = caster_feedback
+    return result
 
 
 func choose_enemy_target():
