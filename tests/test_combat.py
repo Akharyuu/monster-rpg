@@ -5320,6 +5320,91 @@ def test_voidborn_activates_at_five_removed_buffs():
     )
 
 
+def test_voidborn_extra_activations_extend_invincibility_and_damage():
+
+    void = create_monster("drake_void")
+    void.resonance = 5
+    update_resonance_kit(void)
+
+    skill = void.get_skill(3)
+
+    trigger_passives(
+        "on_remove_enemy_buff",
+        void,
+        {
+            "removed_count": 15,
+            "skill": skill
+        }
+    )
+
+    invincibility = next(
+        buff
+        for buff in void.buffs
+        if buff.effect_id == "invincibility"
+    )
+
+    assert invincibility.remaining_turns == 4
+
+    assert (
+        skill._voidborn_activations_this_use
+        == 3
+    )
+
+    assert (
+        skill._voidborn_damage_bonus_this_use
+        == pytest.approx(0.40)
+    )
+
+
+def test_voidborn_bonus_empowers_remaining_dismantle_hits(
+    monkeypatch
+):
+
+    void = create_monster("drake_void")
+    void.resonance = 5
+    update_resonance_kit(void)
+
+    target = create_monster(
+        "drake_igneous"
+    )
+
+    skill = void.get_skill(3)
+
+    skill._is_executing = True
+    skill._removed_buffs_this_use = 10
+    skill._voidborn_damage_bonus_this_use = 0.20
+
+    monkeypatch.setattr(
+        random,
+        "randint",
+        lambda a, b: 100
+    )
+
+    snapshot = skill.get_target_snapshot(
+        target
+    )
+
+    damage, critical = skill.damage_calc(
+        void,
+        target,
+        1.0,
+        snapshot,
+        1
+    )
+
+    expected = int(
+        skill.base_damage_calc(
+            void,
+            target,
+            1.0,
+            damage_multiplier=2.0
+        )
+    )
+
+    assert critical is False
+    assert damage == expected
+
+
 def test_voidborn_transcendence_full_cleanses_on_activation():
 
     void = create_monster("drake_void")
