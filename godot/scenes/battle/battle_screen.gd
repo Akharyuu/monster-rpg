@@ -34,7 +34,7 @@ var battle_finished := false
 func _ready() -> void:
     allies = [
         PrototypeFactoryScript.create_level_one_monster(
-            "drake_abyssal"
+            "drake_aether"
         ),
         PrototypeFactoryScript.create_level_one_monster(
             "drake_abyssal"
@@ -176,6 +176,16 @@ func request_player_skill(slot: int) -> void:
         execute_player_skill(
             skill,
             battle_controller.get_living(enemies)
+        )
+        return
+
+    if skill.target_type == "all_allies":
+        turn_label.text = "All allies will be affected"
+        await get_tree().create_timer(0.25).timeout
+
+        execute_player_skill(
+            skill,
+            battle_controller.get_living(allies)
         )
         return
 
