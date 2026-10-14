@@ -249,6 +249,21 @@ func execute_active_skill(
     )
 
     if (
+        active_monster.monster_id == "drake_storm"
+        and skill.skill_id == "lightning_rush"
+    ):
+        var speed_up = (
+            StatusEffectFactoryScript.create_status_effect(
+                "speed_up",
+                2,
+                active_monster
+            )
+        )
+
+        if active_monster.apply_status_effect(speed_up) != null:
+            caster_feedback.append("SPD UP!")
+
+    if (
         active_monster.monster_id == "drake_aether"
         and skill.skill_id == "sovereign_breath"
     ):
