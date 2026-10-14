@@ -2812,6 +2812,55 @@ VOID_SENSITIVITY_BUFF_ORDER = [
 
 
 
+VOID_NEUTRAL_BUFF_IDS = [
+    "benchmark_neutral_buff_1",
+    "benchmark_neutral_buff_2",
+    "benchmark_neutral_buff_3",
+    "benchmark_neutral_buff_4",
+    "benchmark_neutral_buff_5"
+]
+
+
+def _build_team_neutral_initial_buffs(
+    team_size,
+    buff_count,
+    turns=3
+):
+
+    selected_buffs = (
+        VOID_NEUTRAL_BUFF_IDS[
+            :buff_count
+        ]
+    )
+
+    team_buffs = []
+
+    for _ in range(team_size):
+
+        monster_buffs = []
+
+        for index, effect_id in enumerate(
+            selected_buffs,
+            start=1
+        ):
+
+            monster_buffs.append(
+                {
+                    "effect_id": effect_id,
+                    "name":
+                        f"Benchmark Buff {index}",
+                    "turns": turns,
+                    "benchmark_neutral": True
+                }
+            )
+
+        team_buffs.append(
+            monster_buffs
+        )
+
+    return team_buffs
+
+
 def _build_team_initial_buffs(
     team_size,
     buff_count,
@@ -2854,6 +2903,7 @@ def analyze_void_buff_sensitivity(
     ascended=True,
     max_turns=200,
     attribute_targeting=False,
+    neutral_buffs=False,
     verbose=True
 ):
 
@@ -2876,12 +2926,37 @@ def analyze_void_buff_sensitivity(
         + 1
     ):
 
-        initial_buffs = (
-            _build_team_initial_buffs(
-                len(void_team),
-                buff_count
+        if neutral_buffs:
+
+            initial_buffs = (
+                _build_team_neutral_initial_buffs(
+                    len(void_team),
+                    buff_count
+                )
             )
-        )
+
+            benchmark_initial_buffs = (
+                _build_team_neutral_initial_buffs(
+                    len(benchmark_team),
+                    buff_count
+                )
+            )
+
+        else:
+
+            initial_buffs = (
+                _build_team_initial_buffs(
+                    len(void_team),
+                    buff_count
+                )
+            )
+
+            benchmark_initial_buffs = (
+                _build_team_initial_buffs(
+                    len(benchmark_team),
+                    buff_count
+                )
+            )
 
         scenarios.append(
             {
@@ -2896,10 +2971,7 @@ def analyze_void_buff_sensitivity(
                 "void_team_initial_buffs":
                     initial_buffs,
                 "benchmark_team_initial_buffs":
-                    _build_team_initial_buffs(
-                        len(benchmark_team),
-                        buff_count
-                    )
+                    benchmark_initial_buffs
             }
         )
 
@@ -3063,6 +3135,8 @@ def analyze_void_buff_sensitivity(
         "void_team": void_team,
         "benchmark_team":
             benchmark_team,
+        "neutral_buffs":
+            neutral_buffs,
         "results":
             sensitivity_results
     }
@@ -3102,6 +3176,18 @@ def print_void_buff_sensitivity_report(
         "Void team: "
         + ", ".join(
             report["void_team"]
+        )
+    )
+
+    print(
+        "Buff mode: "
+        + (
+            "neutral benchmark buffs"
+            if report.get(
+                "neutral_buffs",
+                False
+            )
+            else "real combat buffs"
         )
     )
 
