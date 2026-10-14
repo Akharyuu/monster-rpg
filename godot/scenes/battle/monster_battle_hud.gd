@@ -10,6 +10,7 @@ signal target_pressed
 @onready var level_label: Label = $"Level"
 @onready var hp_bar: ProgressBar = $"HP"
 @onready var action_gauge: ProgressBar = $"AG"
+@onready var battle_state_container: HBoxContainer = $"Battle States"
 @onready var status_container: HBoxContainer = $"Status"
 @onready var target_button: Button = $"Target Button"
 
@@ -69,6 +70,7 @@ func refresh(is_active: bool) -> void:
         target_button.disabled = true
         target_highlight.visible = false
 
+    _populate_battle_states()
     _populate_statuses()
 
 
@@ -259,6 +261,109 @@ func _create_status_badge(effect) -> Label:
     )
 
     return badge
+
+
+func _battle_state_display_name(state_id: String) -> String:
+    match state_id:
+        "frozen_scales":
+            return "Frozen Scales"
+        _:
+            return state_id.replace("_", " ").capitalize()
+
+
+func _create_battle_state_badge(
+    state_id: String,
+    value,
+    maximum = null
+) -> Label:
+    var badge := Label.new()
+
+    badge.custom_minimum_size = Vector2(94.0, 23.0)
+    badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+    badge.add_theme_font_size_override(
+        "font_size",
+        13
+    )
+
+    var display_name: String = (
+        _battle_state_display_name(state_id)
+    )
+
+    if maximum != null:
+        badge.text = "%s %d/%d" % [
+            display_name,
+            int(value),
+            int(maximum)
+        ]
+    elif value is bool:
+        badge.text = display_name
+    else:
+        badge.text = "%s %s" % [
+            display_name,
+            str(value)
+        ]
+
+    badge.tooltip_text = badge.text
+
+    var style := StyleBoxFlat.new()
+    style.bg_color = Color(0.22, 0.22, 0.34, 0.92)
+    style.border_color = Color(0.58, 0.68, 1.0, 0.95)
+    style.border_width_left = 1
+    style.border_width_top = 1
+    style.border_width_right = 1
+    style.border_width_bottom = 1
+    style.corner_radius_top_left = 5
+    style.corner_radius_top_right = 5
+    style.corner_radius_bottom_left = 5
+    style.corner_radius_bottom_right = 5
+
+    badge.add_theme_stylebox_override(
+        "normal",
+        style
+    )
+
+    return badge
+
+
+func _populate_battle_states() -> void:
+    for child in battle_state_container.get_children():
+        child.queue_free()
+
+    for resource_id in bound_monster.combat_resources:
+        var value = bound_monster.combat_resources[
+            resource_id
+        ]
+
+        var maximum = (
+            bound_monster.combat_resource_maximums.get(
+                resource_id,
+                null
+            )
+        )
+
+        battle_state_container.add_child(
+            _create_battle_state_badge(
+                str(resource_id),
+                value,
+                maximum
+            )
+        )
+
+    for state_id in bound_monster.special_states:
+        var state_value = bound_monster.special_states[
+            state_id
+        ]
+
+        if state_value is bool and not state_value:
+            continue
+
+        battle_state_container.add_child(
+            _create_battle_state_badge(
+                str(state_id),
+                state_value
+            )
+        )
 
 
 func _populate_statuses() -> void:
