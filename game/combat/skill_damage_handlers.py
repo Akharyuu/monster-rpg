@@ -164,12 +164,11 @@ def damage_by_missing_health(
 
     data = skill.damage_handler_data
 
-    health_ratio = snapshot.get(
-        "health_ratio",
-        (
-            target.health
-            / target.max_health
-        )
+    health_ratio = (
+        target.health
+        / target.max_health
+        if target.max_health > 0
+        else 0
     )
 
     missing_health_ratio = max(
