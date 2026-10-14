@@ -274,3 +274,140 @@ func _populate_statuses() -> void:
         status_container.add_child(
             _create_status_badge(debuff)
         )
+
+
+func play_attack_feedback() -> void:
+    if bound_monster == null or not bound_monster.is_alive():
+        return
+
+    var start_position: Vector2 = position
+    var direction: float = -1.0 if is_enemy else 1.0
+    var attack_position := start_position + Vector2(
+        22.0 * direction,
+        0.0
+    )
+
+    var tween := create_tween()
+    tween.set_trans(Tween.TRANS_QUAD)
+    tween.set_ease(Tween.EASE_OUT)
+
+    tween.tween_property(
+        self,
+        "position",
+        attack_position,
+        0.09
+    )
+
+    tween.tween_property(
+        self,
+        "position",
+        start_position,
+        0.13
+    )
+
+    await tween.finished
+
+
+func play_damage_feedback(
+    damage: int,
+    critical: bool = false,
+    is_dot: bool = false
+) -> void:
+    if damage <= 0:
+        return
+
+    var current_alpha: float = modulate.a
+    var flash_color := Color(
+        1.0,
+        0.38 if not is_dot else 0.58,
+        0.38 if not is_dot else 0.18,
+        current_alpha
+    )
+
+    var flash_tween := create_tween()
+    flash_tween.tween_property(
+        self,
+        "modulate",
+        flash_color,
+        0.05
+    )
+    flash_tween.tween_property(
+        self,
+        "modulate",
+        Color(1.0, 1.0, 1.0, current_alpha),
+        0.16
+    )
+
+    var damage_label := Label.new()
+    damage_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    damage_label.z_index = 20
+    damage_label.text = "-%d" % damage
+    damage_label.horizontal_alignment = (
+        HORIZONTAL_ALIGNMENT_CENTER
+    )
+
+    if critical:
+        damage_label.text += "  CRIT!"
+        damage_label.add_theme_font_size_override(
+            "font_size",
+            24
+        )
+        damage_label.add_theme_color_override(
+            "font_color",
+            Color(1.0, 0.82, 0.20)
+        )
+    elif is_dot:
+        damage_label.add_theme_font_size_override(
+            "font_size",
+            19
+        )
+        damage_label.add_theme_color_override(
+            "font_color",
+            Color(1.0, 0.48, 0.16)
+        )
+    else:
+        damage_label.add_theme_font_size_override(
+            "font_size",
+            20
+        )
+        damage_label.add_theme_color_override(
+            "font_color",
+            Color(1.0, 0.32, 0.26)
+        )
+
+    add_child(damage_label)
+
+    damage_label.position = Vector2(
+        80.0,
+        35.0
+    )
+    damage_label.size = Vector2(
+        160.0,
+        36.0
+    )
+
+    var label_start: Vector2 = damage_label.position
+    var label_end := label_start + Vector2(
+        0.0,
+        -34.0
+    )
+
+    var number_tween := create_tween()
+    number_tween.set_parallel(true)
+
+    number_tween.tween_property(
+        damage_label,
+        "position",
+        label_end,
+        0.55
+    )
+
+    number_tween.tween_property(
+        damage_label,
+        "modulate:a",
+        0.0,
+        0.55
+    )
+
+    await number_tween.finished
+    damage_label.queue_free()
