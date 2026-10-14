@@ -3805,3 +3805,449 @@ def print_void_null_rend_ab_report(
     print(
         "=============================================================="
     )
+
+
+# =========================================================
+#              FIVE DRAKE CONTEXTUAL BENCHMARK
+# =========================================================
+
+FIVE_DRAKE_CONTEXT_SCENARIOS = [
+    {
+        "name": "Buffless",
+        "neutral_enemy_buffs": 0,
+        "veil": False
+    },
+    {
+        "name": "Low buffs",
+        "neutral_enemy_buffs": 1,
+        "veil": False
+    },
+    {
+        "name": "Buff-heavy",
+        "neutral_enemy_buffs": 4,
+        "veil": False
+    },
+    {
+        "name": "Veil protected",
+        "neutral_enemy_buffs": 3,
+        "veil": True
+    }
+]
+
+
+
+def _build_context_enemy_buffs(
+    team_size,
+    neutral_buff_count,
+    veil=False,
+    turns=3
+):
+
+    team_buffs = []
+
+    for _ in range(team_size):
+
+        monster_buffs = []
+
+        if veil:
+            monster_buffs.append(
+                {
+                    "effect_id": "veil",
+                    "turns": turns
+                }
+            )
+
+        neutral_buffs = (
+            _build_team_neutral_initial_buffs(
+                1,
+                neutral_buff_count,
+                turns=turns
+            )[0]
+        )
+
+        monster_buffs.extend(
+            neutral_buffs
+        )
+
+        team_buffs.append(
+            monster_buffs
+        )
+
+    return team_buffs
+
+
+
+def analyze_five_drake_contextual_balance(
+    runs=500,
+    resonance=5,
+    scenarios=None,
+    core_team_sets=None,
+    level=50,
+    ascended=True,
+    max_turns=200,
+    attribute_targeting=False,
+    neutral_core_attributes=True,
+    verbose=True
+):
+
+    if resonance < 0 or resonance > 5:
+        raise ValueError(
+            "resonance must be between 0 and 5."
+        )
+
+    if scenarios is None:
+        scenarios = (
+            FIVE_DRAKE_CONTEXT_SCENARIOS
+        )
+
+    if core_team_sets is None:
+        core_team_sets = [
+            list(core)
+            for core in DEFAULT_NEUTRAL_CORE_SETS
+        ]
+
+    scenario_reports = []
+
+    for scenario in scenarios:
+
+        scenario_results = {}
+
+        for candidate_id in DRAKE_ROSTER_IDS:
+
+            matchup_win_rates = []
+            matchup_draw_rates = []
+
+            for benchmark_id in DRAKE_ROSTER_IDS:
+
+                if benchmark_id == candidate_id:
+                    continue
+
+                for core_team in core_team_sets:
+
+                    candidate_team = [
+                        candidate_id
+                    ] + list(core_team)
+
+                    benchmark_team = [
+                        benchmark_id
+                    ] + list(core_team)
+
+                    enemy_buffs = (
+                        _build_context_enemy_buffs(
+                            len(benchmark_team),
+                            scenario.get(
+                                "neutral_enemy_buffs",
+                                0
+                            ),
+                            veil=scenario.get(
+                                "veil",
+                                False
+                            )
+                        )
+                    )
+
+                    candidate_resonances = [
+                        resonance
+                    ] + [
+                        0
+                        for _ in core_team
+                    ]
+
+                    benchmark_resonances = [
+                        resonance
+                    ] + [
+                        0
+                        for _ in core_team
+                    ]
+
+                    side_a = simulate_battles(
+                        candidate_team,
+                        benchmark_team,
+                        runs=runs,
+                        verbose=False,
+                        level=level,
+                        ascended=ascended,
+                        max_turns=max_turns,
+                        attribute_targeting=
+                            attribute_targeting,
+                        neutral_core_attributes=
+                            neutral_core_attributes,
+                        team_a_resonances=
+                            candidate_resonances,
+                        team_b_resonances=
+                            benchmark_resonances,
+                        team_b_initial_buffs=
+                            enemy_buffs
+                    )
+
+                    side_b = simulate_battles(
+                        benchmark_team,
+                        candidate_team,
+                        runs=runs,
+                        verbose=False,
+                        level=level,
+                        ascended=ascended,
+                        max_turns=max_turns,
+                        attribute_targeting=
+                            attribute_targeting,
+                        neutral_core_attributes=
+                            neutral_core_attributes,
+                        team_a_resonances=
+                            benchmark_resonances,
+                        team_b_resonances=
+                            candidate_resonances,
+                        team_a_initial_buffs=
+                            enemy_buffs
+                    )
+
+                    combined_win_rate = (
+                        side_a[
+                            "team_a_win_rate"
+                        ]
+                        + side_b[
+                            "team_b_win_rate"
+                        ]
+                    ) / 2
+
+                    combined_draw_rate = (
+                        side_a[
+                            "draw_rate"
+                        ]
+                        + side_b[
+                            "draw_rate"
+                        ]
+                    ) / 2
+
+                    matchup_win_rates.append(
+                        combined_win_rate
+                    )
+
+                    matchup_draw_rates.append(
+                        combined_draw_rate
+                    )
+
+            scenario_results[
+                candidate_id
+            ] = {
+                "average_win_rate":
+                    _average_values(
+                        matchup_win_rates
+                    ),
+                "average_draw_rate":
+                    _average_values(
+                        matchup_draw_rates
+                    )
+            }
+
+        scenario_reports.append(
+            {
+                "name":
+                    scenario["name"],
+                "neutral_enemy_buffs":
+                    scenario.get(
+                        "neutral_enemy_buffs",
+                        0
+                    ),
+                "veil":
+                    scenario.get(
+                        "veil",
+                        False
+                    ),
+                "results":
+                    scenario_results
+            }
+        )
+
+    baseline = (
+        scenario_reports[0][
+            "results"
+        ]
+    )
+
+    for scenario_report in scenario_reports:
+
+        for monster_id in DRAKE_ROSTER_IDS:
+
+            scenario_report[
+                "results"
+            ][monster_id][
+                "delta_from_baseline"
+            ] = (
+                scenario_report[
+                    "results"
+                ][monster_id][
+                    "average_win_rate"
+                ]
+                - baseline[
+                    monster_id
+                ][
+                    "average_win_rate"
+                ]
+            )
+
+    report = {
+        "runs_per_side_matchup_core":
+            runs,
+        "resonance":
+            resonance,
+        "level":
+            level,
+        "ascended":
+            ascended,
+        "attribute_targeting":
+            attribute_targeting,
+        "neutral_core_attributes":
+            neutral_core_attributes,
+        "core_team_sets": [
+            list(core)
+            for core in core_team_sets
+        ],
+        "scenarios":
+            scenario_reports
+    }
+
+    if verbose:
+        print_five_drake_contextual_report(
+            report
+        )
+
+    return report
+
+
+
+def print_five_drake_contextual_report(
+    report
+):
+
+    print()
+    print(
+        "=============================================================="
+    )
+    print(
+        "              FIVE DRAKE CONTEXTUAL BALANCE"
+    )
+    print(
+        "=============================================================="
+    )
+
+    print(
+        f"Runs per side/matchup/core: "
+        f"{report['runs_per_side_matchup_core']} "
+        f"| Resonance: "
+        f"R{report['resonance']}"
+    )
+
+    print(
+        "Enemy context is applied only to the opposing team."
+    )
+
+    header = (
+        f"{'Drake':<10}"
+    )
+
+    for scenario in report[
+        "scenarios"
+    ]:
+
+        header += (
+            f"{scenario['name']:>16}"
+        )
+
+    print()
+    print(
+        "AVERAGE WIN RATE VS THE OTHER FOUR DRAKES"
+    )
+    print(
+        header
+    )
+
+    for monster_id in DRAKE_ROSTER_IDS:
+
+        row = (
+            f"{DRAKE_ROSTER_LABELS[monster_id]:<10}"
+        )
+
+        for scenario in report[
+            "scenarios"
+        ]:
+
+            value = scenario[
+                "results"
+            ][monster_id][
+                "average_win_rate"
+            ]
+
+            row += (
+                f"{value:>15.1f}%"
+            )
+
+        print(
+            row
+        )
+
+    print()
+    print(
+        "DELTA FROM BUFFLESS BASELINE"
+    )
+
+    print(
+        header
+    )
+
+    for monster_id in DRAKE_ROSTER_IDS:
+
+        row = (
+            f"{DRAKE_ROSTER_LABELS[monster_id]:<10}"
+        )
+
+        for scenario in report[
+            "scenarios"
+        ]:
+
+            delta = scenario[
+                "results"
+            ][monster_id][
+                "delta_from_baseline"
+            ]
+
+            row += (
+                f"{delta:>+15.1f}"
+            )
+
+        print(
+            row
+        )
+
+    print()
+    print(
+        "Contexts:"
+    )
+
+    for scenario in report[
+        "scenarios"
+    ]:
+
+        description = (
+            f"{scenario['neutral_enemy_buffs']} "
+            f"neutral enemy buffs per monster"
+        )
+
+        if scenario[
+            "veil"
+        ]:
+            description += " + Veil"
+
+        print(
+            f"  {scenario['name']}: "
+            f"{description}"
+        )
+
+    print()
+    print(
+        "This is a contextual counter-pick benchmark, "
+        "not a universal power ranking."
+    )
+
+    print(
+        "=============================================================="
+    )
