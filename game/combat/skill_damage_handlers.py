@@ -354,6 +354,29 @@ def damage_for_dead_monsters(
     }
 
 
+
+def damage_with_bonus_stat(
+    attacker,
+    target,
+    skill,
+    snapshot,
+    hit_index
+):
+
+    data = skill.damage_handler_data
+
+    bonus_stat = attacker.get_effective_stat(
+        data["bonus_stat"]
+    )
+
+    return {
+        "bonus_raw_damage": (
+            bonus_stat
+            * data["bonus_scaling"]
+        )
+    }
+
+
 # =========================================================
 #                     HANDLER REGISTRY
 # =========================================================
@@ -369,6 +392,8 @@ DAMAGE_HANDLERS = {
     "damage_for_soul_charges":
         damage_for_soul_charges,
     "damage_for_dead_monsters":
-        damage_for_dead_monsters
+        damage_for_dead_monsters,
+    "damage_with_bonus_stat":
+        damage_with_bonus_stat
 }
 
