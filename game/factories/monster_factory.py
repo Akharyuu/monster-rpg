@@ -105,6 +105,7 @@ def create_skill(skill_id):
             cooldown=skill["cooldown"],
             damage_handler=skill.get("damage_handler"),
             damage_handler_data=skill.get("damage_handler_data"),
+            before_hit_handlers=skill.get("before_hit_handlers"),
             on_hit_handlers=skill.get("on_hit_handlers"),
             after_skill_handlers=skill.get("after_skill_handlers"),
             after_use_handlers=skill.get("after_use_handlers"),
