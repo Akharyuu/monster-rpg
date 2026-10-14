@@ -12,7 +12,18 @@ const PrototypeFactoryScript = preload(
 
 @onready var enemy_name_label = $"Enemy Monster Name"
 @onready var ally_name_label = $"Ally Monster Name"
-@onready var enemy_status_label = $"Enemy Status Label"
+
+@onready var enemy_level_label = $"Enemy Level"
+@onready var ally_level_label = $"Ally Level"
+
+@onready var enemy_attribute_label = $"Enemy Attribute"
+@onready var ally_attribute_label = $"Ally Attribute"
+
+@onready var enemy_status_container = $"Enemy Status Container"
+@onready var ally_status_container = $"Ally Status Container"
+
+@onready var enemy_turn_indicator = $"Enemy Turn Indicator"
+@onready var ally_turn_indicator = $"Ally Turn Indicator"
 
 @onready var skill_1_button = $"Skill 1 Button"
 @onready var skill_2_button = $"Skill 2 Button"
@@ -40,7 +51,20 @@ func _ready() -> void:
     )
 
     enemy_name_label.text = enemy_monster.monster_name
-    ally_name_label.text = "Igneous Drake"
+    ally_name_label.text = player_monster.monster_name
+
+    enemy_level_label.text = "Lv. %d" % enemy_monster.level
+    ally_level_label.text = "Lv. %d" % player_monster.level
+
+    update_attribute_label(
+        enemy_attribute_label,
+        enemy_monster.attribute
+    )
+
+    update_attribute_label(
+        ally_attribute_label,
+        player_monster.attribute
+    )
 
     enemy_hp_bar.max_value = enemy_monster.max_health
     ally_hp_bar.max_value = player_monster.max_health
@@ -352,6 +376,7 @@ func update_battle_ui() -> void:
 
     update_action_gauges()
     update_status_display()
+    update_turn_indicators()
     update_skill_buttons()
 
 
@@ -365,23 +390,163 @@ func update_action_gauges() -> void:
     )
 
 
+func update_attribute_label(
+    label: Label,
+    attribute: String
+) -> void:
+    var display_name := attribute.to_upper()
+    var attribute_color := Color.WHITE
+
+    match attribute:
+        "igneous":
+            display_name = "IGN"
+            attribute_color = Color(1.0, 0.42, 0.22)
+        "abyssal":
+            display_name = "ABY"
+            attribute_color = Color(0.30, 0.56, 1.0)
+        "storm":
+            display_name = "STM"
+            attribute_color = Color(0.90, 0.82, 0.24)
+        "aether":
+            display_name = "AET"
+            attribute_color = Color(0.72, 0.58, 1.0)
+        "void":
+            display_name = "VOI"
+            attribute_color = Color(0.72, 0.40, 0.90)
+
+    label.text = "◆ %s" % display_name
+    label.add_theme_color_override(
+        "font_color",
+        attribute_color
+    )
+
+
+func get_status_short_name(effect_id: String) -> String:
+    match effect_id:
+        "burn":
+            return "BRN"
+        "defense_break":
+            return "DEF↓"
+        "attack_break":
+            return "ATK↓"
+        "speed_break":
+            return "SPD↓"
+        "attack_up":
+            return "ATK↑"
+        "defense_up":
+            return "DEF↑"
+        "speed_up":
+            return "SPD↑"
+        "immunity":
+            return "IMM"
+        "shield":
+            return "SHD"
+        "stun":
+            return "STN"
+        "freeze":
+            return "FRZ"
+        "silence":
+            return "SIL"
+        _:
+            return effect_id.left(4).to_upper()
+
+
+func get_status_color(effect) -> Color:
+    if effect.effect_type == "buff":
+        return Color(0.20, 0.46, 0.78, 0.92)
+
+    match effect.effect_id:
+        "burn":
+            return Color(0.78, 0.25, 0.12, 0.92)
+        "defense_break":
+            return Color(0.60, 0.22, 0.22, 0.92)
+        _:
+            return Color(0.48, 0.20, 0.28, 0.92)
+
+
+func create_status_badge(effect) -> Label:
+    var badge := Label.new()
+    badge.custom_minimum_size = Vector2(62.0, 28.0)
+    badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+
+    var text := get_status_short_name(
+        effect.effect_id
+    )
+
+    if effect.max_stacks > 1:
+        text += " x%d" % effect.stacks
+
+    text += " · %d" % effect.remaining_turns
+    badge.text = text
+    badge.tooltip_text = "%s — %d turn(s)" % [
+        effect.effect_name,
+        effect.remaining_turns
+    ]
+
+    var style := StyleBoxFlat.new()
+    style.bg_color = get_status_color(effect)
+    style.corner_radius_top_left = 5
+    style.corner_radius_top_right = 5
+    style.corner_radius_bottom_left = 5
+    style.corner_radius_bottom_right = 5
+    style.content_margin_left = 6.0
+    style.content_margin_right = 6.0
+    style.content_margin_top = 3.0
+    style.content_margin_bottom = 3.0
+
+    badge.add_theme_stylebox_override(
+        "normal",
+        style
+    )
+
+    return badge
+
+
+func clear_status_container(container: HBoxContainer) -> void:
+    for child in container.get_children():
+        child.queue_free()
+
+
+func populate_status_container(
+    container: HBoxContainer,
+    monster
+) -> void:
+    clear_status_container(container)
+
+    for buff in monster.buffs:
+        container.add_child(
+            create_status_badge(buff)
+        )
+
+    for debuff in monster.debuffs:
+        container.add_child(
+            create_status_badge(debuff)
+        )
+
+
 func update_status_display() -> void:
-    if enemy_monster.debuffs.is_empty():
-        enemy_status_label.text = ""
-        return
+    populate_status_container(
+        enemy_status_container,
+        enemy_monster
+    )
 
-    var texts: Array[String] = []
+    populate_status_container(
+        ally_status_container,
+        player_monster
+    )
 
-    for debuff in enemy_monster.debuffs:
-        var text: String = str(debuff.effect_name)
 
-        if debuff.max_stacks > 1:
-            text += " x%d" % debuff.stacks
+func update_turn_indicators() -> void:
+    enemy_turn_indicator.visible = (
+        not battle_finished
+        and active_monster == enemy_monster
+    )
 
-        text += " (%d)" % debuff.remaining_turns
-        texts.append(text)
-
-    enemy_status_label.text = " | ".join(texts)
+    ally_turn_indicator.visible = (
+        not battle_finished
+        and active_monster == player_monster
+    )
 
 
 func update_skill_buttons() -> void:
@@ -424,6 +589,7 @@ func finish_battle(player_won: bool) -> void:
     battle_finished = true
 
     disable_skill_buttons()
+    update_turn_indicators()
 
     if player_won:
         turn_label.text = "Victory!"
