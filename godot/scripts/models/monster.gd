@@ -251,12 +251,18 @@ func apply_damage_over_time() -> Dictionary:
     }
 
 
-func reduce_status_effect_turns() -> void:
+func reduce_status_effect_turns(
+    effects_at_turn_start: Array = []
+) -> void:
+    var reduce_all := effects_at_turn_start.is_empty()
+
     for buff in buffs:
-        buff.reduce_remaining_turns()
+        if reduce_all or buff in effects_at_turn_start:
+            buff.reduce_remaining_turns()
 
     for debuff in debuffs:
-        debuff.reduce_remaining_turns()
+        if reduce_all or debuff in effects_at_turn_start:
+            debuff.reduce_remaining_turns()
 
     buffs = buffs.filter(
         func(effect): return effect.is_active()
@@ -277,3 +283,15 @@ func get_skill(index: int):
 func reduce_skill_cooldowns() -> void:
     for skill in skills:
         skill.reduce_cooldown()
+
+
+func increase_action_gauge(amount: float) -> void:
+    action_gauge = clampf(
+        action_gauge + amount,
+        0.0,
+        1.0
+    )
+
+
+func reset_action_gauge() -> void:
+    action_gauge = 0.0
