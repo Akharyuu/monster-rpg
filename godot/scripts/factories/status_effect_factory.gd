@@ -19,7 +19,7 @@ static func create_status_effect(
                 "Defense Break",
                 "defense",
                 "debuff",
-                0.7,
+                0.5,
                 duration,
                 stacks,
                 1,
