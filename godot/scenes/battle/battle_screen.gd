@@ -106,30 +106,30 @@ func start_next_turn() -> void:
 
     if dot_result["damage"] > 0:
         turn_label.text = "%s takes %d DoT damage!" % [
-            battle_controller.battle_controller.active_monster.monster_name,
+            battle_controller.active_monster.monster_name,
             dot_result["damage"]
         ]
 
         update_battle_ui()
 
-        if not battle_controller.battle_controller.active_monster.is_alive():
+        if not battle_controller.active_monster.is_alive():
             await get_tree().create_timer(0.5).timeout
-            battle_controller.battle_controller.clear_active_monster()
+            battle_controller.clear_active_monster()
             start_next_turn()
             return
 
         await get_tree().create_timer(0.5).timeout
 
-    if battle_controller.battle_controller.active_monster in allies:
+    if battle_controller.active_monster in allies:
         turn_label.text = "YOUR TURN - %s" % (
-            battle_controller.battle_controller.active_monster.monster_name
+            battle_controller.active_monster.monster_name
         )
         update_skill_buttons()
     else:
         disable_skill_buttons()
 
         turn_label.text = "ENEMY TURN - %s" % (
-            battle_controller.battle_controller.active_monster.monster_name
+            battle_controller.active_monster.monster_name
         )
 
         await get_tree().create_timer(0.5).timeout
@@ -139,12 +139,12 @@ func start_next_turn() -> void:
 func request_player_skill(slot: int) -> void:
     if (
         battle_finished
-        or battle_controller.battle_controller.active_monster == null
-        or battle_controller.battle_controller.active_monster not in allies
+        or battle_controller.active_monster == null
+        or battle_controller.active_monster not in allies
     ):
         return
 
-    var skill = battle_controller.battle_controller.active_monster.get_skill(slot)
+    var skill = battle_controller.active_monster.get_skill(slot)
 
     if skill == null or not skill.is_available():
         return
@@ -174,7 +174,7 @@ func _on_enemy_target_pressed(index: int) -> void:
     if not target.is_alive():
         return
 
-    var skill = battle_controller.battle_controller.active_monster.get_skill(
+    var skill = battle_controller.active_monster.get_skill(
         pending_skill_slot
     )
 
@@ -194,9 +194,11 @@ func execute_player_skill(
     disable_skill_buttons()
     set_target_selection(false)
 
-    var result: Dictionary = skill.execute_targets(
-        battle_controller.battle_controller.active_monster,
-        targets
+    var result: Dictionary = (
+        battle_controller.execute_active_skill(
+            skill,
+            targets
+        )
     )
 
     update_battle_ui()
@@ -216,7 +218,7 @@ func execute_player_skill(
             result["healing"]
         )
 
-    end_turn(battle_controller.battle_controller.active_monster)
+    battle_controller.end_active_turn()
     update_battle_ui()
 
     if battle_controller.is_battle_over():
@@ -227,32 +229,34 @@ func execute_player_skill(
 
     await get_tree().create_timer(0.6).timeout
 
-    battle_controller.battle_controller.clear_active_monster()
+    battle_controller.clear_active_monster()
     start_next_turn()
 
 
 func enemy_turn() -> void:
-    if battle_controller.battle_controller.active_monster == null:
+    if battle_controller.active_monster == null:
         return
 
-    var skill = battle_controller.battle_controller.active_monster.get_skill(1)
+    var skill = battle_controller.active_monster.get_skill(1)
     var target = battle_controller.choose_enemy_target()
 
     if skill == null or target == null:
         return
 
-    var result: Dictionary = skill.execute_targets(
-        battle_controller.battle_controller.active_monster,
-        [target]
+    var result: Dictionary = (
+        battle_controller.execute_active_skill(
+            skill,
+            [target]
+        )
     )
 
     turn_label.text = "%s hits %s for %d" % [
-        battle_controller.battle_controller.active_monster.monster_name,
+        battle_controller.active_monster.monster_name,
         target.monster_name,
         result["damage"]
     ]
 
-    end_turn(battle_controller.battle_controller.active_monster)
+    end_turn(battle_controller.active_monster)
     update_battle_ui()
 
     if battle_controller.is_battle_over():
@@ -263,7 +267,7 @@ func enemy_turn() -> void:
 
     await get_tree().create_timer(0.6).timeout
 
-    battle_controller.battle_controller.clear_active_monster()
+    battle_controller.clear_active_monster()
     start_next_turn()
 
 
@@ -282,12 +286,12 @@ func _on_skill_3_button_pressed() -> void:
 func update_battle_ui() -> void:
     for index in range(ally_huds.size()):
         ally_huds[index].refresh(
-            battle_controller.battle_controller.active_monster == allies[index]
+            battle_controller.active_monster == allies[index]
         )
 
     for index in range(enemy_huds.size()):
         enemy_huds[index].refresh(
-            battle_controller.battle_controller.active_monster == enemies[index]
+            battle_controller.active_monster == enemies[index]
         )
 
     update_skill_buttons()
@@ -304,14 +308,14 @@ func update_skill_buttons() -> void:
         var button = buttons[index]
 
         if (
-            battle_controller.battle_controller.active_monster == null
-            or battle_controller.battle_controller.active_monster not in allies
+            battle_controller.active_monster == null
+            or battle_controller.active_monster not in allies
         ):
             button.text = "-"
             button.disabled = true
             continue
 
-        var skill = battle_controller.battle_controller.active_monster.get_skill(index + 1)
+        var skill = battle_controller.active_monster.get_skill(index + 1)
 
         if skill == null:
             button.text = "-"
