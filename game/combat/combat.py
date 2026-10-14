@@ -22,8 +22,9 @@ from ..combat.telemetry import (
     serialize_battle_telemetry
 )
 
-from ..models.enums import TargetType
+from ..models.enums import EffectType, TargetType
 from ..models.skills import SkillType
+from ..models.status_effect import StatusEffect
 
 from ..ui import (
     select_ally,
@@ -59,14 +60,39 @@ def apply_initial_buffs(
 
         for buff_config in buff_configs:
 
-            buff = create_status_effect(
-                effect_id=buff_config["effect_id"],
-                duration=buff_config.get(
-                    "turns",
-                    3
-                ),
-                source=monster
-            )
+            if buff_config.get(
+                "benchmark_neutral",
+                False
+            ):
+
+                buff = StatusEffect(
+                    effect_id=buff_config[
+                        "effect_id"
+                    ],
+                    name=buff_config.get(
+                        "name",
+                        "Benchmark Buff"
+                    ),
+                    stat=None,
+                    effect_type=EffectType.BUFF,
+                    modifier=None,
+                    duration=buff_config.get(
+                        "turns",
+                        3
+                    ),
+                    source=monster
+                )
+
+            else:
+
+                buff = create_status_effect(
+                    effect_id=buff_config["effect_id"],
+                    duration=buff_config.get(
+                        "turns",
+                        3
+                    ),
+                    source=monster
+                )
 
             monster.apply_status_effect(
                 buff
