@@ -2928,10 +2928,14 @@ def analyze_void_buff_sensitivity(
 
         if neutral_buffs:
 
+            # Neutral benchmark buffs exist only to feed Void's anti-buff
+            # mechanics. Giving the same dummy buffs to Void's own team
+            # would add no combat power, while filling Void's five buff
+            # slots and potentially preventing Voidborn Invincibility.
             initial_buffs = (
                 _build_team_neutral_initial_buffs(
                     len(void_team),
-                    buff_count
+                    0
                 )
             )
 
