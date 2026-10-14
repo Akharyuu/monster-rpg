@@ -1,4 +1,6 @@
 from ..factories.status_effect_factory import create_status_effect
+from ..combat.combat_events import revive_monster
+from ..combat.passive_triggers import trigger_passives
 from ..combat.passive_modifiers import get_direct_heal_multiplier, get_overgrowth_shield
 from ..combat.telemetry import get_active_shield_value, record_telemetry
 
@@ -380,6 +382,293 @@ def banish_killed_oblivion_targets(
     }
 
 
+
+# =========================================================
+#                  DULLAHAN SUPPORT HANDLERS
+# =========================================================
+
+def support_lowest_gauge_ally(
+    caster,
+    skill,
+    data,
+    context,
+    skill_result
+):
+
+    living_allies = [
+        ally
+        for ally in context.get(
+            "team",
+            []
+        )
+        if ally.is_alive
+        and ally is not caster
+    ]
+
+    if not living_allies:
+        living_allies = [
+            caster
+        ]
+
+    target = min(
+        living_allies,
+        key=lambda ally:
+            ally.action_gauge
+    )
+
+    for buff_config in data.get(
+        "self_buffs",
+        []
+    ):
+
+        buff = create_status_effect(
+            effect_id=buff_config[
+                "effect_id"
+            ],
+            duration=buff_config[
+                "turns"
+            ],
+            source=caster
+        )
+
+        caster.apply_status_effect(
+            buff
+        )
+
+    for buff_config in data.get(
+        "ally_buffs",
+        []
+    ):
+
+        buff = create_status_effect(
+            effect_id=buff_config[
+                "effect_id"
+            ],
+            duration=buff_config[
+                "turns"
+            ],
+            source=caster
+        )
+
+        target.apply_status_effect(
+            buff
+        )
+
+    target.increase_action_gauge(
+        data.get(
+            "ally_action_gauge",
+            0
+        )
+    )
+
+    if data.get(
+        "force_next_turn",
+        False
+    ):
+        target.forced_turn_pending = True
+
+    return {
+        "type":
+            "support_lowest_gauge_ally",
+        "target":
+            target
+    }
+
+
+
+def revive_most_recent_ally(
+    caster,
+    skill,
+    data,
+    context,
+    skill_result
+):
+
+    charges = getattr(
+        skill,
+        "_soul_charges_consumed",
+        0
+    )
+
+    if charges <= 0:
+        return None
+
+    dead_allies = [
+        ally
+        for ally in context.get(
+            "team",
+            []
+        )
+        if not ally.is_alive
+        and not ally.banished
+        and ally.death_order is not None
+    ]
+
+    if not dead_allies:
+        return None
+
+    target = max(
+        dead_allies,
+        key=lambda ally:
+            ally.death_order
+    )
+
+    charge_to_ratio = data[
+        "health_ratio_by_charges"
+    ]
+
+    used_charges = min(
+        charges,
+        max(
+            charge_to_ratio
+        )
+    )
+
+    health_ratio = charge_to_ratio[
+        used_charges
+    ]
+
+    revived = revive_monster(
+        target,
+        health_ratio,
+        action_gauge=data.get(
+            "action_gauge",
+            0
+        )
+    )
+
+    if not revived:
+        return None
+
+    return {
+        "type": "revive",
+        "target": target,
+        "health_ratio":
+            health_ratio
+    }
+
+
+
+def apply_team_buff(
+    caster,
+    skill,
+    data,
+    context,
+    skill_result
+):
+
+    for ally in context.get(
+        "team",
+        []
+    ):
+
+        if not ally.is_alive:
+            continue
+
+        buff = create_status_effect(
+            effect_id=data[
+                "effect_id"
+            ],
+            duration=data[
+                "turns"
+            ],
+            source=caster
+        )
+
+        ally.apply_status_effect(
+            buff
+        )
+
+
+
+def follow_up_skill_on_kill(
+    caster,
+    skill,
+    data,
+    context,
+    skill_result
+):
+
+    killed_target = any(
+        not result["target"].is_alive
+        for result in skill_result.target_results
+    )
+
+    if not killed_target:
+        return None
+
+    opponents = [
+        opponent
+        for opponent in context.get(
+            "opponents",
+            []
+        )
+        if opponent.is_alive
+    ]
+
+    if not opponents:
+        return None
+
+    target = min(
+        opponents,
+        key=lambda opponent:
+            opponent.health
+            / opponent.max_health
+    )
+
+    follow_up = caster.get_skill(
+        data["skill_slot"]
+    )
+
+    if follow_up is None:
+        return None
+
+    follow_context = dict(
+        context
+    )
+
+    follow_context[
+        "skill"
+    ] = follow_up
+
+    follow_context[
+        "targets"
+    ] = [
+        target
+    ]
+
+    trigger_passives(
+        "before_skill",
+        caster,
+        follow_context
+    )
+
+    result = follow_up.execute(
+        caster,
+        [
+            target
+        ],
+        follow_context
+    )
+
+    follow_context[
+        "skill_result"
+    ] = result
+
+    trigger_passives(
+        "after_skill",
+        caster,
+        follow_context
+    )
+
+    return {
+        "type": "follow_up_skill",
+        "target": target,
+        "skill": follow_up,
+        "result": result
+    }
+
+
 # =========================================================
 #                      HANDLER REGISTRY
 # =========================================================
@@ -394,5 +683,13 @@ AFTER_USE_HANDLERS = {
     "apply_scaling_silence": apply_scaling_silence,
     "grant_extra_turn": grant_extra_turn,
     "banish_killed_oblivion_targets":
-        banish_killed_oblivion_targets
+        banish_killed_oblivion_targets,
+    "support_lowest_gauge_ally":
+        support_lowest_gauge_ally,
+    "revive_most_recent_ally":
+        revive_most_recent_ally,
+    "apply_team_buff":
+        apply_team_buff,
+    "follow_up_skill_on_kill":
+        follow_up_skill_on_kill
 }
