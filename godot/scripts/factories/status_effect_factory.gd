@@ -27,6 +27,20 @@ static func create_status_effect(
                 "multiplicative"
             )
 
+        "burn":
+            return StatusEffectScript.new(
+                "burn",
+                "Burn",
+                null,
+                "debuff",
+                null,
+                duration,
+                stacks,
+                3,
+                source,
+                "multiplicative"
+            )
+
         _:
             push_error("Unknown status effect id: %s" % effect_id)
             return null
