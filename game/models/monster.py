@@ -38,7 +38,16 @@ class Monster:
         self.action_gauge = 0
         self.resonance = 0
         self.extra_turn_pending = False
+        self.forced_turn_pending = False
+        self._preserve_action_gauge_forced_turn = False
         self.banished = False
+        self.special_states = {}
+        self.internal_cooldowns = {}
+        self.death_order = None
+        self._death_recorded = False
+        self._battle_state = None
+        self._combat_team = []
+        self._combat_opponents = []
 
         if combat_resources is None:
             self.combat_resources = {}
@@ -171,6 +180,24 @@ class Monster:
                 return True
 
         return False
+
+
+    @property
+    def has_heal_block(self):
+
+        return any(
+            debuff.effect_id == "heal_block"
+            for debuff in self.debuffs
+        )
+
+
+    @property
+    def is_headless(self):
+
+        return self.special_states.get(
+            "headless",
+            False
+        )
 
 
     @property
@@ -647,9 +674,92 @@ class Monster:
 
 
     def heal(self, value):
+
+        if not self.is_alive:
+            return 0
+
+        if self.has_heal_block:
+            return 0
+
+        hp_ratio_before = (
+            self.health
+            / self.max_health
+        )
+
+        healing_multiplier = 1.0
+
+        for opponent in getattr(
+            self,
+            "_combat_opponents",
+            []
+        ):
+
+            if not opponent.is_alive:
+                continue
+
+            if opponent.has_oblivion:
+                continue
+
+            for passive in opponent.passives:
+
+                if (
+                    passive.handler
+                    != "final_omen"
+                ):
+                    continue
+
+                data = passive.handler_data
+
+                if (
+                    hp_ratio_before
+                    >= data["hp_threshold"]
+                ):
+                    continue
+
+                healing_multiplier *= (
+                    data.get(
+                        "healing_received_multiplier",
+                        1
+                    )
+                )
+
+        value = int(
+            value
+            * healing_multiplier
+        )
+
         base_health = self.health
         self.health += value
-        return self.health - base_health
+
+        actual_heal = (
+            self.health
+            - base_health
+        )
+
+        if actual_heal <= 0:
+            return 0
+
+        for opponent in getattr(
+            self,
+            "_combat_opponents",
+            []
+        ):
+
+            if not opponent.is_alive:
+                continue
+
+            trigger_passives(
+                "on_enemy_healed",
+                opponent,
+                {
+                    "target": self,
+                    "healing": actual_heal,
+                    "hp_ratio_before":
+                        hp_ratio_before
+                }
+            )
+
+        return actual_heal
 
 
 
@@ -868,6 +978,141 @@ class Monster:
 
 
     # =========================================================
+    #                    SPECIAL COMBAT STATES
+    # =========================================================
+
+    def apply_named(
+        self,
+        target,
+        turns=2
+    ):
+
+        self.clear_named_target()
+
+        self.special_states[
+            "named_target"
+        ] = target
+
+        self.special_states[
+            "headless"
+        ] = True
+
+        target.special_states[
+            "named_by"
+        ] = self
+
+        target.special_states[
+            "named_remaining_turns"
+        ] = turns
+
+
+    def clear_named_target(self):
+
+        target = self.special_states.get(
+            "named_target"
+        )
+
+        if target is not None:
+
+            if (
+                target.special_states.get(
+                    "named_by"
+                )
+                is self
+            ):
+                target.special_states.pop(
+                    "named_by",
+                    None
+                )
+                target.special_states.pop(
+                    "named_remaining_turns",
+                    None
+                )
+
+        self.special_states.pop(
+            "named_target",
+            None
+        )
+
+        self.special_states.pop(
+            "headless",
+            None
+        )
+
+
+    def reduce_special_state_turns(self):
+
+        named_by = self.special_states.get(
+            "named_by"
+        )
+
+        if named_by is None:
+            return
+
+        remaining = (
+            self.special_states.get(
+                "named_remaining_turns",
+                0
+            )
+            - 1
+        )
+
+        self.special_states[
+            "named_remaining_turns"
+        ] = remaining
+
+        if remaining <= 0:
+
+            if (
+                named_by.special_states.get(
+                    "named_target"
+                )
+                is self
+            ):
+                named_by.clear_named_target()
+
+
+    def reduce_internal_cooldowns(self):
+
+        for cooldown_id in list(
+            self.internal_cooldowns
+        ):
+
+            value = self.internal_cooldowns[
+                cooldown_id
+            ]
+
+            if value > 0:
+                value -= 1
+
+            self.internal_cooldowns[
+                cooldown_id
+            ] = value
+
+
+    def get_internal_cooldown(
+        self,
+        cooldown_id
+    ):
+
+        return self.internal_cooldowns.get(
+            cooldown_id,
+            0
+        )
+
+
+    def set_internal_cooldown(
+        self,
+        cooldown_id,
+        turns
+    ):
+
+        self.internal_cooldowns[
+            cooldown_id
+        ] = turns
+
+
+    # =========================================================
     #                       ACTION GAUGE
     # =========================================================
 
@@ -938,7 +1183,13 @@ class Monster:
         self.reset_debuffs()
         self.reset_combat_resources()
         self.extra_turn_pending = False
+        self.forced_turn_pending = False
+        self._preserve_action_gauge_forced_turn = False
         self.banished = False
+        self.special_states = {}
+        self.internal_cooldowns = {}
+        self.death_order = None
+        self._death_recorded = False
 
         for skill in self.skills:
             skill.reset_cooldown()
