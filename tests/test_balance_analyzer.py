@@ -2004,7 +2004,7 @@ def test_five_drake_contextual_balance_builds_all_scenarios(
         "Veil protected"
     ]
 
-    assert len(calls) == 80
+    assert len(calls) == 160
 
 
 def test_five_drake_contextual_balance_applies_context_to_enemy_only(
