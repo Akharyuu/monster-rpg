@@ -1,6 +1,7 @@
 import random
 
 from ..data.passive_data import PASSIVE_DATA
+from ..models.enums import SkillType
 from ..factories.status_effect_factory import create_status_effect
 from ..combat.telemetry import record_telemetry
 
@@ -778,8 +779,8 @@ def soul_vessel(owner, context, passive):
 
         if (
             skill is None
-            or skill.skill_type.value
-            != "damage"
+            or skill.skill_type
+            != SkillType.DAMAGE
         ):
             return
 
