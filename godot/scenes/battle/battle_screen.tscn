@@ -89,7 +89,7 @@ offset_left = 364.0
 offset_top = 503.0
 offset_right = 505.0
 offset_bottom = 589.0
-text = "S2"
+text = "S3"
 
 [node name="Turn Label" type="Label" parent="." unique_id=559603554]
 layout_mode = 0
@@ -100,3 +100,6 @@ offset_bottom = 281.0
 text = "Your Turn"
 
 [connection signal="pressed" from="Skill 1 Button" to="." method="_on_skill_1_button_pressed"]
+
+[connection signal="pressed" from="Skill 2 Button" to="." method="_on_skill_2_button_pressed"]
+[connection signal="pressed" from="Skill 3 Button" to="." method="_on_skill_3_button_pressed"]
