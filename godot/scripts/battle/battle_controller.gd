@@ -249,6 +249,61 @@ func execute_active_skill(
     )
 
     if (
+        active_monster.monster_id == "drake_aether"
+        and skill.skill_id == "sovereign_breath"
+    ):
+        var silence_chance: float = minf(
+            0.80,
+            0.30 + active_monster.buffs.size() * 0.10
+        )
+
+        for target_result in result.get(
+            "target_results",
+            []
+        ):
+            var target = target_result["target"]
+
+            if not target.is_alive():
+                continue
+
+            var effect_result: Dictionary = (
+                skill.try_apply_effect(
+                    {
+                        "effect_id": "silence",
+                        "chance": silence_chance,
+                        "turns": 1
+                    },
+                    active_monster,
+                    target
+                )
+            )
+
+            var applied_effect = effect_result[
+                "applied_effect"
+            ]
+
+            if applied_effect != null:
+                target_result["effects_applied"].append(
+                    applied_effect
+                )
+                result["effects_applied"].append(
+                    applied_effect
+                )
+            elif effect_result["resisted"]:
+                target_result["resisted_effects"].append(
+                    "silence"
+                )
+                result["resisted_effects"].append(
+                    "silence"
+                )
+
+    _resolve_receive_hit_passives(
+        active_monster,
+        result,
+        caster_feedback
+    )
+
+    if (
         active_monster.monster_id == "drake_abyssal"
         and skill.skill_id == "glacial_collapse"
         and not block_frozen_scales_generation
@@ -287,6 +342,67 @@ func execute_active_skill(
 
     result["caster_feedback"] = caster_feedback
     return result
+
+
+func _resolve_receive_hit_passives(
+    attacker,
+    result: Dictionary,
+    caster_feedback: Array[String]
+) -> void:
+    for target_result in result.get(
+        "target_results",
+        []
+    ):
+        var defender = target_result["target"]
+        var hit_count: int = int(
+            target_result.get("hits_landed", 0)
+        )
+
+        if (
+            defender.monster_id != "drake_aether"
+            or hit_count <= 0
+        ):
+            continue
+
+        for _hit_index in range(hit_count):
+            if randf() > 0.30:
+                continue
+
+            var accuracy: float = defender.get_effective_stat(
+                "accuracy"
+            )
+            var resistance: float = attacker.get_effective_stat(
+                "resistance"
+            )
+            var resist_chance: float = clampf(
+                resistance - accuracy,
+                15.0,
+                100.0
+            )
+
+            if randf_range(0.0, 100.0) < resist_chance:
+                continue
+
+            var attack_break = (
+                StatusEffectFactoryScript.create_status_effect(
+                    "attack_break",
+                    2,
+                    defender
+                )
+            )
+
+            var applied_effect = attacker.apply_status_effect(
+                attack_break
+            )
+
+            if applied_effect != null:
+                if (
+                    "CELESTIAL AUTHORITY - ATK DOWN!"
+                    not in caster_feedback
+                ):
+                    caster_feedback.append(
+                        "CELESTIAL AUTHORITY - ATK DOWN!"
+                    )
 
 
 func choose_enemy_target():
