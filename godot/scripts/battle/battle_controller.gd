@@ -146,6 +146,26 @@ func begin_next_turn() -> Dictionary:
     }
 
 
+func active_monster_cannot_act() -> bool:
+    return (
+        active_monster != null
+        and active_monster.cannot_act()
+    )
+
+
+func get_active_control_effect_id() -> String:
+    if active_monster == null:
+        return ""
+
+    if active_monster.is_stunned():
+        return "stun"
+
+    if active_monster.is_frozen():
+        return "freeze"
+
+    return ""
+
+
 func end_active_turn() -> void:
     if active_monster == null:
         return
