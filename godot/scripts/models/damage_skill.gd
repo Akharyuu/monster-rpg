@@ -227,14 +227,30 @@ func apply_on_hit_passives(
     defender,
     applied_effects: Array
 ) -> void:
-    if not defender.is_alive():
-        return
-
+    # Cinderblood-style passives do NOT use Accuracy/Resistance in Python.
+    # They only roll their own proc chance, then apply the status effect.
     for effect_config in attacker.on_hit_effects:
-        var applied_effect = try_apply_effect(
-            effect_config,
-            attacker,
-            defender
+        var chance: float = float(
+            effect_config.get("chance", 1.0)
+        )
+
+        if randf() > chance:
+            continue
+
+        var status_effect = (
+            StatusEffectFactoryScript.create_status_effect(
+                effect_config["effect_id"],
+                int(effect_config["turns"]),
+                attacker,
+                int(effect_config.get("stacks", 1))
+            )
+        )
+
+        if status_effect == null:
+            continue
+
+        var applied_effect = defender.apply_status_effect(
+            status_effect
         )
 
         if applied_effect != null:
