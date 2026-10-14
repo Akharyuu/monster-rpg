@@ -177,6 +177,18 @@ func get_effective_stat(stat: String) -> float:
     )
 
 
+func get_passive_damage_multiplier() -> float:
+    if monster_id != "drake_storm":
+        return 1.0
+
+    var bonus_speed: float = maxf(
+        0.0,
+        get_effective_stat("speed") - speed
+    )
+
+    return 1.0 + bonus_speed * 0.003
+
+
 func get_attribute_modifier(defender) -> float:
     if (
         (attribute == "igneous" and defender.attribute == "abyssal")
