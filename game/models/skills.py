@@ -187,7 +187,40 @@ class DamageSkill(Skill):
                 1 - defense_ignore_ratio
             )
 
-            damage_reduction = (1000 / (1000 + effective_defense))
+            # Defense uses a level-normalized nonlinear curve.
+            #
+            # The reference value (744) is calibrated against the current
+            # level-50 roster. Scaling it by the monster's level stat
+            # multiplier keeps DEF meaningful at low levels as well.
+            level_50_defense = MONSTER_DATA[
+                defender.monster_id
+            ]["defense"]
+
+            if level_50_defense > 0:
+                stat_scale = (
+                    defender.defense
+                    / level_50_defense
+                )
+            else:
+                stat_scale = 1
+
+            defense_reference = (
+                744 * stat_scale
+            )
+
+            if defense_reference <= 0:
+                defense_reference = 744
+
+            damage_reduction = (
+                1
+                / (
+                    1
+                    + (
+                        effective_defense
+                        / defense_reference
+                    ) ** 1.5
+                )
+            )
 
         #Attribute Advantage
         attribute_modifier = (attacker.get_attribute_modifier(defender))
