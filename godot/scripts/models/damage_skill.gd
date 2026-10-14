@@ -70,9 +70,26 @@ func base_damage_calc(
             1.0 - defense_ignore_ratio
         )
 
+        # Calibrated against the current level-50 roster.
+        # The reference scales with monster level so DEF remains
+        # relevant at low levels instead of collapsing toward zero.
+        var defense_reference: float = (
+            744.0 * defender.stat_scale
+        )
+
+        if defense_reference <= 0.0:
+            defense_reference = 744.0
+
         damage_reduction = (
-            1000.0
-            / (1000.0 + effective_defense)
+            1.0
+            / (
+                1.0
+                + pow(
+                    effective_defense
+                    / defense_reference,
+                    1.5
+                )
+            )
         )
 
     var attribute_modifier: float = (
