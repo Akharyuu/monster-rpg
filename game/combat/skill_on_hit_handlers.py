@@ -37,6 +37,63 @@ def reduce_action_gauge_if_debuff(
 
 
 
+
+def reduce_action_gauge_with_threshold_bonus(
+    caster,
+    target,
+    skill,
+    data
+):
+
+    starting_gauge = target.action_gauge
+
+    amount = data[
+        "amount"
+    ]
+
+    if (
+        starting_gauge
+        > data.get(
+            "threshold",
+            1
+        )
+    ):
+        amount += data.get(
+            "bonus_amount",
+            0
+        )
+
+    target.reduce_action_gauge(
+        amount
+    )
+
+
+
+def gain_action_gauge_if_target_low_hp(
+    caster,
+    target,
+    skill,
+    data
+):
+
+    if not target.is_alive:
+        return
+
+    hp_ratio = (
+        target.health
+        / target.max_health
+    )
+
+    if hp_ratio >= data[
+        "health_threshold"
+    ]:
+        return
+
+    caster.increase_action_gauge(
+        data["amount"]
+    )
+
+
 # =========================================================
 #                     DEBUFF HANDLERS
 # =========================================================
@@ -223,6 +280,10 @@ ON_HIT_HANDLERS = {
     "reduce_action_gauge": reduce_action_gauge,
     "reduce_action_gauge_if_debuff":
         reduce_action_gauge_if_debuff,
+    "reduce_action_gauge_with_threshold_bonus":
+        reduce_action_gauge_with_threshold_bonus,
+    "gain_action_gauge_if_target_low_hp":
+        gain_action_gauge_if_target_low_hp,
     "apply_debuff_on_hit_indices":
         apply_debuff_on_hit_indices,
     "strip_buffs_on_hit":
