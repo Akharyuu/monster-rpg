@@ -227,6 +227,20 @@ class DamageSkill(Skill):
             return max(1, int(final_damage)), critical
 
 
+    def finalize_target_skill_states(
+        self,
+        target_results
+    ):
+
+        for target_result in target_results:
+
+            target = target_result[
+                "target"
+            ]
+
+            target.finalize_after_enemy_skill()
+
+
     # =========================================================
     #                        EXECUTION
     # =========================================================
@@ -352,6 +366,10 @@ class DamageSkill(Skill):
 
             self._is_executing = False
 
+            self.finalize_target_skill_states(
+                target_results
+            )
+
             return skill_result
 
 
@@ -413,6 +431,10 @@ class DamageSkill(Skill):
 
             self._is_executing = False
 
+            self.finalize_target_skill_states(
+                target_results
+            )
+
             return skill_result
 
 
@@ -462,6 +484,10 @@ class DamageSkill(Skill):
         )
 
         self._is_executing = False
+
+        self.finalize_target_skill_states(
+            target_results
+        )
 
         return skill_result
 
@@ -587,7 +613,15 @@ class DamageSkill(Skill):
             }
 
         return {
-            "debuffs": debuffs
+            "debuffs": debuffs,
+            "health_ratio": (
+                target.health
+                / target.max_health
+                if target.max_health > 0
+                else 0
+            ),
+            "action_gauge":
+                target.action_gauge
         }
 
 
