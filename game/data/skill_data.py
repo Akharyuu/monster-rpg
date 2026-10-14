@@ -1158,6 +1158,648 @@ SKILL_DATA = {
                 }
             }
         ]
+    },
+
+    # =========================================================
+    #                        DULLAHAN
+    # =========================================================
+
+    # ---------------------------------------------------------
+    #                      SHARED SKILLS
+    # ---------------------------------------------------------
+
+    "severing_blade": {
+        "name": "Severing Blade",
+        "type": SkillType.DAMAGE,
+        "multiplier": 2.60,
+        "hits": 1,
+        "target_type": TargetType.SINGLE_ENEMY,
+        "cooldown": 0,
+
+        "effects": [
+            {
+                "effect_id": "heal_block",
+                "chance": 0.30,
+                "turns": 2,
+                "trigger": "after_skill"
+            }
+        ]
+    },
+
+    # ---------------------------------------------------------
+    #                    IGNEOUS DULLAHAN
+    # ---------------------------------------------------------
+
+    "relentless_pursuit": {
+        "name": "Relentless Pursuit",
+        "type": SkillType.DAMAGE,
+        "multiplier": 1.85,
+        "hits": 2,
+        "target_type": TargetType.SINGLE_ENEMY,
+        "cooldown": 4,
+
+        "damage_handler": "damage_by_missing_health",
+        "damage_handler_data": {
+            "max_bonus_damage": 0.30
+        }
+    },
+
+    "relentless_pursuit_blood_trail": {
+        "name": "Relentless Pursuit: Blood Trail",
+        "type": SkillType.DAMAGE,
+        "multiplier": 1.85,
+        "hits": 2,
+        "target_type": TargetType.SINGLE_ENEMY,
+        "cooldown": 4,
+
+        "damage_handler": "damage_by_missing_health",
+        "damage_handler_data": {
+            "max_bonus_damage": 0.45
+        },
+
+        "on_hit_handlers": [
+            {
+                "handler": "gain_action_gauge_if_target_low_hp",
+                "data": {
+                    "health_threshold": 0.50,
+                    "amount": 0.20
+                }
+            }
+        ]
+    },
+
+    "death_sentence": {
+        "name": "Death Sentence",
+        "type": SkillType.DAMAGE,
+        "multiplier": 4.60,
+        "hits": 1,
+        "target_type": TargetType.SINGLE_ENEMY,
+        "cooldown": 5,
+
+        "damage_handler": "execute_below_health_threshold",
+        "damage_handler_data": {
+            "health_threshold": 0.25,
+            "defense_ignore_ratio": 0.50
+        }
+    },
+
+    "death_sentence_execution": {
+        "name": "Death Sentence: Execution",
+        "type": SkillType.DAMAGE,
+        "multiplier": 4.60,
+        "hits": 1,
+        "target_type": TargetType.SINGLE_ENEMY,
+        "cooldown": 4,
+
+        "damage_handler": "execute_below_health_threshold",
+        "damage_handler_data": {
+            "health_threshold": 0.33,
+            "defense_ignore_ratio": 0.50
+        }
+    },
+
+    "death_sentence_massacre": {
+        "name": "Death Sentence: Massacre",
+        "type": SkillType.DAMAGE,
+        "multiplier": 4.60,
+        "hits": 1,
+        "target_type": TargetType.SINGLE_ENEMY,
+        "cooldown": 4,
+
+        "damage_handler": "execute_below_health_threshold",
+        "damage_handler_data": {
+            "health_threshold": 0.33,
+            "defense_ignore_ratio": 0.50
+        },
+
+        "after_use_handlers": [
+            {
+                "handler": "follow_up_skill_on_kill",
+                "data": {
+                    "skill_slot": 2
+                }
+            }
+        ]
+    },
+
+    # ---------------------------------------------------------
+    #                    ABYSSAL DULLAHAN
+    # ---------------------------------------------------------
+
+    "spectral_shackles": {
+        "name": "Spectral Shackles",
+        "type": SkillType.DAMAGE,
+        "multiplier": 1.95,
+        "hits": 2,
+        "target_type": TargetType.SINGLE_ENEMY,
+        "cooldown": 4,
+
+        "on_hit_handlers": [
+            {
+                "handler": "apply_debuff_on_hit_indices",
+                "data": {
+                    "effect_id": "speed_break",
+                    "chance": 0.50,
+                    "turns": 2,
+                    "hit_indices": [0]
+                }
+            },
+            {
+                "handler": "apply_debuff_on_hit_indices",
+                "data": {
+                    "effect_id": "attack_break",
+                    "chance": 0.50,
+                    "turns": 2,
+                    "hit_indices": [1]
+                }
+            }
+        ]
+    },
+
+    "spectral_shackles_binding": {
+        "name": "Spectral Shackles: Binding",
+        "type": SkillType.DAMAGE,
+        "multiplier": 1.95,
+        "hits": 2,
+        "target_type": TargetType.SINGLE_ENEMY,
+        "cooldown": 4,
+
+        "on_hit_handlers": [
+            {
+                "handler": "apply_debuff_on_hit_indices",
+                "data": {
+                    "effect_id": "speed_break",
+                    "chance": 0.70,
+                    "turns": 2,
+                    "hit_indices": [0]
+                }
+            },
+            {
+                "handler": "apply_debuff_on_hit_indices",
+                "data": {
+                    "effect_id": "attack_break",
+                    "chance": 0.70,
+                    "turns": 2,
+                    "hit_indices": [1]
+                }
+            }
+        ]
+    },
+
+    "spectral_shackles_lockdown": {
+        "name": "Spectral Shackles: Lockdown",
+        "type": SkillType.DAMAGE,
+        "multiplier": 1.95,
+        "hits": 2,
+        "target_type": TargetType.SINGLE_ENEMY,
+        "cooldown": 4,
+
+        "on_hit_handlers": [
+            {
+                "handler": "apply_debuff_on_hit_indices",
+                "data": {
+                    "effect_id": "speed_break",
+                    "chance": 0.90,
+                    "turns": 2,
+                    "hit_indices": [0]
+                }
+            },
+            {
+                "handler": "apply_debuff_on_hit_indices",
+                "data": {
+                    "effect_id": "attack_break",
+                    "chance": 0.90,
+                    "turns": 2,
+                    "hit_indices": [1]
+                }
+            }
+        ],
+
+        "after_use_handlers": [
+            {
+                "handler": "reduce_action_gauge_if_both_debuffs_applied",
+                "data": {
+                    "effect_ids": [
+                        "speed_break",
+                        "attack_break"
+                    ],
+                    "amount": 0.20
+                }
+            }
+        ]
+    },
+
+    "inescapable_fate": {
+        "name": "Inescapable Fate",
+        "type": SkillType.DAMAGE,
+        "multiplier": 3.00,
+        "hits": 1,
+        "target_type": TargetType.SINGLE_ENEMY,
+        "cooldown": 5,
+
+        "after_skill_handlers": [
+            {
+                "handler": "extend_target_debuffs",
+                "data": {
+                    "turns": 1,
+                    "silence_required_debuffs": 3,
+                    "silence_turns": 1
+                }
+            }
+        ]
+    },
+
+    "inescapable_fate_ironbound": {
+        "name": "Inescapable Fate: Ironbound",
+        "type": SkillType.DAMAGE,
+        "multiplier": 3.00,
+        "hits": 1,
+        "target_type": TargetType.SINGLE_ENEMY,
+        "cooldown": 4,
+
+        "damage_handler": "damage_with_bonus_stat",
+        "damage_handler_data": {
+            "bonus_stat": "defense",
+            "bonus_scaling": 1.20
+        },
+
+        "after_skill_handlers": [
+            {
+                "handler": "extend_target_debuffs",
+                "data": {
+                    "turns": 1,
+                    "silence_required_debuffs": 3,
+                    "silence_turns": 1
+                }
+            }
+        ]
+    },
+
+    # ---------------------------------------------------------
+    #                     STORM DULLAHAN
+    # ---------------------------------------------------------
+
+    "gale_pursuit": {
+        "name": "Gale Pursuit",
+        "type": SkillType.DAMAGE,
+        "multiplier": 2.25,
+        "hits": 1,
+        "target_type": TargetType.ALL_ENEMIES,
+        "cooldown": 4,
+
+        "on_hit_handlers": [
+            {
+                "handler": "reduce_action_gauge",
+                "data": {
+                    "amount": 0.20
+                }
+            }
+        ]
+    },
+
+    "gale_pursuit_crosswind": {
+        "name": "Gale Pursuit: Crosswind",
+        "type": SkillType.DAMAGE,
+        "multiplier": 2.25,
+        "hits": 1,
+        "target_type": TargetType.ALL_ENEMIES,
+        "cooldown": 4,
+
+        "on_hit_handlers": [
+            {
+                "handler": "reduce_action_gauge_with_threshold_bonus",
+                "data": {
+                    "amount": 0.25,
+                    "threshold": 0.50,
+                    "bonus_amount": 0.10
+                }
+            }
+        ]
+    },
+
+    "gale_pursuit_tempest": {
+        "name": "Gale Pursuit: Tempest",
+        "type": SkillType.DAMAGE,
+        "multiplier": 2.25,
+        "hits": 1,
+        "target_type": TargetType.ALL_ENEMIES,
+        "cooldown": 4,
+
+        "on_hit_handlers": [
+            {
+                "handler": "reduce_action_gauge_with_threshold_bonus",
+                "data": {
+                    "amount": 0.25,
+                    "threshold": 0.50,
+                    "bonus_amount": 0.10
+                }
+            }
+        ],
+
+        "after_use_handlers": [
+            {
+                "handler": "apply_team_buff",
+                "data": {
+                    "effect_id": "speed_up",
+                    "turns": 2
+                }
+            }
+        ]
+    },
+
+    "headlong_charge": {
+        "name": "Headlong Charge",
+        "type": SkillType.SUPPORT,
+        "target_type": TargetType.SELF,
+        "cooldown": 5,
+
+        "after_use_handlers": [
+            {
+                "handler": "support_lowest_gauge_ally",
+                "data": {
+                    "self_buffs": [
+                        {
+                            "effect_id": "attack_up",
+                            "turns": 2
+                        },
+                        {
+                            "effect_id": "speed_up",
+                            "turns": 2
+                        }
+                    ],
+                    "ally_action_gauge": 0.20
+                }
+            }
+        ]
+    },
+
+    "headlong_charge_rally": {
+        "name": "Headlong Charge: Rally",
+        "type": SkillType.SUPPORT,
+        "target_type": TargetType.SELF,
+        "cooldown": 5,
+
+        "after_use_handlers": [
+            {
+                "handler": "support_lowest_gauge_ally",
+                "data": {
+                    "self_buffs": [
+                        {
+                            "effect_id": "attack_up",
+                            "turns": 2
+                        },
+                        {
+                            "effect_id": "speed_up",
+                            "turns": 2
+                        }
+                    ],
+                    "ally_buffs": [
+                        {
+                            "effect_id": "attack_up",
+                            "turns": 2
+                        },
+                        {
+                            "effect_id": "speed_up",
+                            "turns": 2
+                        }
+                    ],
+                    "ally_action_gauge": 0.30
+                }
+            }
+        ]
+    },
+
+    "headlong_charge_stampede": {
+        "name": "Headlong Charge: Stampede",
+        "type": SkillType.SUPPORT,
+        "target_type": TargetType.SELF,
+        "cooldown": 5,
+
+        "after_use_handlers": [
+            {
+                "handler": "support_lowest_gauge_ally",
+                "data": {
+                    "self_buffs": [
+                        {
+                            "effect_id": "attack_up",
+                            "turns": 2
+                        },
+                        {
+                            "effect_id": "speed_up",
+                            "turns": 2
+                        }
+                    ],
+                    "ally_buffs": [
+                        {
+                            "effect_id": "attack_up",
+                            "turns": 2
+                        },
+                        {
+                            "effect_id": "speed_up",
+                            "turns": 2
+                        }
+                    ],
+                    "ally_action_gauge": 0.30,
+                    "force_next_turn": True
+                }
+            }
+        ]
+    },
+
+    # ---------------------------------------------------------
+    #                    AETHER DULLAHAN
+    # ---------------------------------------------------------
+
+    "soulpiercer": {
+        "name": "Soulpiercer",
+        "type": SkillType.DAMAGE,
+        "multiplier": 4.10,
+        "hits": 1,
+        "target_type": TargetType.SINGLE_ENEMY,
+        "cooldown": 3,
+
+        "damage_handler": "damage_for_soul_charges",
+        "damage_handler_data": {
+            "damage_per_charge": 0.06,
+            "max_charges": 5
+        }
+    },
+
+    "soulpiercer_ascension": {
+        "name": "Soulpiercer: Ascension",
+        "type": SkillType.DAMAGE,
+        "multiplier": 4.10,
+        "hits": 1,
+        "target_type": TargetType.SINGLE_ENEMY,
+        "cooldown": 3,
+
+        "damage_handler": "damage_for_soul_charges",
+        "damage_handler_data": {
+            "damage_per_charge": 0.08,
+            "max_charges": 5
+        }
+    },
+
+    "beyond_the_veil": {
+        "name": "Beyond the Veil",
+        "type": SkillType.DAMAGE,
+        "multiplier": 1.25,
+        "hits": 4,
+        "target_type": TargetType.ALL_ENEMIES,
+        "cooldown": 7,
+
+        "damage_handler": "damage_for_soul_charges",
+        "damage_handler_data": {
+            "damage_per_charge": 0.10,
+            "max_charges": 5,
+            "use_consumed_charges": True,
+            "disable_bonus_if_ally_dead": True
+        }
+    },
+
+    "beyond_the_veil_soul_recall": {
+        "name": "Beyond the Veil: Soul Recall",
+        "type": SkillType.DAMAGE,
+        "multiplier": 1.25,
+        "hits": 4,
+        "target_type": TargetType.ALL_ENEMIES,
+        "cooldown": 6,
+
+        "damage_handler": "damage_for_soul_charges",
+        "damage_handler_data": {
+            "damage_per_charge": 0.10,
+            "max_charges": 5,
+            "use_consumed_charges": True,
+            "disable_bonus_if_ally_dead": True
+        },
+
+        "after_use_handlers": [
+            {
+                "handler": "revive_most_recent_ally",
+                "data": {
+                    "health_ratio_by_charges": {
+                        1: 0.30,
+                        2: 0.40,
+                        3: 0.50,
+                        4: 0.60,
+                        5: 0.70
+                    },
+                    "action_gauge": 0.30
+                }
+            }
+        ]
+    },
+
+    "beyond_the_veil_convergence": {
+        "name": "Beyond the Veil: Convergence",
+        "type": SkillType.DAMAGE,
+        "multiplier": 1.25,
+        "hits": 4,
+        "target_type": TargetType.ALL_ENEMIES,
+        "cooldown": 6,
+
+        "damage_handler": "damage_for_soul_charges",
+        "damage_handler_data": {
+            "damage_per_charge": 0.10,
+            "max_charges": 5,
+            "use_consumed_charges": True,
+            "disable_bonus_if_ally_dead": True,
+            "allow_bonus_with_dead_at_max": True
+        },
+
+        "after_use_handlers": [
+            {
+                "handler": "revive_most_recent_ally",
+                "data": {
+                    "health_ratio_by_charges": {
+                        1: 0.30,
+                        2: 0.40,
+                        3: 0.50,
+                        4: 0.60,
+                        5: 0.70
+                    },
+                    "action_gauge": 0.30
+                }
+            }
+        ]
+    },
+
+    # ---------------------------------------------------------
+    #                     VOID DULLAHAN
+    # ---------------------------------------------------------
+
+    "spinal_scourge": {
+        "name": "Spinal Scourge",
+        "type": SkillType.DAMAGE,
+        "multiplier": 1.40,
+        "hits": 3,
+        "target_type": TargetType.ALL_ENEMIES,
+        "cooldown": 4,
+
+        "damage_handler": "damage_for_dead_monsters",
+        "damage_handler_data": {
+            "damage_per_dead_monster": 0.05,
+            "max_dead_monsters": 5,
+            "max_bonus_damage": 0.25
+        }
+    },
+
+    "spinal_scourge_ossuary": {
+        "name": "Spinal Scourge: Ossuary",
+        "type": SkillType.DAMAGE,
+        "multiplier": 1.40,
+        "hits": 3,
+        "target_type": TargetType.ALL_ENEMIES,
+        "cooldown": 4,
+
+        "damage_handler": "damage_for_dead_monsters",
+        "damage_handler_data": {
+            "damage_per_dead_monster": 0.08,
+            "max_dead_monsters": 5,
+            "max_bonus_damage": 0.40
+        }
+    },
+
+    "deaths_gaze": {
+        "name": "Death's Gaze",
+        "type": SkillType.DAMAGE,
+        "multiplier": 4.70,
+        "hits": 1,
+        "target_type": TargetType.SINGLE_ENEMY,
+        "cooldown": 6,
+
+        "before_hit_handlers": [
+            {
+                "handler": "apply_named_and_vulnerability",
+                "data": {
+                    "hit_indices": [0],
+                    "named_turns": 2,
+                    "vulnerability_chance": 1.00,
+                    "vulnerability_turns": 2
+                }
+            }
+        ]
+    },
+
+    "deaths_gaze_last_name": {
+        "name": "Death's Gaze: Last Name",
+        "type": SkillType.DAMAGE,
+        "multiplier": 4.70,
+        "hits": 1,
+        "target_type": TargetType.SINGLE_ENEMY,
+        "cooldown": 5,
+
+        "before_hit_handlers": [
+            {
+                "handler": "apply_named_and_vulnerability",
+                "data": {
+                    "hit_indices": [0],
+                    "named_turns": 2,
+                    "vulnerability_chance": 1.00,
+                    "vulnerability_turns": 3
+                }
+            }
+        ]
     }
 
 }
