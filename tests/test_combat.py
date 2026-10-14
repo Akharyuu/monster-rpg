@@ -5173,7 +5173,7 @@ def test_null_rend_applies_oblivion_only_on_second_hit(
     )
 
 
-def test_obliterate_second_hit_has_thirty_five_percent_bonus_damage():
+def test_obliterate_second_hit_has_thirty_percent_bonus_damage():
 
     void = create_monster("drake_void")
     void.resonance = 1
@@ -5191,15 +5191,15 @@ def test_obliterate_second_hit_has_thirty_five_percent_bonus_damage():
     second_hit = skill.base_damage_calc(
         void,
         target,
-        1.35
+        1.30
     )
 
     assert second_hit == pytest.approx(
-        first_hit * 1.35
+        first_hit * 1.30
     )
 
 
-def test_null_rend_uses_buffed_base_multiplier():
+def test_null_rend_uses_original_base_multiplier():
 
     void = create_monster(
         "drake_void"
@@ -5207,7 +5207,7 @@ def test_null_rend_uses_buffed_base_multiplier():
 
     assert (
         void.get_skill(2).multiplier
-        == pytest.approx(2.25)
+        == pytest.approx(2.10)
     )
 
 
@@ -5555,3 +5555,147 @@ def test_void_ai_does_not_force_dismantle_without_enemy_buffs(
         selected_skill.skill_id
         == "null_rend_annihilation"
     )
+
+
+def test_dismantle_later_hits_scale_with_all_buffs_devoured(
+    monkeypatch
+):
+
+    void = create_monster(
+        "drake_void"
+    )
+
+    void.resonance = 5
+    update_resonance_kit(
+        void
+    )
+
+    targets = [
+        create_monster(
+            "drake_igneous"
+        )
+        for _ in range(3)
+    ]
+
+    for target in targets:
+
+        for effect_id in (
+            "attack_up",
+            "defense_up",
+            "speed_up"
+        ):
+
+            target.apply_status_effect(
+                create_status_effect(
+                    effect_id=effect_id,
+                    duration=3,
+                    source=target
+                )
+            )
+
+    monkeypatch.setattr(
+        random,
+        "random",
+        lambda: 1.0
+    )
+
+    monkeypatch.setattr(
+        random,
+        "randint",
+        lambda a, b: 100
+    )
+
+    skill = void.get_skill(3)
+
+    result = skill.execute(
+        void,
+        targets,
+        context={
+            "team": [void],
+            "opponents": targets
+        }
+    )
+
+    for target_result in result.target_results:
+
+        first_hit_damage = (
+            target_result[
+                "hit_results"
+            ][0]["damage"]
+        )
+
+        second_hit_damage = (
+            target_result[
+                "hit_results"
+            ][1]["damage"]
+        )
+
+        assert second_hit_damage == pytest.approx(
+            first_hit_damage * 1.72,
+            abs=2
+        )
+
+    assert all(
+        len(target.buffs) == 0
+        for target in targets
+    )
+
+
+def test_dismantle_has_no_devour_damage_bonus_without_buffs(
+    monkeypatch
+):
+
+    void = create_monster(
+        "drake_void"
+    )
+
+    void.resonance = 5
+    update_resonance_kit(
+        void
+    )
+
+    targets = [
+        create_monster(
+            "drake_igneous"
+        )
+        for _ in range(3)
+    ]
+
+    monkeypatch.setattr(
+        random,
+        "random",
+        lambda: 1.0
+    )
+
+    monkeypatch.setattr(
+        random,
+        "randint",
+        lambda a, b: 100
+    )
+
+    skill = void.get_skill(3)
+
+    result = skill.execute(
+        void,
+        targets,
+        context={
+            "team": [void],
+            "opponents": targets
+        }
+    )
+
+    for target_result in result.target_results:
+
+        first_hit_damage = (
+            target_result[
+                "hit_results"
+            ][0]["damage"]
+        )
+
+        second_hit_damage = (
+            target_result[
+                "hit_results"
+            ][1]["damage"]
+        )
+
+        assert second_hit_damage == first_hit_damage
