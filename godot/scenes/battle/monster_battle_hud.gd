@@ -411,3 +411,75 @@ func play_damage_feedback(
 
     await number_tween.finished
     damage_label.queue_free()
+
+
+func play_status_feedback(
+    text_value: String,
+    feedback_type: String = "debuff"
+) -> void:
+    var status_label := Label.new()
+
+    status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    status_label.z_index = 21
+    status_label.text = text_value
+    status_label.horizontal_alignment = (
+        HORIZONTAL_ALIGNMENT_CENTER
+    )
+    status_label.add_theme_font_size_override(
+        "font_size",
+        18
+    )
+
+    match feedback_type:
+        "burn":
+            status_label.add_theme_color_override(
+                "font_color",
+                Color(1.0, 0.48, 0.16)
+            )
+        "resist":
+            status_label.add_theme_color_override(
+                "font_color",
+                Color(0.72, 0.82, 1.0)
+            )
+        _:
+            status_label.add_theme_color_override(
+                "font_color",
+                Color(1.0, 0.42, 0.42)
+            )
+
+    add_child(status_label)
+
+    status_label.position = Vector2(
+        80.0,
+        66.0
+    )
+    status_label.size = Vector2(
+        160.0,
+        32.0
+    )
+
+    var start_position: Vector2 = status_label.position
+    var end_position := start_position + Vector2(
+        0.0,
+        -24.0
+    )
+
+    var tween := create_tween()
+    tween.set_parallel(true)
+
+    tween.tween_property(
+        status_label,
+        "position",
+        end_position,
+        0.50
+    )
+
+    tween.tween_property(
+        status_label,
+        "modulate:a",
+        0.0,
+        0.50
+    )
+
+    await tween.finished
+    status_label.queue_free()
