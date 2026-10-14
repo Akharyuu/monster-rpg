@@ -1487,7 +1487,7 @@ def test_void_diagnostics_forwards_controlled_initial_buffs(
 #             VOID BUFF SENSITIVITY TESTS
 # =========================================================
 
-def test_void_buff_sensitivity_builds_four_buff_levels(
+def test_void_buff_sensitivity_builds_six_buff_levels(
     monkeypatch
 ):
 
@@ -1564,7 +1564,7 @@ def test_void_buff_sensitivity_builds_four_buff_levels(
 
     assert len(
         captured_scenarios
-    ) == 4
+    ) == 6
 
     assert [
         result["buff_count"]
@@ -1573,16 +1573,18 @@ def test_void_buff_sensitivity_builds_four_buff_levels(
         0,
         1,
         2,
-        3
+        3,
+        4,
+        5
     ]
 
     assert (
         len(
-            captured_scenarios[3][
+            captured_scenarios[5][
                 "benchmark_team_initial_buffs"
             ][0]
         )
-        == 3
+        == 5
     )
 
 
