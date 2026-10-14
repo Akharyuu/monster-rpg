@@ -29,6 +29,7 @@ var enemies: Array = []
 var battle_controller
 var pending_skill_slot := 0
 var battle_finished := false
+var action_in_progress := true
 
 
 func _ready() -> void:
@@ -83,6 +84,7 @@ func start_next_turn() -> void:
     if battle_finished:
         return
 
+    action_in_progress = true
     pending_skill_slot = 0
     set_target_selection(false)
 
@@ -139,6 +141,7 @@ func start_next_turn() -> void:
         turn_label.text = "YOUR TURN - %s" % (
             battle_controller.active_monster.monster_name
         )
+        action_in_progress = false
         update_skill_buttons()
     else:
         disable_skill_buttons()
@@ -154,6 +157,7 @@ func start_next_turn() -> void:
 func request_player_skill(slot: int) -> void:
     if (
         battle_finished
+        or action_in_progress
         or battle_controller.active_monster == null
         or battle_controller.active_monster not in allies
     ):
@@ -172,6 +176,7 @@ func request_player_skill(slot: int) -> void:
         return
 
     if skill.target_type == "all_enemies":
+        action_in_progress = true
         await preview_aoe_targets()
         execute_player_skill(
             skill,
@@ -180,6 +185,7 @@ func request_player_skill(slot: int) -> void:
         return
 
     if skill.target_type == "all_allies":
+        action_in_progress = true
         turn_label.text = "All allies will be affected"
         await get_tree().create_timer(0.25).timeout
 
@@ -189,6 +195,7 @@ func request_player_skill(slot: int) -> void:
         )
         return
 
+    action_in_progress = true
     pending_skill_slot = slot
     set_target_selection(true)
     turn_label.text = "Choose an enemy target"
@@ -575,6 +582,7 @@ func disable_skill_buttons() -> void:
 
 func finish_battle(player_won: bool) -> void:
     battle_finished = true
+    action_in_progress = true
     pending_skill_slot = 0
 
     disable_skill_buttons()
