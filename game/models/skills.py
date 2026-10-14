@@ -948,6 +948,12 @@ class DamageSkill(Skill):
             data["_telemetry"] = target_result.get(
                 "telemetry"
             )
+            data["_target_health_ratio_before_hit"] = (
+                health_before
+                / target.max_health
+                if target.max_health > 0
+                else 0
+            )
 
             handler = ON_HIT_HANDLERS[handler_name]
 
