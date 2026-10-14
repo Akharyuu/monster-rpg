@@ -245,6 +245,7 @@ func request_player_skill(slot: int) -> void:
         return
 
     if skill.target_type == "all_enemies":
+        await preview_aoe_targets()
         execute_player_skill(
             skill,
             get_living(enemies)
@@ -425,7 +426,26 @@ func update_skill_buttons() -> void:
 
 func set_target_selection(enabled: bool) -> void:
     for hud in enemy_huds:
-        hud.set_target_enabled(enabled)
+        hud.set_target_mode(
+            "single" if enabled else "none"
+        )
+
+
+func set_aoe_preview(enabled: bool) -> void:
+    for hud in enemy_huds:
+        hud.set_target_mode(
+            "aoe" if enabled else "none"
+        )
+
+
+func preview_aoe_targets() -> void:
+    disable_skill_buttons()
+    set_aoe_preview(true)
+    turn_label.text = "All enemies will be hit"
+
+    await get_tree().create_timer(0.35).timeout
+
+    set_aoe_preview(false)
 
 
 func disable_skill_buttons() -> void:
@@ -440,6 +460,7 @@ func finish_battle(player_won: bool) -> void:
 
     disable_skill_buttons()
     set_target_selection(false)
+    set_aoe_preview(false)
     update_battle_ui()
 
     turn_label.text = (
