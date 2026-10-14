@@ -95,12 +95,52 @@ def damage_with_speed_scaling(attacker, target, skill, snapshot, hit_index):
 
 
 # =========================================================
+#                  REMOVED BUFFS DAMAGE
+# =========================================================
+
+def damage_for_removed_buffs(
+    attacker,
+    target,
+    skill,
+    snapshot,
+    hit_index
+):
+
+    data = skill.damage_handler_data
+
+    if hit_index not in data[
+        "affected_hit_indices"
+    ]:
+        return {
+            "damage_multiplier": 1
+        }
+
+    removed_buffs = getattr(
+        skill,
+        "_removed_buffs_this_use",
+        0
+    )
+
+    damage_multiplier = (
+        1
+        + removed_buffs
+        * data["damage_per_removed_buff"]
+    )
+
+    return {
+        "damage_multiplier":
+            damage_multiplier
+    }
+
+
+# =========================================================
 #                     HANDLER REGISTRY
 # =========================================================
 
 DAMAGE_HANDLERS = {
     "damage_for_burn_stacks": damage_for_burn_stacks,
     "damage_if_condition": damage_if_condition,
-    "damage_with_speed_scaling": damage_with_speed_scaling
+    "damage_with_speed_scaling": damage_with_speed_scaling,
+    "damage_for_removed_buffs": damage_for_removed_buffs
 }
 
