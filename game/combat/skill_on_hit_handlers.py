@@ -176,8 +176,15 @@ def strip_buffs_on_hit(
         "track_removed_buffs_for_skill_damage",
         False
     ):
-        skill._removed_buffs_this_use += (
-            removed_count
+        current_removed_buffs = getattr(
+            skill,
+            "_removed_buffs_this_use",
+            0
+        )
+
+        skill._removed_buffs_this_use = (
+            current_removed_buffs
+            + removed_count
         )
 
     record_telemetry(
