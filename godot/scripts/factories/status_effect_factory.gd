@@ -69,6 +69,20 @@ static func create_status_effect(
                 "multiplicative"
             )
 
+        "speed_up":
+            return StatusEffectScript.new(
+                "speed_up",
+                "Speed Up",
+                "speed",
+                "buff",
+                1.3,
+                duration,
+                stacks,
+                1,
+                source,
+                "multiplicative"
+            )
+
         "veil":
             return StatusEffectScript.new(
                 "veil",
