@@ -201,10 +201,6 @@ static func _attach_skill_descriptions(monster) -> void:
                 {
                     "kind": "damage",
                     "text": "Each consumed Soul Charge grants [b]+10% damage[/b]."
-                },
-                {
-                    "kind": "special",
-                    "text": "If an ally is already defeated, the consumed charges do not increase this skill's damage."
                 }
             ]
         },
@@ -610,7 +606,6 @@ static func _create_aether_dullahan():
     beyond_the_veil.damage_per_soul_charge = 0.10
     beyond_the_veil.max_soul_charges = 5
     beyond_the_veil.use_consumed_soul_charges = true
-    beyond_the_veil.disable_soul_bonus_if_ally_dead = true
 
     var skills: Array = [
         severing_blade,
