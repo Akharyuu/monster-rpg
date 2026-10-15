@@ -143,3 +143,10 @@ detects Godot parser errors even if the process exits with code 0.
 
 These are fast structural/runtime smoke checks, not a replacement for
 interactive battle QA in the Godot editor.
+
+## End-of-port handoff
+
+The current roster/skill/passive/Resonance combat prototype port is
+considered complete for visual development. See
+[`docs/COMBAT_PORT_HANDOFF.md`](../../docs/COMBAT_PORT_HANDOFF.md) for
+scope, validated systems, deliberate exclusions and the next UI milestone.
