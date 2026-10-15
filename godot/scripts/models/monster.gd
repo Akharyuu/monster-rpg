@@ -10,6 +10,7 @@ var attribute: String
 var rarity: int
 
 var level: int = 1
+var resonance: int = 0
 var ascended: bool = false
 var stat_scale: float = 1.0
 
@@ -233,7 +234,10 @@ func get_direct_heal_multiplier(target) -> float:
     if has_oblivion():
         return 1.0
 
-    if monster_id != "dryad_storm":
+    if (
+        monster_id != "dryad_storm"
+        or resonance < 1
+    ):
         return 1.0
 
     if target.max_health <= 0:
