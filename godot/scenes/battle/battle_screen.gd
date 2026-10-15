@@ -123,8 +123,8 @@ const ENEMY_ARCS := {
     2: [Vector2(795, 180), Vector2(1035, 145)],
     3: [Vector2(740, 215), Vector2(930, 120), Vector2(1100, 170)],
     4: [
-        Vector2(630, 225), Vector2(800, 145),
-        Vector2(980, 120), Vector2(1140, 210)
+        Vector2(690, 225), Vector2(840, 145),
+        Vector2(990, 120), Vector2(1140, 210)
     ]
 }
 
