@@ -1464,9 +1464,9 @@ func execute_soul_recall(target) -> Dictionary:
 
     target.health = maxi(
         1,
-        int(target.max_health * 0.70)
+        int(target.max_health * 0.50)
     )
-    target.action_gauge = 0.30
+    target.action_gauge = 1.0
     target.buffs.clear()
     target.debuffs.clear()
     target.special_states.clear()
