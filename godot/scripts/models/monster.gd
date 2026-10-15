@@ -223,6 +223,32 @@ func get_passive_damage_multiplier() -> float:
     return 1.0 + bonus_speed * 0.003
 
 
+func get_healing_hp() -> float:
+    # Equipment is not ported to Godot yet, so at prototype level
+    # Healing HP equals current Max HP.
+    return float(max_health)
+
+
+func get_direct_heal_multiplier(target) -> float:
+    if has_oblivion():
+        return 1.0
+
+    if monster_id != "dryad_storm":
+        return 1.0
+
+    if target.max_health <= 0:
+        return 1.0
+
+    var target_hp_ratio: float = (
+        float(target.health) / float(target.max_health)
+    )
+
+    if target_hp_ratio < 0.50:
+        return 1.20
+
+    return 1.0
+
+
 func get_attribute_modifier(defender) -> float:
     if (
         (attribute == "igneous" and defender.attribute == "abyssal")
