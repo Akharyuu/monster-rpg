@@ -18,6 +18,12 @@ func setup(p_allies: Array, p_enemies: Array) -> void:
     enemies = p_enemies
     recorded_dead_monsters = []
 
+    for ally in allies:
+        ally.combat_opponents = enemies
+
+    for enemy in enemies:
+        enemy.combat_opponents = allies
+
 
 func get_living(team: Array) -> Array:
     return team.filter(
