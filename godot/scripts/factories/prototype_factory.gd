@@ -1097,10 +1097,6 @@ static func _attach_passive_description(monster) -> void:
                         if monster.resonance >= 4
                         else "Gains [b]1 Soul Charge[/b] whenever any monster dies."
                     )
-                },
-                {
-                    "kind": "special",
-                    "text": "[b]Beyond the Veil[/b] consumes all stored Soul Charges to increase its damage."
                 }
             ]
         }
@@ -1117,7 +1113,7 @@ static func _attach_passive_description(monster) -> void:
             soul_vessel_data["effects"].append(
                 {
                     "kind": "special",
-                    "text": "At [b]5 Soul Charges[/b], [color=#d9a6ff]Soul Recall[/color] becomes available as an active action."
+                    "text": "At [b]5 Soul Charges[/b], this passive becomes [color=#d9a6ff]Soul Recall[/color], an active skill that consumes all charges to revive a selected fallen ally with [b]50% HP[/b] and [b]100% Action Gauge[/b]."
                 }
             )
 
