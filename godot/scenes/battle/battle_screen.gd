@@ -39,10 +39,10 @@ var action_in_progress := true
 func _ready() -> void:
     allies = [
         PrototypeFactoryScript.create_level_one_monster(
-            "drake_void"
+            "dullahan_void"
         ),
         PrototypeFactoryScript.create_level_one_monster(
-            "drake_aether"
+            "drake_void"
         )
     ]
 
@@ -537,6 +537,10 @@ func get_status_feedback_text(effect_id: String) -> String:
             return "SILENCE!"
         "oblivion":
             return "OBLIVION!"
+        "heal_block":
+            return "HEAL BLOCK!"
+        "vulnerability":
+            return "VULNERABLE!"
         _:
             return effect_id.to_upper()
 
