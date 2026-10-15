@@ -318,7 +318,7 @@ func execute_active_skill(
     )
     var annihilation_oblivion_snapshot: Dictionary = {}
 
-    if skill.skill_id == "null_rend_annihilation":
+    if skill.has_handler("banish_killed_oblivion_targets"):
         for target in targets:
             if target != null:
                 annihilation_oblivion_snapshot[target] = (
@@ -417,10 +417,7 @@ func execute_active_skill(
         targets
     )
 
-    if (
-        active_monster.monster_id == "drake_storm"
-        and skill.skill_id == "stormbreak_requiem"
-    ):
+    if skill.has_handler("aoe_follow_up_attack"):
         _resolve_stormbreak_requiem_follow_up(
             skill,
             result,
@@ -537,7 +534,7 @@ func execute_active_skill(
                 "VOIDBORN ACTIVATED!"
             )
 
-    if skill.skill_id == "null_rend_annihilation":
+    if skill.has_handler("banish_killed_oblivion_targets"):
         for target_result in result.get(
             "target_results",
             []
@@ -558,11 +555,9 @@ func execute_active_skill(
                     "ANNIHILATION - BANISHED!"
                 )
 
-    if (
-        active_monster.monster_id == "dullahan_igneous"
-        and skill.skill_id == "death_sentence_massacre"
-    ):
+    if skill.has_handler("follow_up_skill_on_kill"):
         _resolve_massacre_follow_up(
+            skill,
             result,
             caster_feedback
         )
@@ -995,6 +990,7 @@ func execute_active_skill(
 
 
 func _resolve_massacre_follow_up(
+    skill,
     result: Dictionary,
     caster_feedback: Array[String]
 ) -> void:
@@ -1038,7 +1034,12 @@ func _resolve_massacre_follow_up(
         if opponent_ratio < current_ratio:
             follow_target = opponent
 
-    var follow_skill = active_monster.get_skill(2)
+    var follow_data: Dictionary = skill.get_handler_data(
+        "follow_up_skill_on_kill"
+    )
+    var follow_skill = active_monster.get_skill(
+        int(follow_data.get("skill_slot", 0))
+    )
 
     if follow_skill == null:
         return
@@ -1102,6 +1103,12 @@ func _resolve_stormbreak_requiem_follow_up(
         else allies
     )
 
+    var follow_up_data: Dictionary = skill.get_handler_data(
+        "aoe_follow_up_attack"
+    )
+    var damage_multiplier: float = float(
+        follow_up_data.get("damage_multiplier", 0.0)
+    )
     var follow_up_damage := 0
 
     for target in opponents:
@@ -1111,7 +1118,7 @@ func _resolve_stormbreak_requiem_follow_up(
         var damage_result: Dictionary = skill.damage_calc(
             active_monster,
             target,
-            0.75
+            damage_multiplier
         )
 
         var actual_damage: int = target.receive_damage(

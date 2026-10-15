@@ -455,3 +455,25 @@ def test_headlong_charge_support_parameters_stay_in_json():
     assert 'support_data.get("self_buffs", [])' in controller
     assert 'support_data.get("ally_buffs", [])' in controller
     assert 'support_data.get("force_next_turn", false)' in controller
+
+
+def test_advanced_after_use_handlers_use_shared_configuration():
+    source = (
+        GODOT_FACTORY.parents[3] / "godot" / "scripts"
+        / "battle" / "battle_controller.gd"
+    ).read_text(encoding="utf-8")
+    for handler in (
+        "aoe_follow_up_attack", "banish_killed_oblivion_targets",
+        "follow_up_skill_on_kill"
+    ):
+        assert f'skill.has_handler("{handler}")' in source
+
+    assert 'follow_data.get("skill_slot", 0)' in source
+    assert 'follow_up_data.get("damage_multiplier", 0.0)' in source
+    data = skill_module.SKILL_DATA
+    assert data["stormbreak_requiem"]["after_use_handlers"][0][
+        "data"
+    ]["damage_multiplier"] == 0.75
+    assert data["death_sentence_massacre"]["after_use_handlers"][0][
+        "data"
+    ]["skill_slot"] == 2
