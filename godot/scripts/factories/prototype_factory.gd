@@ -26,6 +26,8 @@ static func create_level_one_monster(monster_id: String):
             monster = _create_void_dullahan()
         "dullahan_aether":
             monster = _create_aether_dullahan()
+        "dullahan_igneous":
+            monster = _create_igneous_dullahan()
         "slime_storm":
             monster = _create_storm_slime()
         "slime_abyssal":
@@ -177,6 +179,26 @@ static func _attach_skill_descriptions(monster) -> void:
                 {
                     "kind": "debuff",
                     "text": "[b]Hits 2-3:[/b] each has a [b]30% chance[/b] to apply [color=#ff7777]Defense Break[/color] for [b]2 turns[/b]."
+                }
+            ]
+        },
+
+        "relentless_pursuit": {
+            "summary": "Relentlessly hunts down a wounded enemy with two strikes.",
+            "effects": [
+                {
+                    "kind": "damage",
+                    "text": "Damage increases as the target loses Health, up to [b]+30%[/b] at 0% HP."
+                }
+            ]
+        },
+
+        "death_sentence": {
+            "summary": "Delivers a lethal single-target strike.",
+            "effects": [
+                {
+                    "kind": "damage",
+                    "text": "If the target starts the skill below [b]25% HP[/b], ignores [b]50% of its Defense[/b]."
                 }
             ]
         },
@@ -556,6 +578,71 @@ static func _create_abyssal_drake():
     ] = 3
 
     return monster
+
+
+static func _create_igneous_dullahan():
+    var severing_blade = DamageSkillScript.new(
+        "severing_blade",
+        "Severing Blade",
+        2.60,
+        1,
+        [],
+        "attack",
+        0,
+        [
+            {
+                "effect_id": "heal_block",
+                "chance": 0.30,
+                "turns": 2,
+                "trigger": "after_skill"
+            }
+        ]
+    )
+
+    var relentless_pursuit = DamageSkillScript.new(
+        "relentless_pursuit",
+        "Relentless Pursuit",
+        1.85,
+        2,
+        [],
+        "attack",
+        4,
+        []
+    )
+    relentless_pursuit.max_missing_health_bonus = 0.30
+
+    var death_sentence = DamageSkillScript.new(
+        "death_sentence",
+        "Death Sentence",
+        4.60,
+        1,
+        [],
+        "attack",
+        5,
+        []
+    )
+    death_sentence.execute_health_threshold = 0.25
+    death_sentence.execute_defense_ignore_ratio = 0.50
+
+    var skills: Array = [
+        severing_blade,
+        relentless_pursuit,
+        death_sentence
+    ]
+
+    return MonsterScript.new(
+        "dullahan_igneous",
+        "Igneous Dullahan",
+        "Dullahan",
+        "igneous",
+        4,
+        _scaled(9200),
+        _scaled(915),
+        _scaled(610),
+        _scaled(218),
+        skills,
+        LEVEL_ONE_MULTIPLIER
+    )
 
 
 static func _create_aether_dullahan():
