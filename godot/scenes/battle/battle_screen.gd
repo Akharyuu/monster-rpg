@@ -12,6 +12,7 @@ const StatusEffectFactoryScript = preload(
     "res://scripts/factories/status_effect_factory.gd"
 )
 
+@onready var passive_button = $"Passive Button"
 @onready var skill_1_button = $"Skill 1 Button"
 @onready var skill_2_button = $"Skill 2 Button"
 @onready var skill_3_button = $"Skill 3 Button"
@@ -560,6 +561,8 @@ func update_battle_ui() -> void:
 
 
 func update_skill_buttons() -> void:
+    _update_passive_button()
+
     var buttons := [
         skill_1_button,
         skill_2_button,
@@ -604,6 +607,33 @@ func update_skill_buttons() -> void:
             or blocked_by_silence
             or not skill.is_available()
         )
+
+
+func _update_passive_button() -> void:
+    if (
+        battle_controller.active_monster == null
+        or battle_controller.active_monster not in allies
+    ):
+        passive_button.text = "PASSIVE"
+        passive_button.set_tooltip_passive({})
+        passive_button.visible = false
+        return
+
+    var passive_data: Dictionary = (
+        battle_controller.active_monster.passive_tooltip
+    )
+
+    if passive_data.is_empty():
+        passive_button.text = "PASSIVE"
+        passive_button.set_tooltip_passive({})
+        passive_button.visible = false
+        return
+
+    passive_button.visible = true
+    passive_button.text = "PASSIVE\n%s" % str(
+        passive_data.get("name", "")
+    )
+    passive_button.set_tooltip_passive(passive_data)
 
 
 func set_target_selection(enabled: bool) -> void:
