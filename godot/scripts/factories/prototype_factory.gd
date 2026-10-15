@@ -39,58 +39,205 @@ static func create_level_one_monster(monster_id: String):
 
 
 static func _attach_skill_descriptions(monster) -> void:
-    var descriptions := {
-        "draconic_claw":
-            "Attacks one enemy. Has a 30% chance to apply Defense Break for 2 turns.",
+    var tooltip_data := {
+        "draconic_claw": {
+            "summary": "A precise claw strike against one enemy.",
+            "effects": [
+                {
+                    "kind": "debuff",
+                    "text": "[b]30% chance[/b] to apply [color=#ff7777]Defense Break[/color] for [b]2 turns[/b]."
+                }
+            ]
+        },
 
-        "scorching_breath":
-            "Attacks all enemies twice. Deals increased damage based on the target's Burn stacks.",
+        "scorching_breath": {
+            "summary": "Engulfs all enemies in a two-hit breath attack.",
+            "effects": [
+                {
+                    "kind": "damage",
+                    "text": "Damage increases with the target's [color=#ff8a42]Burn[/color] stacks."
+                }
+            ]
+        },
 
-        "flame_devourer":
-            "Attacks one enemy. Deals increased damage based on Burn stacks, then consumes the Burn present before the attack to heal the caster.",
+        "flame_devourer": {
+            "summary": "Consumes the target's flames to empower the strike and restore the caster.",
+            "effects": [
+                {
+                    "kind": "damage",
+                    "text": "Deals increased damage based on [color=#ff8a42]Burn[/color] stacks."
+                },
+                {
+                    "kind": "heal",
+                    "text": "Consumes the Burn present before the attack and [color=#76e6a8]heals the caster[/color]."
+                }
+            ]
+        },
 
-        "rime_breath":
-            "Attacks all enemies twice. Each hit has a 50% chance to apply Speed Break for 2 turns.",
+        "rime_breath": {
+            "summary": "A freezing breath that strikes the entire enemy team twice.",
+            "effects": [
+                {
+                    "kind": "debuff",
+                    "text": "Each hit has a [b]50% chance[/b] to apply [color=#78aaff]Speed Break[/color] for [b]2 turns[/b]."
+                }
+            ]
+        },
 
-        "glacial_collapse":
-            "Attacks all enemies, reducing their Action Gauge by 10%. Enemies with Speed Break are also subject to Freeze for 1 turn.",
+        "glacial_collapse": {
+            "summary": "Crushes the enemy team under a sudden glacial impact.",
+            "effects": [
+                {
+                    "kind": "control",
+                    "text": "Reduces each target's [b]Action Gauge by 10%[/b]."
+                },
+                {
+                    "kind": "control",
+                    "text": "Targets with [color=#78aaff]Speed Break[/color] can be [color=#9ed7ff]Frozen[/color] for [b]1 turn[/b]."
+                }
+            ]
+        },
 
-        "lightning_rush":
-            "Attacks one enemy twice, then grants the caster Speed Up for 2 turns.",
+        "lightning_rush": {
+            "summary": "Rushes one enemy with two rapid lightning-infused strikes.",
+            "effects": [
+                {
+                    "kind": "buff",
+                    "text": "After attacking, grants the caster [color=#70c8ff]Speed Up[/color] for [b]2 turns[/b]."
+                }
+            ]
+        },
 
-        "stormbreak":
-            "Strikes enemies 10 times at random, hitting each living enemy at least once first. A target hit 3 or more times has a 50% chance to be Stunned. Later repeated hits deal reduced damage, while the first hit gains bonus damage if the caster has Speed Up.",
+        "stormbreak": {
+            "summary": "Unleashes ten lightning strikes across random enemies.",
+            "effects": [
+                {
+                    "kind": "special",
+                    "text": "Hits every living enemy at least once before distributing the remaining strikes randomly."
+                },
+                {
+                    "kind": "control",
+                    "text": "A target hit [b]3+ times[/b] has a [b]50% chance[/b] to be [color=#9ed7ff]Stunned[/color]."
+                },
+                {
+                    "kind": "damage",
+                    "text": "Repeated hits after the fifth deal reduced damage. The first hit gains bonus damage while the caster has [color=#70c8ff]Speed Up[/color]."
+                }
+            ]
+        },
 
-        "sovereign_breath":
-            "Attacks all enemies. Afterwards, attempts to Silence them for 1 turn. Silence chance increases by 10% for each buff on the caster, from 30% up to 80%.",
+        "sovereign_breath": {
+            "summary": "Blasts all enemies with sovereign aether.",
+            "effects": [
+                {
+                    "kind": "debuff",
+                    "text": "Attempts to apply [color=#d08cff]Silence[/color] for [b]1 turn[/b]."
+                },
+                {
+                    "kind": "special",
+                    "text": "Silence chance starts at [b]30%[/b] and gains [b]+10% per caster buff[/b], up to [b]80%[/b]."
+                }
+            ]
+        },
 
-        "heavens_decree":
-            "Grants all allies Attack Up, Immunity and Veil for 2 turns.",
+        "heavens_decree": {
+            "summary": "Empowers the entire allied team with celestial authority.",
+            "effects": [
+                {
+                    "kind": "buff",
+                    "text": "Grants [color=#70c8ff]Attack Up[/color], [color=#70c8ff]Immunity[/color] and [color=#70c8ff]Veil[/color] for [b]2 turns[/b]."
+                }
+            ]
+        },
 
-        "null_rend":
-            "Attacks one enemy twice. The second hit has a 60% chance to apply Oblivion for 2 turns.",
+        "null_rend": {
+            "summary": "Tears into one enemy with two void-infused strikes.",
+            "effects": [
+                {
+                    "kind": "debuff",
+                    "text": "The second hit has a [b]60% chance[/b] to apply [color=#d08cff]Oblivion[/color] for [b]2 turns[/b]."
+                }
+            ]
+        },
 
-        "dismantle":
-            "Attacks all enemies 3 times. The first hit strips buffs. Hits 2 and 3 gain 8% damage for every buff removed and each has a 30% chance to apply Defense Break for 2 turns.",
+        "dismantle": {
+            "summary": "Disassembles the enemy team's defenses over three sweeping hits.",
+            "effects": [
+                {
+                    "kind": "special",
+                    "text": "[b]Hit 1:[/b] strips enemy buffs."
+                },
+                {
+                    "kind": "damage",
+                    "text": "[b]Hits 2-3:[/b] gain [b]+8% damage[/b] for every buff removed."
+                },
+                {
+                    "kind": "debuff",
+                    "text": "[b]Hits 2-3:[/b] each has a [b]30% chance[/b] to apply [color=#ff7777]Defense Break[/color] for [b]2 turns[/b]."
+                }
+            ]
+        },
 
-        "severing_blade":
-            "Attacks one enemy. Has a 30% chance to apply Heal Block for 2 turns.",
+        "severing_blade": {
+            "summary": "A heavy single-target slash.",
+            "effects": [
+                {
+                    "kind": "debuff",
+                    "text": "[b]30% chance[/b] to apply [color=#ff7777]Heal Block[/color] for [b]2 turns[/b]."
+                }
+            ]
+        },
 
-        "spinal_scourge":
-            "Attacks all enemies 3 times. Damage increases by 5% for each monster that has died in battle, up to 25%.",
+        "spinal_scourge": {
+            "summary": "Sweeps through all enemies with three brutal strikes.",
+            "effects": [
+                {
+                    "kind": "damage",
+                    "text": "Gains [b]+5% damage[/b] for every monster that has died in battle, up to [b]+25%[/b]."
+                }
+            ]
+        },
 
-        "deaths_gaze":
-            "Names one enemy for 2 turns before dealing damage and attempts to apply Vulnerability for 2 turns. While a target is Named, this Dullahan becomes Headless, gaining 20% Speed and immunity to Silence unless affected by Oblivion.",
+        "deaths_gaze": {
+            "summary": "Names one enemy for death before delivering a devastating strike.",
+            "effects": [
+                {
+                    "kind": "special",
+                    "text": "Applies [color=#d9a6ff]Named[/color] for [b]2 turns[/b]."
+                },
+                {
+                    "kind": "debuff",
+                    "text": "Attempts to apply [color=#ff7777]Vulnerability[/color] for [b]2 turns[/b], increasing direct damage taken by [b]15%[/b]."
+                },
+                {
+                    "kind": "special",
+                    "text": "While a target is Named, the Dullahan becomes [color=#d9a6ff]Headless[/color]: [b]+20% Speed[/b] and immunity to Silence unless affected by Oblivion."
+                }
+            ]
+        },
 
-        "ooze_slam":
-            "Attacks one enemy."
+        "ooze_slam": {
+            "summary": "Slams into one enemy.",
+            "effects": []
+        }
     }
 
     for skill in monster.skills:
-        skill.description = str(
-            descriptions.get(skill.skill_id, "")
+        var data: Dictionary = tooltip_data.get(
+            skill.skill_id,
+            {}
         )
 
+        skill.tooltip_summary = str(
+            data.get("summary", skill.description)
+        )
+
+        skill.tooltip_effects = data.get(
+            "effects",
+            []
+        )
+
+        skill.description = skill.tooltip_summary
 
 static func _scaled(value: float) -> int:
     return int(round(value * LEVEL_ONE_MULTIPLIER))
