@@ -31,9 +31,14 @@ the Godot front end. Do not create separate per-engine copies.
   the shared file and restores enum values and numeric lookup-table keys.
 - Godot reads this same JSON after applying Resonance, to synchronize common
   parameters and straightforward healing/buff values.
-- The current Godot factory still contains skill constructors and adapters
-  for complex handlers. Their data duplication will be removed in a later
-  handler-migration step without changing the combat engine behavior.
+- Godot now builds the 12 Slime, Sprout, Wisp and Thornet prototypes directly
+  from shared skill IDs, names, targets, cooldowns, effects and multipliers.
+  Their Action Gauge, poison/stun and conditional-damage adapters are read
+  from the JSON as well. Skill-based lowest-HP-ally healing percentages are
+  also read from JSON (including the Dryad's Vine Barrage variants).
+- More complex monsters, Resonance replacements and engine-specific
+  handlers still use compatibility constructors; those will be migrated
+  incrementally without changing their combat behavior.
 
 ## Migration status
 

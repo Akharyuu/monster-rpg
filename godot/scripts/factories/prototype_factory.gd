@@ -112,6 +112,52 @@ static func _sync_skill_from_shared_data(skill) -> bool:
         if entry.has("effects"):
             skill.effects = entry["effects"]
 
+        # Simple JSON handler adapters shared by the early monster set
+        # (and reused by existing advanced monster constructors).
+        for handler_config in entry.get("on_hit_handlers", []):
+            if str(handler_config.get("handler", "")) == "reduce_action_gauge":
+                var gauge_data: Dictionary = handler_config.get("data", {})
+                skill.action_gauge_reduction_per_hit = float(
+                    gauge_data.get("amount", 0.0)
+                )
+                skill.action_gauge_reduction_chance = float(
+                    gauge_data.get("chance", 1.0)
+                )
+
+        for handler_config in entry.get("after_use_handlers", []):
+            if str(handler_config.get("handler", "")) == "heal_lowest_hp_ally":
+                var healing_data: Dictionary = handler_config.get("data", {})
+                skill.heal_lowest_hp_ally_ratio = float(
+                    healing_data.get("healing_hp_ratio", 0.0)
+                )
+
+        if str(entry.get("damage_handler", "")) == "damage_if_condition":
+            var damage_data: Dictionary = entry.get(
+                "damage_handler_data", {}
+            )
+            var condition: Dictionary = damage_data.get("condition", {})
+            match str(condition.get("type", "")):
+                "target_has_debuff":
+                    skill.conditional_required_debuff_id = str(
+                        condition.get("effect_id", "")
+                    )
+                "target_has_any_debuff":
+                    skill.conditional_requires_any_debuff = true
+
+            skill.conditional_damage_multiplier = float(
+                damage_data.get("damage_multiplier", 1.0)
+            )
+            var per_hit: Dictionary = damage_data.get(
+                "multipliers_by_hit", {}
+            )
+            if not per_hit.is_empty():
+                var multipliers: Array = []
+                for hit_number in range(1, skill.hits + 1):
+                    multipliers.append(float(
+                        per_hit.get(str(hit_number), 1.0)
+                    ))
+                skill.conditional_hit_damage_multipliers = multipliers
+
     elif skill_type == "healing":
         var buffs: Array = []
         for handler_config in entry.get("after_use_handlers", []):
@@ -140,6 +186,50 @@ static func _sync_monster_skills(monster) -> bool:
         if not _sync_skill_from_shared_data(skill):
             return false
     return true
+
+
+# Generic constructor for monsters whose basic skills are fully
+# described by skill_data.json. Richer handlers will migrate gradually.
+static func _create_shared_damage_skill(skill_id: String):
+    var definitions: Dictionary = _get_shared_skills()
+    if not definitions.has(skill_id):
+        push_error("Unknown shared damage skill: %s" % skill_id)
+        return null
+
+    var entry: Dictionary = definitions[skill_id]
+    if str(entry.get("type", "")) != "damage":
+        push_error("Expected shared damage skill: %s" % skill_id)
+        return null
+
+    return DamageSkillScript.new(
+        skill_id,
+        str(entry["name"]),
+        float(entry["multiplier"]),
+        int(entry.get("hits", 1)),
+        entry.get("hit_multipliers", []),
+        str(entry.get("scaling_stat", "attack")),
+        int(entry["cooldown"]),
+        entry.get("effects", []),
+        {},
+        {},
+        str(entry["target_type"])
+    )
+
+
+static func _create_shared_damage_monster(monster_id: String):
+    var monsters: Dictionary = _get_shared_monsters()
+    if not monsters.has(monster_id):
+        push_error("Unknown shared monster: %s" % monster_id)
+        return null
+
+    var skills: Array = []
+    for skill_id in monsters[monster_id].get("skills", []):
+        var skill = _create_shared_damage_skill(str(skill_id))
+        if skill == null:
+            return null
+        skills.append(skill)
+
+    return _make_monster_from_data(monster_id, skills)
 
 
 static func _make_monster_from_data(
@@ -221,33 +311,33 @@ static func create_level_one_monster(
         "dullahan_storm":
             monster = _create_storm_dullahan()
         "thornet_igneous":
-            monster = _create_thornet("igneous")
+            monster = _create_shared_damage_monster(monster_id)
         "thornet_abyssal":
-            monster = _create_thornet("abyssal")
+            monster = _create_shared_damage_monster(monster_id)
         "thornet_storm":
-            monster = _create_thornet("storm")
+            monster = _create_shared_damage_monster(monster_id)
         "wisp_igneous":
-            monster = _create_wisp("igneous")
+            monster = _create_shared_damage_monster(monster_id)
         "wisp_abyssal":
-            monster = _create_wisp("abyssal")
+            monster = _create_shared_damage_monster(monster_id)
         "wisp_storm":
-            monster = _create_wisp("storm")
+            monster = _create_shared_damage_monster(monster_id)
         "sprout_igneous":
-            monster = _create_sprout("igneous")
+            monster = _create_shared_damage_monster(monster_id)
         "sprout_abyssal":
-            monster = _create_sprout("abyssal")
+            monster = _create_shared_damage_monster(monster_id)
         "sprout_storm":
-            monster = _create_sprout("storm")
+            monster = _create_shared_damage_monster(monster_id)
         "griffon_igneous":
             monster = _create_igneous_griffon()
         "dryad_storm":
             monster = _create_storm_dryad()
         "slime_storm":
-            monster = _create_storm_slime()
+            monster = _create_shared_damage_monster(monster_id)
         "slime_abyssal":
-            monster = _create_abyssal_slime()
+            monster = _create_shared_damage_monster(monster_id)
         "slime_igneous":
-            monster = _create_igneous_slime()
+            monster = _create_shared_damage_monster(monster_id)
         _:
             push_error("Unknown prototype monster id: %s" % monster_id)
             return null
@@ -2632,155 +2722,6 @@ static func _create_abyssal_drake():
     return monster
 
 
-static func _create_thornet(attribute: String):
-    var needle_rush = DamageSkillScript.new(
-        "needle_rush",
-        "Needle Rush",
-        1.65,
-        2,
-        [],
-        "attack",
-        0,
-        [
-            {
-                "effect_id": "poison",
-                "chance": 0.35,
-                "turns": 2,
-                "trigger": "per_hit"
-            }
-        ]
-    )
-
-    var second_skill = null
-
-    match attribute:
-        "igneous":
-            second_skill = DamageSkillScript.new(
-                "fever_sting",
-                "Fever Sting",
-                1.55,
-                3,
-                [],
-                "attack",
-                4,
-                []
-            )
-            second_skill.conditional_required_debuff_id = "poison"
-            second_skill.conditional_damage_multiplier = 1.15
-
-        "abyssal":
-            second_skill = DamageSkillScript.new(
-                "numbing_sting",
-                "Numbing Sting",
-                2.50,
-                2,
-                [],
-                "attack",
-                4,
-                [
-                    {
-                        "effect_id": "poison",
-                        "chance": 0.25,
-                        "turns": 2,
-                        "trigger": "per_hit"
-                    },
-                    {
-                        "effect_id": "stun",
-                        "chance": 0.60,
-                        "turns": 1,
-                        "trigger": "after_skill",
-                        "condition": {
-                            "type": "target_gained_debuff",
-                            "effect_id": "poison"
-                        }
-                    }
-                ]
-            )
-
-        "storm":
-            second_skill = DamageSkillScript.new(
-                "swarm_pierce",
-                "Swarm Pierce",
-                2.50,
-                3,
-                [],
-                "attack",
-                4,
-                []
-            )
-            second_skill.conditional_requires_any_debuff = true
-            second_skill.conditional_hit_damage_multipliers = [
-                1.00,
-                1.15,
-                1.30
-            ]
-
-    var monster_id: String = "thornet_%s" % attribute
-
-    var skills: Array = [
-        needle_rush,
-        second_skill
-    ]
-
-    return _make_monster_from_data(
-        monster_id,
-        skills
-    )
-
-
-static func _create_wisp(attribute: String):
-    var will_o_glow = DamageSkillScript.new(
-        "will_o_glow",
-        "Will-o'-Glow",
-        2.60,
-        1,
-        [],
-        "attack",
-        0,
-        [],
-        {},
-        {},
-        "single_enemy",
-        0.10
-    )
-    will_o_glow.action_gauge_reduction_chance = 0.60
-
-    var monster_id: String = "wisp_%s" % attribute
-
-    var skills: Array = [
-        will_o_glow
-    ]
-
-    return _make_monster_from_data(
-        monster_id,
-        skills
-    )
-
-
-static func _create_sprout(attribute: String):
-    var nurturing_lash = DamageSkillScript.new(
-        "nurturing_lash",
-        "Nurturing Lash",
-        1.60,
-        1,
-        [],
-        "attack",
-        0,
-        []
-    )
-
-    var monster_id: String = "sprout_%s" % attribute
-
-    var skills: Array = [
-        nurturing_lash
-    ]
-
-    return _make_monster_from_data(
-        monster_id,
-        skills
-    )
-
-
 static func _create_igneous_griffon():
     var rending_talons = DamageSkillScript.new(
         "rending_talons",
@@ -3360,65 +3301,5 @@ static func _create_aether_drake():
 
     return _make_monster_from_data(
         "drake_aether",
-        skills
-    )
-
-
-static func _create_storm_slime():
-    var skills: Array = [
-        DamageSkillScript.new(
-            "ooze_slam",
-            "Ooze Slam",
-            2.3,
-            1,
-            [],
-            "attack",
-            0,
-            []
-        )
-    ]
-
-    return _make_monster_from_data(
-        "slime_storm",
-        skills
-    )
-
-
-static func _create_abyssal_slime():
-    var skills: Array = [
-        DamageSkillScript.new(
-            "ooze_slam",
-            "Ooze Slam",
-            2.3,
-            1,
-            [],
-            "attack",
-            0,
-            []
-        )
-    ]
-
-    return _make_monster_from_data(
-        "slime_abyssal",
-        skills
-    )
-
-
-static func _create_igneous_slime():
-    var skills: Array = [
-        DamageSkillScript.new(
-            "ooze_slam",
-            "Ooze Slam",
-            2.3,
-            1,
-            [],
-            "attack",
-            0,
-            []
-        )
-    ]
-
-    return _make_monster_from_data(
-        "slime_igneous",
         skills
     )

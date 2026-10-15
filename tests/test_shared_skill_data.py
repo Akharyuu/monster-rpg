@@ -103,3 +103,57 @@ def test_godot_syncs_core_values_from_same_file():
         'skill.multiplier = float(entry["multiplier"])',
     ):
         assert line in source
+
+
+def test_simple_families_have_only_supported_shared_skill_handlers():
+    simple_families = {"Slime", "Sprout", "Wisp", "Thornet"}
+    known_ids = set()
+    for monster in MONSTER_DATA.values():
+        if monster["family"] not in simple_families:
+            continue
+        known_ids.update(monster["skills"])
+
+    assert len(known_ids) == 7
+    for skill_id in known_ids:
+        record = skill_module.SKILL_DATA[skill_id]
+        assert record["type"] is SkillType.DAMAGE
+        for config in record.get("on_hit_handlers", []):
+            assert config["handler"] == "reduce_action_gauge"
+        for config in record.get("after_use_handlers", []):
+            assert config["handler"] == "heal_lowest_hp_ally"
+        if record.get("damage_handler"):
+            assert record["damage_handler"] == "damage_if_condition"
+            assert record["damage_handler_data"]["condition"]["type"] in {
+                "target_has_debuff", "target_has_any_debuff"
+            }
+
+
+def test_basic_godot_monsters_use_shared_skill_factory():
+    source = GODOT_FACTORY.read_text(encoding="utf-8")
+    assert "static func _create_shared_damage_skill(" in source
+    assert "static func _create_shared_damage_monster(" in source
+    assert "for skill_id in monsters[monster_id].get(\"skills\", []):" in source
+    assert source.count(
+        "monster = _create_shared_damage_monster(monster_id)"
+    ) == 12
+    for removed_constructor in (
+        "_create_thornet(", "_create_wisp(", "_create_sprout(",
+        "_create_storm_slime(", "_create_abyssal_slime(",
+        "_create_igneous_slime(",
+    ):
+        assert removed_constructor not in source
+
+
+def test_godot_uses_shared_lowest_ally_heal_ratios():
+    factory = GODOT_FACTORY.read_text(encoding="utf-8")
+    damage = (
+        ROOT / "godot" / "scripts" / "models" / "damage_skill.gd"
+    ).read_text(encoding="utf-8")
+    controller = (
+        ROOT / "godot" / "scripts" / "battle" / "battle_controller.gd"
+    ).read_text(encoding="utf-8")
+
+    assert 'handler_config.get("handler", "")) == "heal_lowest_hp_ally"' in factory
+    assert "var heal_lowest_hp_ally_ratio: float = 0.0" in damage
+    assert "skill.heal_lowest_hp_ally_ratio > 0.0" in controller
+    assert 'skill.skill_id == "vine_barrage"' not in controller

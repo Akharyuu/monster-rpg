@@ -10,6 +10,7 @@ var hits: int
 var hit_multipliers: Array
 var scaling_stat: String
 var effects: Array
+var heal_lowest_hp_ally_ratio: float = 0.0
 
 # Optional handler-like data used by the first playable slice.
 var damage_for_burn_stacks: Dictionary = {}
