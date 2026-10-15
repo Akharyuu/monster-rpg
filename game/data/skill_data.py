@@ -1668,25 +1668,20 @@ SKILL_DATA = {
         "damage_handler_data": {
             "damage_per_charge": 0.10,
             "max_charges": 5,
-            "use_consumed_charges": True,
-            "disable_bonus_if_ally_dead": True
+            "use_consumed_charges": True
         },
 
-        "after_use_handlers": [
-            {
-                "handler": "revive_most_recent_ally",
-                "data": {
-                    "health_ratio_by_charges": {
-                        1: 0.30,
-                        2: 0.40,
-                        3: 0.50,
-                        4: 0.60,
-                        5: 0.70
-                    },
-                    "action_gauge": 0.30
-                }
-            }
-        ]
+        # R2 also unlocks Soul Recall as a separate active action.
+        # At 5 Soul Charges, the player may spend all 5 to revive
+        # a selected non-Banished ally at 70% HP and 30% AG.
+        "active_action": {
+            "id": "soul_recall",
+            "required_charges": 5,
+            "consume_charges": 5,
+            "revive_health_ratio": 0.70,
+            "action_gauge": 0.30,
+            "target": "selected_dead_ally"
+        }
     },
 
     "beyond_the_veil_convergence": {
@@ -1701,26 +1696,18 @@ SKILL_DATA = {
         "damage_handler_data": {
             "damage_per_charge": 0.10,
             "max_charges": 5,
-            "use_consumed_charges": True,
-            "disable_bonus_if_ally_dead": True,
-            "allow_bonus_with_dead_at_max": True
+            "use_consumed_charges": True
         },
 
-        "after_use_handlers": [
-            {
-                "handler": "revive_most_recent_ally",
-                "data": {
-                    "health_ratio_by_charges": {
-                        1: 0.30,
-                        2: 0.40,
-                        3: 0.50,
-                        4: 0.60,
-                        5: 0.70
-                    },
-                    "action_gauge": 0.30
-                }
-            }
-        ]
+        # The revive remains a separate choice from the offensive S3.
+        "active_action": {
+            "id": "soul_recall_convergence",
+            "required_charges": 5,
+            "consume_charges": 5,
+            "revive_health_ratio": 0.70,
+            "action_gauge": 0.30,
+            "target": "selected_dead_ally"
+        }
     },
 
     # ---------------------------------------------------------
