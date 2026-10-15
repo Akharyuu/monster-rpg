@@ -575,6 +575,20 @@ func play_result_feedback(result: Dictionary) -> void:
                 "resist"
             )
 
+    for survivor in result.get(
+        "deathless_survivors",
+        []
+    ):
+        var survivor_hud = get_hud_for_monster(
+            survivor
+        )
+
+        if survivor_hud != null:
+            await survivor_hud.play_status_feedback(
+                "DEATHLESS RIDER - 1 HP!",
+                "buff"
+            )
+
 
 func play_caster_feedback(result: Dictionary) -> void:
     var feedback: Array = result.get(
