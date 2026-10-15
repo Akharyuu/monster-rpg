@@ -578,6 +578,70 @@ class Monster:
 
 
 
+    def can_use_soul_recall(self, target=None, team=None):
+        """Whether Aether Dullahan can use its separate revive action."""
+        if (
+            self.monster_id != "dullahan_aether"
+            or self.resonance < 2
+            or not self.is_alive
+            or self.has_oblivion
+            or self.is_silenced
+            or self.cannot_act
+            or self.get_combat_resource("soul_charges") < 5
+        ):
+            return False
+
+        if team is None:
+            team = self._combat_team
+
+        if self not in team:
+            return False
+
+        if target is None:
+            return any(
+                ally is not self
+                and not ally.is_alive
+                and not ally.banished
+                for ally in team
+            )
+
+        return (
+            target is not self
+            and target in team
+            and not target.is_alive
+            and not target.banished
+        )
+
+
+    def use_soul_recall(self, target, team=None):
+        """Spend 5 Soul Charges to revive a selected fallen ally.
+
+        This is an active action separate from Beyond the Veil.
+        The combat controller is responsible for ending the caster's turn.
+        """
+        if not self.can_use_soul_recall(target, team):
+            return False
+
+        from ..combat.combat_events import revive_monster
+
+        # A revived monster begins at 30% AG, regardless of the
+        # Action Gauge it retained when it died.
+        previous_gauge = target.action_gauge
+        target.reset_action_gauge()
+
+        if not revive_monster(
+            target,
+            health_ratio=0.70,
+            action_gauge=0.30
+        ):
+            target.action_gauge = previous_gauge
+            return False
+
+        self.consume_combat_resource("soul_charges", 5)
+        return True
+
+
+
     def reduce_skill_cooldowns(self):
         for skill in self.skills:
             skill.reduce_cooldown()
