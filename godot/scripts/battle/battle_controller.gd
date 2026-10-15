@@ -144,6 +144,10 @@ func begin_next_turn() -> Dictionary:
         active_monster.apply_damage_over_time()
     )
 
+    if not active_monster.is_alive():
+        var ignored_feedback: Array[String] = []
+        _resolve_new_deaths(ignored_feedback)
+
     return {
         "battle_over": false,
         "monster": active_monster,
@@ -212,7 +216,7 @@ func execute_active_skill(
     )
 
     if active_monster.monster_id == "dullahan_aether":
-        active_monster.special_states["ally_dead"] = (
+        active_monster.ally_dead_for_soul_bonus = (
             get_living(allies).size() < allies.size()
             if active_monster in allies
             else get_living(enemies).size() < enemies.size()
