@@ -21,6 +21,13 @@ var resolve_hits_by_round: bool = false
 var strip_buffs_hit_index: int = -1
 var damage_per_removed_buff: float = 0.0
 var removed_buff_damage_hit_indices: Array = []
+var damage_per_dead_monster: float = 0.0
+var max_dead_monsters: int = 0
+var max_dead_monster_bonus: float = 0.0
+var apply_named_before_hit: bool = false
+var named_turns: int = 0
+var vulnerability_chance: float = 0.0
+var vulnerability_turns: int = 0
 
 
 func _init(
@@ -41,7 +48,14 @@ func _init(
     p_resolve_hits_by_round: bool = false,
     p_strip_buffs_hit_index: int = -1,
     p_damage_per_removed_buff: float = 0.0,
-    p_removed_buff_damage_hit_indices: Array = []
+    p_removed_buff_damage_hit_indices: Array = [],
+    p_damage_per_dead_monster: float = 0.0,
+    p_max_dead_monsters: int = 0,
+    p_max_dead_monster_bonus: float = 0.0,
+    p_apply_named_before_hit: bool = false,
+    p_named_turns: int = 0,
+    p_vulnerability_chance: float = 0.0,
+    p_vulnerability_turns: int = 0
 ) -> void:
     super(
         p_skill_id,
@@ -68,6 +82,13 @@ func _init(
     removed_buff_damage_hit_indices = (
         p_removed_buff_damage_hit_indices
     )
+    damage_per_dead_monster = p_damage_per_dead_monster
+    max_dead_monsters = p_max_dead_monsters
+    max_dead_monster_bonus = p_max_dead_monster_bonus
+    apply_named_before_hit = p_apply_named_before_hit
+    named_turns = p_named_turns
+    vulnerability_chance = p_vulnerability_chance
+    vulnerability_turns = p_vulnerability_turns
 
 
 func base_damage_calc(
@@ -136,12 +157,17 @@ func base_damage_calc(
         attacker.get_passive_damage_multiplier()
     )
 
+    var direct_damage_taken_multiplier: float = (
+        defender.get_direct_damage_taken_multiplier()
+    )
+
     return maxf(
         1.0,
         raw_damage
         * damage_reduction
         * attribute_modifier
         * passive_damage_multiplier
+        * direct_damage_taken_multiplier
     )
 
 
@@ -170,6 +196,19 @@ func damage_calc(
     var bonus_damage: float = get_burn_damage_multiplier(
         defender
     )
+
+    if damage_per_dead_monster > 0.0:
+        var counted_dead: int = mini(
+            attacker.battle_dead_count,
+            max_dead_monsters
+        )
+
+        var dead_bonus: float = minf(
+            counted_dead * damage_per_dead_monster,
+            max_dead_monster_bonus
+        )
+
+        bonus_damage *= 1.0 + dead_bonus
 
     var base_damage: float = base_damage_calc(
         attacker,
@@ -396,6 +435,37 @@ func execute_on_target(
     var starting_burn_stacks: int = (
         defender.get_debuff_stacks("burn")
     )
+
+    if apply_named_before_hit and defender.is_alive():
+        attacker.apply_named(
+            defender,
+            named_turns
+        )
+
+        var vulnerability_result: Dictionary = (
+            try_apply_effect(
+                {
+                    "effect_id": "vulnerability",
+                    "chance": vulnerability_chance,
+                    "turns": vulnerability_turns
+                },
+                attacker,
+                defender
+            )
+        )
+
+        var vulnerability_effect = (
+            vulnerability_result["applied_effect"]
+        )
+
+        if vulnerability_effect != null:
+            effects_applied.append(
+                vulnerability_effect
+            )
+        elif vulnerability_result["resisted"]:
+            resisted_effects.append(
+                "vulnerability"
+            )
 
     for hit_index in range(hits):
         var hit_multiplier := 1.0
