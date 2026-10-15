@@ -786,6 +786,8 @@ func _update_passive_button() -> void:
         passive_list.size()
     )
 
+    # Informational passives are always visible. An internal CD only
+    # mutes the portion of the passive that is on cooldown.
     for index in range(visible_count):
         var button = buttons[index]
         var passive_data: Dictionary = passive_list[index]
@@ -799,62 +801,126 @@ func _update_passive_button() -> void:
                 cooldown_id
             )
 
+        button.visible = true
+        button.text = str(
+            passive_data.get("name", "PASSIVE")
+        )
+
+        if remaining_cd > 0:
+            button.text += "\nCD %d" % remaining_cd
+
         var tooltip_data: Dictionary = (
             passive_data.duplicate(true)
         )
         tooltip_data["cooldown_remaining"] = remaining_cd
+        button.set_tooltip_passive(tooltip_data)
 
-        var soul_recall_unlocked: bool = (
-            index == 0
-            and active.monster_id == "dullahan_aether"
-            and active.resonance >= 2
-            and active.get_combat_resource("soul_charges") >= 5
+        var suppressed: bool = active.has_oblivion()
+        var recharging: bool = remaining_cd > 0
+
+        _set_action_button_state(
+            button,
+            suppressed or recharging,
+            false
         )
 
-        button.visible = true
-
-        if soul_recall_unlocked:
-            # At five charges Soul Vessel itself becomes the active
-            # revive action, rather than creating an extra button.
-            button.text = "Soul Recall"
-            tooltip_data["badge"] = "ACTIVE"
-            button.set_tooltip_passive(tooltip_data)
-
-            _set_action_button_state(
-                button,
-                battle_finished
-                or action_in_progress
-                or active.is_silenced()
-                or not battle_controller.can_use_soul_recall(
-                    active
-                )
-            )
+        if suppressed:
+            button.set_visual_state("passive_suppressed")
+        elif recharging:
+            button.set_visual_state("passive_cooldown")
         else:
-            button.text = str(
-                passive_data.get("name", "PASSIVE")
+            button.set_visual_state("passive_ready")
+
+    # Soul Recall is a separate active action beside Soul Vessel.
+    # It stays visible and shows charge progress even before 5/5.
+    if (
+        active.monster_id == "dullahan_aether"
+        and active.resonance >= 2
+        and visible_count < buttons.size()
+    ):
+        var action_button = buttons[visible_count]
+        var charges: int = active.get_combat_resource(
+            "soul_charges"
+        )
+        var unlocked: bool = charges >= 5
+        var selected: bool = (
+            pending_special_action == "soul_recall"
+        )
+
+        var blocked: bool = (
+            battle_finished
+            or active.has_oblivion()
+            or active.is_silenced()
+            or (action_in_progress and not selected)
+        )
+
+        var action_data: Dictionary = {
+            "name": "Soul Recall",
+            "badge": (
+                "ACTIVE"
+                if unlocked and not blocked
+                else "LOCKED"
+            ),
+            "summary": "Calls a fallen ally back from beyond the veil.",
+            "effects": [
+                {
+                    "kind": "special",
+                    "text": "Consumes [b]5 Soul Charges[/b] to revive a selected fallen ally with [b]50% HP[/b] and [b]100% Action Gauge[/b]."
+                },
+                {
+                    "kind": "special",
+                    "text": "A [color=#d9a6ff]Banished[/color] ally cannot be revived."
+                }
+            ]
+        }
+
+        action_button.visible = true
+        action_button.set_tooltip_passive(action_data)
+
+        if selected:
+            action_button.text = "Soul Recall\nCANCEL"
+            action_button.set_visual_state("active_selected")
+            _set_action_button_state(action_button, false)
+        elif unlocked:
+            action_button.text = "Soul Recall\nREADY"
+            action_button.set_visual_state(
+                "active_locked" if blocked else "active_ready"
             )
-
-            if remaining_cd > 0:
-                button.text += "\nCD %d" % remaining_cd
-
-            button.set_tooltip_passive(tooltip_data)
-
-            # Passive cooldowns only suppress their cooldown-based
-            # effect. Other passive bonuses remain in force.
+            # Keep tooltip hover available when blocked.
             _set_action_button_state(
-                button,
-                active.has_oblivion() or remaining_cd > 0,
+                action_button,
+                blocked,
                 false
             )
+        else:
+            action_button.text = (
+                "Soul Recall\n%d/5" % charges
+            )
+            action_button.set_visual_state("active_locked")
+            _set_action_button_state(
+                action_button,
+                true,
+                false
+            )
+
+        visible_count += 1
 
     _layout_passive_buttons(visible_count)
 
 
-func _on_soul_recall_pressed() -> void:
+func _on_soul_recall_button_2_pressed() -> void:
+    _on_soul_recall_pressed(1)
+
+
+func _on_soul_recall_button_3_pressed() -> void:
+    _on_soul_recall_pressed(2)
+
+
+func _on_soul_recall_pressed(button_index: int) -> void:
     if (
         battle_finished
-        or action_in_progress
         or battle_controller.active_monster == null
+        or battle_controller.active_monster not in allies
     ):
         return
 
@@ -863,6 +929,25 @@ func _on_soul_recall_pressed() -> void:
     if (
         active.monster_id != "dullahan_aether"
         or active.resonance < 2
+        or button_index != mini(
+            2,
+            active.passive_tooltips.size()
+        )
+    ):
+        return
+
+    # The action can be selected even without a fallen ally. Clicking
+    # it again cancels targeting, leaving other skills usable.
+    if pending_special_action == "soul_recall":
+        pending_special_action = ""
+        set_revive_target_selection(false)
+        action_in_progress = false
+        update_skill_buttons()
+        turn_label.text = "Soul Recall selection cancelled"
+        return
+
+    if (
+        action_in_progress
         or active.get_combat_resource("soul_charges") < 5
         or active.has_oblivion()
         or active.is_silenced()
@@ -876,7 +961,19 @@ func _on_soul_recall_pressed() -> void:
     set_target_selection(false)
     set_revive_target_selection(true)
     update_skill_buttons()
-    turn_label.text = "Choose a fallen ally to revive"
+
+    var fallen_allies: int = 0
+
+    for ally in allies:
+        if not ally.is_alive() and not ally.banished:
+            fallen_allies += 1
+
+    if fallen_allies > 0:
+        turn_label.text = "Choose a fallen ally (Soul Recall to cancel)"
+    else:
+        turn_label.text = (
+            "No fallen allies - Soul Recall to cancel"
+        )
 
 func set_target_selection(enabled: bool) -> void:
     for hud in enemy_huds:
