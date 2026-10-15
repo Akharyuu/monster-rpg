@@ -322,6 +322,7 @@ func damage_calc(
 
 func effect_condition_met(
     condition: Dictionary,
+    attacker,
     defender,
     applied_effects_this_use: Array = []
 ) -> bool:
@@ -353,6 +354,29 @@ func effect_condition_met(
                     return true
 
             return false
+
+        "target_action_gauge_below":
+            var threshold: float = float(
+                condition.get("threshold", 0.0)
+            )
+
+            var buff_rule: Dictionary = condition.get(
+                "threshold_if_caster_has_buff",
+                {}
+            )
+
+            if (
+                not buff_rule.is_empty()
+                and attacker.has_buff(
+                    str(buff_rule.get("effect_id", ""))
+                )
+            ):
+                threshold = float(
+                    buff_rule.get("threshold", threshold)
+                )
+
+            return defender.action_gauge < threshold
+
         _:
             return true
 
@@ -380,6 +404,7 @@ func try_apply_effect(
 
     if not effect_condition_met(
         condition,
+        attacker,
         defender,
         applied_effects_this_use
     ):
