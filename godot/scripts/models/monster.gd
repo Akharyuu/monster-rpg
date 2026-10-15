@@ -2,6 +2,9 @@ class_name Monster
 extends RefCounted
 
 const SkillScript = preload("res://scripts/models/skill.gd")
+const StatusEffectFactoryScript = preload(
+    "res://scripts/factories/status_effect_factory.gd"
+)
 
 var monster_id: String
 var monster_name: String
