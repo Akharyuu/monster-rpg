@@ -1,0 +1,14 @@
+MONSTER RPG — Igneous Drake idle animation
+
+1. Perform git pull in your Monster RPG repository.
+2. Extract this ZIP into the godot/ folder, preserving folders:
+   assets/monster_sprites/drake_igneous_idle.png
+   assets/monster_sprites/drake_igneous_idle.json
+3. Open the project in Godot and test a battle featuring Igneous Drake.
+
+The Godot HUD implementation is in commit d76860beae1a4fc55603a157c4d298833e5738f9.
+The sprite and metadata are intentionally kept outside GitHub until you choose
+to commit them. If missing, the HUD uses the previous static sprite/placeholder.
+
+This package corrects the PNG's dimensions to the original JSON's 2166 x 1236.
+36 frames, 91 ms each, repeat. The animation is an idle, not an attack.
