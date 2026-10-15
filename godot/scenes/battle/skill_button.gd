@@ -203,6 +203,19 @@ func _build_passive_card(passive_data: Dictionary) -> Control:
         )
     )
 
+    var remaining_cd: int = int(
+        passive_data.get("cooldown_remaining", 0)
+    )
+
+    if remaining_cd > 0:
+        header.add_child(
+            _make_badge(
+                "CD %d" % remaining_cd,
+                Color(0.27, 0.29, 0.38, 0.96),
+                Color(0.78, 0.80, 0.88)
+            )
+        )
+
     var separator := HSeparator.new()
     separator.modulate = Color(0.65, 0.50, 0.86, 0.38)
     root.add_child(separator)
