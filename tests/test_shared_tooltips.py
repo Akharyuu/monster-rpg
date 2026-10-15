@@ -90,3 +90,21 @@ def test_important_tooltip_wording_preserved():
         SKILL_DATA["flame_devourer_rekindled"]["tooltip"]["effects"][-1]["text"]
     )
     assert "Frozen Scales" in PASSIVE_DATA["frozen_scales"]["tooltip"]["summary"]
+
+
+def test_void_drake_tooltip_uses_shared_base_passive():
+    source = FACTORY.read_text(encoding="utf-8")
+    passive_block = source.split(
+        "static func _attach_passive_description(monster) -> void:"
+    )[1].split("static func _scaled(")[0]
+
+    # The local passive_data map was removed when base tooltips
+    # migrated to JSON; no dynamic tooltip may reference it.
+    assert "passive_data.get(" not in passive_block
+    assert 'if monster.monster_id == "drake_void":' in passive_block
+    assert "monster.passive_tooltip.duplicate(true)" in passive_block
+    assert 'monster.passive_tooltips.append(' in passive_block
+
+    base_id = MONSTER_DATA["drake_void"]["passives"][0]
+    assert base_id == "bottomless_hunger"
+    assert PASSIVE_DATA[base_id]["tooltip"]["name"] == "Bottomless Hunger"

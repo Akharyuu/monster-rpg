@@ -924,9 +924,10 @@ static func _attach_passive_description(monster) -> void:
         }
 
     if monster.monster_id == "drake_void":
-        var bottomless_data: Dictionary = passive_data.get(
-            "drake_void",
-            {}
+        # The base Bottomless Hunger tooltip is loaded from
+        # passive_data.json above, not from a local passive_data map.
+        var bottomless_data: Dictionary = (
+            monster.passive_tooltip.duplicate(true)
         )
 
         monster.passive_tooltips = []
