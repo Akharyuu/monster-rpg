@@ -2,6 +2,7 @@ class_name SkillButton
 extends Button
 
 var tooltip_skill = null
+var tooltip_passive: Dictionary = {}
 
 
 func _ready() -> void:
@@ -19,14 +20,28 @@ func _ready() -> void:
 
 func set_tooltip_skill(skill) -> void:
     tooltip_skill = skill
+    tooltip_passive = {}
     tooltip_text = "skill" if skill != null else ""
 
 
-func _make_custom_tooltip(_for_text: String) -> Object:
-    if tooltip_skill == null:
-        return null
+func set_tooltip_passive(passive_data: Dictionary) -> void:
+    tooltip_skill = null
+    tooltip_passive = passive_data
+    tooltip_text = (
+        "passive"
+        if not passive_data.is_empty()
+        else ""
+    )
 
-    return _build_skill_card(tooltip_skill)
+
+func _make_custom_tooltip(_for_text: String) -> Object:
+    if tooltip_skill != null:
+        return _build_skill_card(tooltip_skill)
+
+    if not tooltip_passive.is_empty():
+        return _build_passive_card(tooltip_passive)
+
+    return null
 
 
 func _build_skill_card(skill) -> Control:
@@ -134,6 +149,97 @@ func _build_skill_card(skill) -> Control:
         root.add_child(effects_box)
 
         for effect_data in skill.tooltip_effects:
+            effects_box.add_child(
+                _make_effect_row(effect_data)
+            )
+
+    return panel
+
+
+func _build_passive_card(passive_data: Dictionary) -> Control:
+    var panel := PanelContainer.new()
+    panel.custom_minimum_size = Vector2(390.0, 0.0)
+
+    var panel_style := StyleBoxFlat.new()
+    panel_style.bg_color = Color(0.055, 0.065, 0.12, 0.985)
+    panel_style.border_color = Color(0.58, 0.40, 0.82, 0.95)
+    panel_style.border_width_left = 1
+    panel_style.border_width_top = 1
+    panel_style.border_width_right = 1
+    panel_style.border_width_bottom = 1
+    panel_style.corner_radius_top_left = 10
+    panel_style.corner_radius_top_right = 10
+    panel_style.corner_radius_bottom_left = 10
+    panel_style.corner_radius_bottom_right = 10
+    panel_style.content_margin_left = 16.0
+    panel_style.content_margin_top = 14.0
+    panel_style.content_margin_right = 16.0
+    panel_style.content_margin_bottom = 14.0
+    panel.add_theme_stylebox_override("panel", panel_style)
+
+    var root := VBoxContainer.new()
+    root.add_theme_constant_override("separation", 9)
+    panel.add_child(root)
+
+    var header := HBoxContainer.new()
+    header.add_theme_constant_override("separation", 8)
+    root.add_child(header)
+
+    var title := Label.new()
+    title.text = str(passive_data.get("name", "Passive"))
+    title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    title.add_theme_font_size_override("font_size", 20)
+    title.add_theme_color_override(
+        "font_color",
+        Color(0.97, 0.98, 1.0)
+    )
+    header.add_child(title)
+
+    header.add_child(
+        _make_badge(
+            "PASSIVE",
+            Color(0.30, 0.18, 0.43, 0.96),
+            Color(0.89, 0.74, 1.0)
+        )
+    )
+
+    var separator := HSeparator.new()
+    separator.modulate = Color(0.65, 0.50, 0.86, 0.38)
+    root.add_child(separator)
+
+    var summary_text: String = str(
+        passive_data.get("summary", "")
+    )
+
+    if not summary_text.is_empty():
+        var summary := Label.new()
+        summary.text = summary_text
+        summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+        summary.custom_minimum_size = Vector2(350.0, 0.0)
+        summary.add_theme_font_size_override("font_size", 14)
+        summary.add_theme_color_override(
+            "font_color",
+            Color(0.82, 0.85, 0.93)
+        )
+        root.add_child(summary)
+
+    var effects: Array = passive_data.get("effects", [])
+
+    if not effects.is_empty():
+        var effects_title := Label.new()
+        effects_title.text = "EFFECTS"
+        effects_title.add_theme_font_size_override("font_size", 11)
+        effects_title.add_theme_color_override(
+            "font_color",
+            Color(0.66, 0.52, 0.88)
+        )
+        root.add_child(effects_title)
+
+        var effects_box := VBoxContainer.new()
+        effects_box.add_theme_constant_override("separation", 5)
+        root.add_child(effects_box)
+
+        for effect_data in effects:
             effects_box.add_child(
                 _make_effect_row(effect_data)
             )
