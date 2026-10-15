@@ -211,7 +211,7 @@ static func _attach_skill_descriptions(monster) -> void:
             "effects": [
                 {
                     "kind": "damage",
-                    "text": "Damage increases by [b]0.1%[/b] for every point of the caster's Speed."
+                    "text": "Damage increases according to the caster's Speed."
                 }
             ]
         },
