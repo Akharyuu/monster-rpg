@@ -275,9 +275,17 @@ def test_advanced_monsters_use_canonical_skill_constructors():
     for monster_id in ADVANCED_MONSTERS:
         for skill_id in MONSTER_DATA[monster_id]["skills"]:
             assert skill_id in skill_module.SKILL_DATA
+    referenced = {
+        action["new"] if action["action"] == "replace_skill"
+        else action["skill"]
+        for levels in RESONANCE_DATA.values()
+        for actions in levels.values()
+        for action in actions
+        if action["action"] in {"replace_skill", "add_skill"}
+    }
     for skill_id in ADVANCED_RESONANCE_SKILLS:
         assert skill_id in skill_module.SKILL_DATA
-        assert ('"' + skill_id + '"') in source
+        assert skill_id in referenced
     assert source.count("DamageSkillScript.new(") == 1
     assert source.count("SupportSkillScript.new(") == 1
     assert source.count("MonsterScript.new(") == 1
@@ -315,3 +323,68 @@ def test_special_revival_and_turn_rules_remain_canonical():
     assert skills["headlong_charge_stampede"][
         "after_use_handlers"
     ][0]["data"]["force_next_turn"] is True
+
+
+def test_godot_uses_shared_skill_resonance_rules():
+    source = GODOT_FACTORY.read_text(encoding="utf-8")
+    assert "static func _apply_resonance(monster) -> bool:" in source
+    selector = source.split(
+        "static func _apply_resonance(monster) -> bool:"
+    )[1]
+    assert "var rules: Dictionary = _get_shared_resonances()" in selector
+    assert "for rank in range(1, monster.resonance + 1):" in selector
+    assert "for action in levels.get(str(rank), []):" in selector
+    assert 'operation == "replace_skill"' in selector
+    assert 'operation == "add_skill"' in selector
+    assert 'int(action.get("slot", 0)) - 1' in selector
+    assert "monster.skills[slot] = replacement" in selector
+    assert "monster.skills.append(extra_skill)" in selector
+    assert "if not _apply_resonance(monster):" in source
+    assert 'if monster.monster_id == "' not in selector
+    assert "if not _assign_shared_passives(monster):" in source
+
+
+@pytest.mark.parametrize(
+    ("monster_id", "resonance", "expected"),
+    (
+        ("drake_igneous",0,["draconic_claw","scorching_breath","flame_devourer"]),
+        ("drake_igneous",2,["draconic_claw","scorching_breath_afterburn","flame_devourer"]),
+        ("drake_igneous",5,["draconic_claw","scorching_breath_afterburn","flame_devourer_incineration"]),
+        ("drake_void",1,["draconic_claw","null_rend_obliterate","dismantle"]),
+        ("drake_void",4,["draconic_claw","null_rend_obliterate","dismantle_decimation"]),
+        ("drake_void",5,["draconic_claw","null_rend_annihilation","dismantle_decimation"]),
+        ("dullahan_abyssal",0,["severing_blade","spectral_shackles"]),
+        ("dullahan_abyssal",2,["severing_blade","spectral_shackles_binding","inescapable_fate"]),
+        ("dullahan_abyssal",4,["severing_blade","spectral_shackles_lockdown","inescapable_fate"]),
+        ("dullahan_abyssal",5,["severing_blade","spectral_shackles_lockdown","inescapable_fate_ironbound"]),
+        ("dullahan_aether",2,["severing_blade","soulpiercer","beyond_the_veil_soul_recall"]),
+        ("dullahan_aether",5,["severing_blade","soulpiercer_ascension","beyond_the_veil_convergence"]),
+        ("dullahan_storm",5,["severing_blade","gale_pursuit_tempest","headlong_charge_stampede"]),
+        ("dryad_storm",5,["vine_barrage_nourishment","breath_of_the_grove_evergreen"]),
+        ("griffon_igneous",5,["rending_talons","searing_gale_heatstorm","meteor_dive_terminal_impact"]),
+    ),
+)
+def test_resonance_skill_kits_preserve_previous_godot_behavior(
+    monster_id, resonance, expected
+):
+    # Explicit snapshots of representative kits from the old selector.
+    current = list(MONSTER_DATA[monster_id]["skills"])
+    for rank in range(1, resonance + 1):
+        for action in RESONANCE_DATA[monster_id][rank]:
+            if action["action"] == "replace_skill":
+                current[action["slot"] - 1] = action["new"]
+            elif action["action"] == "add_skill":
+                current.append(action["skill"])
+    assert current == list(expected)
+
+
+def test_resonance_action_totals_remain_stable():
+    actions = [
+        action
+        for levels in RESONANCE_DATA.values()
+        for changes in levels.values()
+        for action in changes
+    ]
+    assert len(actions) == 60
+    assert sum(a["action"] == "replace_skill" for a in actions) == 34
+    assert sum(a["action"] == "add_skill" for a in actions) == 1

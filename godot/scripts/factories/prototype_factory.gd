@@ -726,8 +726,11 @@ static func create_level_one_monster(
             push_error("Unknown prototype monster id: %s" % monster_id)
             return null
 
+    if monster == null:
+        return null
     monster.resonance = clampi(resonance, 0, 5)
-    _apply_resonance(monster)
+    if not _apply_resonance(monster):
+        return null
     if not _sync_monster_skills(monster):
         return null
     if not _assign_shared_passives(monster):
@@ -2212,173 +2215,54 @@ static func _scaled(value: float) -> int:
     return int(round(value * LEVEL_ONE_MULTIPLIER))
 
 
-static func _apply_resonance(monster) -> void:
-    if monster.monster_id == "dullahan_aether":
-        if monster.resonance >= 2:
-            var skill_id: String = (
-                "beyond_the_veil_convergence"
-                if monster.resonance >= 5
-                else "beyond_the_veil_soul_recall"
-            )
-            monster.skills[2] = _create_shared_skill(skill_id)
-        if monster.resonance >= 3:
-            monster.skills[1] = _create_shared_skill(
-                "soulpiercer_ascension"
-            )
-        return
+# Apply skill changes from the same ordered R1-R5 rules as Python.
+# Passive actions are applied separately by _assign_shared_passives().
+static func _apply_resonance(monster) -> bool:
+    var rules: Dictionary = _get_shared_resonances()
+    if rules.is_empty():
+        push_error("Shared Resonance rules are unavailable")
+        return false
 
-    if monster.monster_id == "dullahan_void":
-        if monster.resonance >= 2:
-            monster.skills[1] = _create_shared_skill(
-                "spinal_scourge_ossuary"
-            )
-        if monster.resonance >= 3:
-            monster.skills[2] = _create_shared_skill(
-                "deaths_gaze_last_name"
-            )
-        return
+    var levels: Dictionary = rules.get(monster.monster_id, {})
+    for rank in range(1, monster.resonance + 1):
+        for action in levels.get(str(rank), []):
+            var operation: String = str(action.get("action", ""))
 
-    if monster.monster_id == "dullahan_abyssal":
-        if monster.resonance >= 1:
-            var skill_id: String = (
-                "spectral_shackles_lockdown"
-                if monster.resonance >= 4
-                else "spectral_shackles_binding"
-            )
-            monster.skills[1] = _create_shared_skill(skill_id)
-        if monster.resonance >= 2:
-            var fate_id: String = (
-                "inescapable_fate_ironbound"
-                if monster.resonance >= 5
-                else "inescapable_fate"
-            )
-            monster.skills.append(_create_shared_skill(fate_id))
-        return
+            if operation == "replace_skill":
+                # The JSON uses 1-based slots; Godot arrays use 0-based.
+                var slot: int = int(action.get("slot", 0)) - 1
+                if slot < 0 or slot >= monster.skills.size():
+                    push_error(
+                        "Invalid Resonance slot for %s at R%d: %d"
+                        % [monster.monster_id, rank, slot + 1]
+                    )
+                    return false
 
-    if monster.monster_id == "dullahan_storm":
-        if monster.resonance >= 1:
-            var skill_id: String = (
-                "gale_pursuit_tempest"
-                if monster.resonance >= 4
-                else "gale_pursuit_crosswind"
-            )
-            monster.skills[1] = _create_shared_skill(skill_id)
-        if monster.resonance >= 3:
-            var charge_id: String = (
-                "headlong_charge_stampede"
-                if monster.resonance >= 5
-                else "headlong_charge_rally"
-            )
-            monster.skills[2] = _create_shared_skill(charge_id)
-        return
+                var replacement_id: String = str(
+                    action.get("new", "")
+                )
+                var replacement = _create_shared_skill(replacement_id)
+                if replacement == null:
+                    return false
+                monster.skills[slot] = replacement
 
-    if monster.monster_id == "drake_void":
-        if monster.resonance >= 1:
-            var rend_id: String = (
-                "null_rend_annihilation"
-                if monster.resonance >= 5
-                else "null_rend_obliterate"
-            )
-            monster.skills[1] = _create_shared_skill(rend_id)
+            elif operation == "add_skill":
+                var extra_id: String = str(action.get("skill", ""))
+                var extra_skill = _create_shared_skill(extra_id)
+                if extra_skill == null:
+                    return false
+                monster.skills.append(extra_skill)
 
-        if monster.resonance >= 4:
-            monster.skills[2] = _create_shared_skill(
-                "dismantle_decimation"
-            )
-        return
+            elif (
+                operation == "add_passive"
+                or operation == "replace_passive"
+            ):
+                continue
 
-    if monster.monster_id == "dullahan_igneous":
-        if monster.resonance >= 1:
-            monster.skills[1] = _create_shared_skill(
-                "relentless_pursuit_blood_trail"
-            )
-        if monster.resonance >= 3:
-            var skill_id: String = (
-                "death_sentence_massacre"
-                if monster.resonance >= 5
-                else "death_sentence_execution"
-            )
-            monster.skills[2] = _create_shared_skill(skill_id)
-        return
+            else:
+                push_error(
+                    "Unsupported Resonance action: %s" % operation
+                )
+                return false
 
-    if monster.monster_id == "drake_storm":
-        if monster.resonance >= 2:
-            monster.skills[1] = _create_shared_skill(
-                "lightning_rush_blitz"
-            )
-        if monster.resonance >= 5:
-            monster.skills[2] = _create_shared_skill(
-                "stormbreak_requiem"
-            )
-        return
-
-    if monster.monster_id == "drake_aether":
-        if monster.resonance >= 3:
-            monster.skills[1] = _create_shared_skill(
-                "sovereign_breath_subjugation"
-            )
-        if monster.resonance >= 5:
-            monster.skills[2] = _create_shared_skill(
-                "heavens_decree_apotheosis"
-            )
-        return
-
-    if monster.monster_id == "drake_igneous":
-        if monster.resonance >= 2:
-            monster.skills[1] = _create_shared_skill(
-                "scorching_breath_afterburn"
-            )
-        if monster.resonance >= 3:
-            monster.skills[2] = _create_shared_skill(
-                "flame_devourer_rekindled"
-            )
-        if monster.resonance >= 5:
-            monster.skills[2] = _create_shared_skill(
-                "flame_devourer_incineration"
-            )
-        return
-
-    if monster.monster_id == "drake_abyssal":
-        if monster.resonance >= 1:
-            monster.skills[1] = _create_shared_skill(
-                "rime_breath_frigid"
-            )
-        if monster.resonance >= 5:
-            monster.skills[2] = _create_shared_skill(
-                "glacial_collapse_absolute_zero"
-            )
-        return
-
-    if monster.monster_id == "dryad_storm":
-        if monster.resonance >= 2:
-            monster.skills[1] = _create_shared_skill(
-                "breath_of_the_grove_sanctuary"
-            )
-        if monster.resonance >= 3:
-            monster.skills[0] = _create_shared_skill(
-                "vine_barrage_nourishment"
-            )
-        if monster.resonance >= 4:
-            monster.skills[1] = _create_shared_skill(
-                "breath_of_the_grove_evergreen"
-            )
-        return
-
-    if monster.monster_id == "griffon_igneous":
-        if monster.resonance >= 1:
-            monster.skills[2] = _create_shared_skill(
-                "meteor_dive_violent_crash"
-            )
-        if monster.resonance >= 3:
-            monster.skills[1] = _create_shared_skill(
-                "searing_gale_turbulence"
-            )
-        if monster.resonance >= 4:
-            monster.skills[2] = _create_shared_skill(
-                "meteor_dive_terminal_impact"
-            )
-        if monster.resonance >= 5:
-            monster.skills[1] = _create_shared_skill(
-                "searing_gale_heatstorm"
-            )
-        return
+    return true

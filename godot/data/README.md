@@ -78,8 +78,11 @@ the Godot front end. Do not create separate per-engine copies.
 - Cinderblood, Frozen Scales, Soul Charges and Voidborn resource caps,
   Thunderheart, Nature's Grace, Frostborne, Final Omen, Headless Rider,
   Chilling Presence and The Hunt now consume shared passive parameters.
-- The existing Godot skill Resonance selector, remaining combat-handler
-  branches and rich tooltips are separate migration steps.
+- Godot now applies skill replacements and additions from the same
+  ordered R1-R5 JSON actions as Python. Slots are validated and converted
+  from 1-based schema indices to 0-based Godot indices.
+- Remaining combat-handler branches and rich tooltips are separate
+  migration steps.
 
 ## Migration status
 
@@ -88,7 +91,8 @@ and passive references, and canonical skill definitions. Godot consumes shared
 core skill parameters and selected handler data.
 
 **Still to migrate:** remaining engine-specific passive/skill execution
-branches, Godot's skill Resonance selector, localized names and tooltips.
+branches, localized names and rich tooltips. All kit-level Resonance rules
+for skills and passives are now shared.
 Combat handler implementations remain independent in Python and GDScript.
 
 Run `python -m pytest -q` after editing JSON. Open the battle scene in Godot
