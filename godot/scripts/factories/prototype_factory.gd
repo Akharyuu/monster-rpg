@@ -353,7 +353,11 @@ static func _attach_skill_descriptions(monster) -> void:
                 },
                 {
                     "kind": "special",
-                    "text": "If this skill defeats a target that was already affected by [color=#ff7777]Oblivion[/color], [color=#d9a6ff]Banishes[/color] it."
+                    "text": "If this skill defeats a target that was already affected by [color=#ff7777]Oblivion[/color], the target becomes [color=#d9a6ff]Banished[/color]."
+                },
+                {
+                    "kind": "special",
+                    "text": "A [color=#d9a6ff]Banished[/color] monster cannot be revived."
                 }
             ]
         },
@@ -930,7 +934,7 @@ static func _attach_passive_description(monster) -> void:
                 "effects": [
                     {
                         "kind": "special",
-                        "text": "Each enemy buff removed grants [b]1 Voidborn[/b], up to [b]5[/b]."
+                        "text": "Each enemy buff removed grants [b]1 Voidborn stack[/b], up to [b]5[/b]."
                     },
                     {
                         "kind": "buff",
