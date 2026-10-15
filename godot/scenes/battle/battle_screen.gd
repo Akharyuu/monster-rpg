@@ -122,40 +122,40 @@ func _ready() -> void:
 # Every size has its own arc: 1-3 units do NOT inherit the first N
 # positions of the four-unit formation.
 const ALLY_ARCS := {
-    1: [Vector2(260, 350)],
+    1: [Vector2(285, 350)],
     2: [
-        Vector2(90, 320),
-        Vector2(355, 390)
+        Vector2(115, 320),
+        Vector2(380, 390)
     ],
     3: [
-        Vector2(35, 300),
-        Vector2(215, 360),
-        Vector2(420, 390)
+        Vector2(60, 300),
+        Vector2(240, 360),
+        Vector2(445, 390)
     ],
     4: [
-        Vector2(10, 340),
-        Vector2(155, 390),
-        Vector2(305, 390),
-        Vector2(470, 375)
+        Vector2(35, 340),
+        Vector2(180, 390),
+        Vector2(330, 390),
+        Vector2(495, 375)
     ]
 }
 
 const ENEMY_ARCS := {
-    1: [Vector2(915, 120)],
+    1: [Vector2(890, 120)],
     2: [
-        Vector2(760, 120),
-        Vector2(1010, 145)
+        Vector2(735, 120),
+        Vector2(985, 145)
     ],
     3: [
-        Vector2(690, 95),
-        Vector2(865, 60),
-        Vector2(1050, 120)
+        Vector2(665, 95),
+        Vector2(840, 60),
+        Vector2(1025, 120)
     ],
     4: [
-        Vector2(665, 78),
-        Vector2(815, 60),
-        Vector2(970, 60),
-        Vector2(1120, 110)
+        Vector2(640, 78),
+        Vector2(790, 60),
+        Vector2(945, 60),
+        Vector2(1095, 110)
     ]
 }
 
