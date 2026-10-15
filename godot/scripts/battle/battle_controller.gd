@@ -178,6 +178,8 @@ func end_active_turn() -> void:
         active_turn_effects
     )
 
+    active_monster.reduce_special_state_turns()
+
 
 func clear_active_monster() -> void:
     active_monster = null
@@ -202,6 +204,11 @@ func execute_active_skill(
 
     var caster_feedback: Array[String] = []
     var block_frozen_scales_generation := false
+
+    active_monster.battle_dead_count = (
+        (allies.size() - get_living(allies).size())
+        + (enemies.size() - get_living(enemies).size())
+    )
 
     if (
         active_monster.monster_id == "drake_abyssal"
