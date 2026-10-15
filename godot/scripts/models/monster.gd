@@ -37,6 +37,7 @@ var named_target = null
 var named_by = null
 var battle_dead_count: int = 0
 var ally_dead_for_soul_bonus: bool = false
+var on_hit_action_gauge_granted_this_skill: bool = false
 var passive_tooltip: Dictionary = {}
 var passive_tooltips: Array = []
 
