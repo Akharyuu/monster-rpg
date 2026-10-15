@@ -280,6 +280,8 @@ func _battle_state_display_name(state_id: String) -> String:
     match state_id:
         "frozen_scales":
             return "Frozen Scales"
+        "soul_charges":
+            return "Soul Charges"
         "bottomless_hunger":
             return "Bottomless Hunger"
         "named":
