@@ -516,6 +516,8 @@ func get_status_feedback_text(effect_id: String) -> String:
     match effect_id:
         "burn":
             return "BURN!"
+        "poison":
+            return "POISON!"
         "defense_break":
             return "DEF DOWN!"
         "attack_break":
