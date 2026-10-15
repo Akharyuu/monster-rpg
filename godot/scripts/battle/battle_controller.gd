@@ -11,12 +11,14 @@ var enemies: Array = []
 var active_monster
 var active_turn_effects: Array = []
 var recorded_dead_monsters: Array = []
+var forced_next_monster = null
 
 
 func setup(p_allies: Array, p_enemies: Array) -> void:
     allies = p_allies
     enemies = p_enemies
     recorded_dead_monsters = []
+    forced_next_monster = null
 
     for ally in allies:
         ally.combat_opponents = enemies
@@ -127,8 +129,16 @@ func begin_next_turn() -> Dictionary:
             "player_won": player_won()
         }
 
-    fill_action_gauges()
-    active_monster = get_ready_combatant()
+    if (
+        forced_next_monster != null
+        and forced_next_monster.is_alive()
+    ):
+        active_monster = forced_next_monster
+        forced_next_monster = null
+    else:
+        forced_next_monster = null
+        fill_action_gauges()
+        active_monster = get_ready_combatant()
 
     if active_monster == null:
         return {
