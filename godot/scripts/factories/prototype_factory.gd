@@ -834,6 +834,124 @@ static func _attach_passive_description(monster) -> void:
         {}
     )
 
+    if monster.monster_id == "drake_storm":
+        var thunderheart_data: Dictionary = {
+            "name": (
+                "Thunderheart: Overclocked"
+                if monster.resonance >= 3
+                else "Thunderheart"
+            ),
+            "summary": "Converts bonus Speed into offensive power.",
+            "effects": [
+                {
+                    "kind": "damage",
+                    "text": "Damage increases according to the monster's bonus Speed."
+                }
+            ]
+        }
+
+        if monster.resonance >= 3:
+            thunderheart_data["effects"].append(
+                {
+                    "kind": "special",
+                    "text": "Bonus Speed also increases Crit Rate."
+                }
+            )
+
+        monster.passive_tooltips = [
+            thunderheart_data
+        ]
+        monster.passive_tooltip = thunderheart_data
+
+        if monster.resonance >= 1:
+            var short_circuit_data: Dictionary = {
+                "name": (
+                    "Short Circuit: Chain Reaction"
+                    if monster.resonance >= 4
+                    else "Short Circuit"
+                ),
+                "summary": "Turns Speed Up into a chance to disrupt enemies.",
+                "effects": [
+                    {
+                        "kind": "debuff",
+                        "text": "While affected by [color=#70c8ff]Speed Up[/color], S1 and S2 hits have a [b]10% chance[/b] to apply [color=#ff7777]Stun[/color] for [b]1 turn[/b]."
+                    }
+                ]
+            }
+
+            if monster.resonance >= 4:
+                short_circuit_data["effects"].append(
+                    {
+                        "kind": "special",
+                        "text": "Successfully applying Stun reduces [b]Stormbreak[/b]'s cooldown by [b]1 turn[/b]."
+                    }
+                )
+
+            monster.passive_tooltips.append(
+                short_circuit_data
+            )
+
+    if monster.monster_id == "drake_aether":
+        var authority_data: Dictionary = {
+            "name": (
+                "Celestial Authority: Ascendance"
+                if monster.resonance >= 2
+                else "Celestial Authority"
+            ),
+            "summary": "Punishes enemies that strike the Aether Drake.",
+            "effects": [
+                {
+                    "kind": "debuff",
+                    "text": (
+                        "When hit, has a [b]50% chance[/b] to apply [color=#ff7777]Attack Break[/color] to the attacker for [b]2 turns[/b]."
+                        if monster.resonance >= 2
+                        else "When hit, has a [b]30% chance[/b] to apply [color=#ff7777]Attack Break[/color] to the attacker for [b]2 turns[/b]."
+                    )
+                }
+            ]
+        }
+
+        if monster.resonance >= 2:
+            authority_data["effects"].append(
+                {
+                    "kind": "special",
+                    "text": "On success, grants [b]20% Action Gauge[/b] to the living ally with the most buffs."
+                }
+            )
+
+        monster.passive_tooltips = [
+            authority_data
+        ]
+        monster.passive_tooltip = authority_data
+
+        if monster.resonance >= 1:
+            var divine_grace_data: Dictionary = {
+                "name": (
+                    "Divine Grace: Enlightenment"
+                    if monster.resonance >= 4
+                    else "Divine Grace"
+                ),
+                "summary": "Blesses allies whenever this monster grants them buffs.",
+                "effects": [
+                    {
+                        "kind": "heal",
+                        "text": "Each buff applied by this monster heals the target for [b]5% Max HP[/b]."
+                    }
+                ]
+            }
+
+            if monster.resonance >= 4:
+                divine_grace_data["effects"].append(
+                    {
+                        "kind": "special",
+                        "text": "Also grants the caster [b]+25 Accuracy[/b]."
+                    }
+                )
+
+            monster.passive_tooltips.append(
+                divine_grace_data
+            )
+
     if monster.monster_id == "drake_igneous":
         if monster.resonance >= 4:
             monster.passive_tooltip = {
