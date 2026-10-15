@@ -283,7 +283,7 @@ static func _create_void_drake():
         )
     ]
 
-    return MonsterScript.new(
+    var monster = MonsterScript.new(
         "drake_void",
         "Void Drake",
         "Drake",
@@ -296,6 +296,10 @@ static func _create_void_drake():
         skills,
         LEVEL_ONE_MULTIPLIER
     )
+
+    monster.special_states["bottomless_hunger"] = true
+
+    return monster
 
 
 static func _create_storm_drake():
