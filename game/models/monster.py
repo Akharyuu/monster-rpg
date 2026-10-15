@@ -598,12 +598,9 @@ class Monster:
             return False
 
         if target is None:
-            return any(
-                ally is not self
-                and not ally.is_alive
-                and not ally.banished
-                for ally in team
-            )
+            # Action availability depends on charges, not on whether
+            # there is presently a valid fallen ally to select.
+            return True
 
         return (
             target is not self
