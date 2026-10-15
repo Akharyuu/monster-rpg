@@ -86,3 +86,63 @@ def test_rejects_bad_schema_versions(
     monkeypatch.setattr(module, path_attr, file)
     with pytest.raises(ValueError, match="schema version"):
         getattr(module, loader)()
+
+
+def test_godot_resolves_and_consumes_shared_passive_data():
+    factory = (
+        ROOT / "godot" / "scripts" / "factories" / "prototype_factory.gd"
+    ).read_text(encoding="utf-8")
+    monster = (
+        ROOT / "godot" / "scripts" / "models" / "monster.gd"
+    ).read_text(encoding="utf-8")
+    battle = (
+        ROOT / "godot" / "scripts" / "battle" / "battle_controller.gd"
+    ).read_text(encoding="utf-8")
+
+    assert 'res://data/passive_data.json' in factory
+    assert 'res://data/resonance_data.json' in factory
+    assert 'levels.get(str(level), [])' in factory
+    assert 'operation == "replace_passive"' in factory
+    assert 'operation == "add_passive"' in factory
+    assert "monster.passive_definitions = active" in factory
+    assert 'get_passive_by_handler("apply_burn")' in factory
+    assert "if not _assign_shared_passives(monster):" in factory
+    assert 'get_passive_by_handler("thunderheart")' in monster
+    assert 'get_passive_by_handler("natures_grace")' in monster
+    assert 'get_passive_by_handler("deathless_rider")' in monster
+    assert 'get_passive_by_handler("chilling_presence")' in battle
+    assert 'get_passive_by_handler("the_hunt")' in battle
+
+
+@pytest.mark.parametrize(
+    ("monster_id", "level", "expected_passives"),
+    (
+        ("drake_igneous", 0, {"cinderblood"}),
+        ("drake_igneous", 1, {"cinderblood_ignite"}),
+        ("drake_igneous", 4, {"cinderblood_molten_core"}),
+        ("drake_abyssal", 4, {
+            "frozen_scales_everfrost", "frostborne_everlasting_winter"
+        }),
+        ("drake_storm", 5, {
+            "thunderheart_overclocked", "short_circuit_chain_reaction"
+        }),
+        ("dullahan_aether", 5, {"soul_vessel_requiem"}),
+        ("dullahan_void", 5, {"deathless_rider", "death_march"}),
+        ("dryad_storm", 5, {"natures_grace_overgrowth"}),
+    ),
+)
+def test_resonance_resolves_expected_passive_kits(
+    monster_id, level, expected_passives
+):
+    active = set(MONSTER_DATA[monster_id].get("passives", []))
+    rules = resonance_module.RESONANCE_DATA[monster_id]
+
+    for rank in range(1, level + 1):
+        for action in rules.get(rank, []):
+            if action["action"] == "add_passive":
+                active.add(action["passive"])
+            elif action["action"] == "replace_passive":
+                active.remove(action["old"])
+                active.add(action["new"])
+
+    assert active == expected_passives
