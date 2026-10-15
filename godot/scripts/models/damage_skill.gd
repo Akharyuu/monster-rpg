@@ -49,6 +49,8 @@ var extra_burn_stacks: int = 1
 var extra_burn_turns: int = 3
 var reset_skill_slot_if_burn_stacks: int = 0
 var reset_skill_required_burn_stacks: int = 0
+var action_gauge_gain_if_target_low_hp_threshold: float = 0.0
+var action_gauge_gain_if_target_low_hp_amount: float = 0.0
 
 
 func _init(
@@ -665,6 +667,12 @@ func execute_on_target(
             )
 
     for hit_index in range(hits):
+        var target_health_ratio_before_hit: float = (
+            float(defender.health) / float(defender.max_health)
+            if defender.max_health > 0
+            else 0.0
+        )
+
         var hit_multiplier := 1.0
 
         if not hit_multipliers.is_empty():
@@ -702,6 +710,16 @@ func execute_on_target(
 
         if result["critical"]:
             critical_hits += 1
+
+        if (
+            action_gauge_gain_if_target_low_hp_threshold > 0.0
+            and defender.is_alive()
+            and target_health_ratio_before_hit
+            < action_gauge_gain_if_target_low_hp_threshold
+        ):
+            attacker.increase_action_gauge(
+                action_gauge_gain_if_target_low_hp_amount
+            )
 
         if (
             not action_gauge_reduction_if_debuff_id.is_empty()
@@ -901,6 +919,8 @@ func execute_round_based_targets(
     var total_critical_hits := 0
     var all_effects: Array = []
     var all_resisted: Array[String] = []
+    var voidborn_damage_bonus := 0.0
+    var voidborn_activations := 0
 
     for defender in defenders:
         if defender == null or not defender.is_alive():
@@ -928,6 +948,7 @@ func execute_round_based_targets(
                 damage_multiplier += (
                     removed_buffs_total
                     * damage_per_removed_buff
+                    + voidborn_damage_bonus
                 )
 
             var hit_multiplier := 1.0
@@ -1001,6 +1022,59 @@ func execute_round_based_targets(
                     removed_from_target
                 )
 
+                if (
+                    attacker.monster_id == "drake_void"
+                    and attacker.resonance >= 2
+                    and not attacker.has_oblivion()
+                    and removed_from_target > 0
+                ):
+                    for _removed_buff in range(
+                        removed_from_target
+                    ):
+                        var current_voidborn: int = (
+                            attacker.add_combat_resource(
+                                "voidborn",
+                                1,
+                                5
+                            )
+                        )
+
+                        if current_voidborn < 5:
+                            continue
+
+                        attacker.consume_combat_resource(
+                            "voidborn",
+                            5
+                        )
+                        voidborn_activations += 1
+
+                        if attacker.resonance >= 3:
+                            attacker.debuffs.clear()
+
+                        if voidborn_activations == 1:
+                            var invincibility = (
+                                StatusEffectFactoryScript.create_status_effect(
+                                    "invincibility",
+                                    2,
+                                    attacker
+                                )
+                            )
+                            attacker.apply_status_effect(
+                                invincibility
+                            )
+                        else:
+                            var existing_invincibility = (
+                                attacker.get_buff(
+                                    "invincibility"
+                                )
+                            )
+
+                            if existing_invincibility != null:
+                                existing_invincibility.remaining_turns += 1
+                                existing_invincibility.duration += 1
+
+                            voidborn_damage_bonus += 0.20
+
             if defender.is_alive():
                 for effect_config in effects:
                     if not _effect_triggers_on_hit(
@@ -1052,6 +1126,7 @@ func execute_round_based_targets(
         "resisted_effects": all_resisted,
         "healing": 0,
         "removed_buffs": removed_buffs_total,
+        "voidborn_activations": voidborn_activations,
         "target_results": target_results.values()
     }
 
