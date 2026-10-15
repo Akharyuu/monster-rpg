@@ -17,18 +17,17 @@ signal target_pressed
 @onready var sprite_placeholder = $"Sprite Placeholder"
 @onready var monster_sprite: TextureRect = $"Monster Sprite"
 
-# Artwork is optional while building the roster. PNGs can exist locally
-# without having been committed to Git.
+# Static artwork for the allied team (back view until its idle is ready).
 const ALLY_SPRITES := {
     "drake_igneous": "res://assets/monster_sprites/drake_igneous.png"
 }
 
 # Atlas metadata and image are optional local assets. When missing, the
 # existing static sprite (or the placeholder) is used instead.
-const ALLY_IDLE_ANIMATIONS := {
+const ENEMY_FRONT_IDLE_ANIMATIONS := {
     "drake_igneous": {
-        "image": "res://assets/monster_sprites/drake_igneous_idle.png",
-        "metadata": "res://assets/monster_sprites/drake_igneous_idle.json"
+        "image": "res://assets/monster_sprites/drake_igneous_idle_front.png",
+        "metadata": "res://assets/monster_sprites/drake_igneous_idle_front.json"
     }
 }
 
@@ -88,12 +87,15 @@ func _configure_monster_sprite() -> void:
     monster_sprite.texture = null
     sprite_placeholder.visible = true
 
-    if bound_monster == null or is_enemy:
+    if bound_monster == null:
         return
 
-    if _configure_idle_animation():
+    # The front-view idle belongs to the enemy side only.
+    if is_enemy:
+        _configure_idle_animation()
         return
 
+    # Allies retain the static back-side placeholder artwork.
     var sprite_path: String = str(
         ALLY_SPRITES.get(str(bound_monster.monster_id), "")
     )
@@ -120,10 +122,10 @@ func _configure_monster_sprite() -> void:
 # This avoids assuming a fixed FPS or sprite sheet column count.
 func _configure_idle_animation() -> bool:
     var monster_id: String = str(bound_monster.monster_id)
-    if not ALLY_IDLE_ANIMATIONS.has(monster_id):
+    if not ENEMY_FRONT_IDLE_ANIMATIONS.has(monster_id):
         return false
 
-    var paths: Dictionary = ALLY_IDLE_ANIMATIONS[monster_id]
+    var paths: Dictionary = ENEMY_FRONT_IDLE_ANIMATIONS[monster_id]
     var image_path: String = str(paths["image"])
     var metadata_path: String = str(paths["metadata"])
 

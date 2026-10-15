@@ -42,8 +42,8 @@ var action_in_progress := true
 
 
 func _ready() -> void:
-	# Temporary 4v4 battle to inspect both curved formations, targeting,
-	# AoE effects, healing and passives. Change these lists for future demos.
+	# Visual 4v4 comparison: allied Kaelgors use the static back-side art;
+	# enemy Kaelgors play the front-view idle animation.
 	allies = [
 		PrototypeFactoryScript.create_level_one_monster(
             "drake_igneous"
@@ -61,16 +61,16 @@ func _ready() -> void:
 
 	enemies = [
 		PrototypeFactoryScript.create_level_one_monster(
-            "slime_storm"
+            "drake_igneous"
 		),
 		PrototypeFactoryScript.create_level_one_monster(
-            "slime_igneous"
+            "drake_igneous"
 		),
 		PrototypeFactoryScript.create_level_one_monster(
-            "thornet_abyssal"
+            "drake_igneous"
 		),
 		PrototypeFactoryScript.create_level_one_monster(
-            "sprout_abyssal"
+            "drake_igneous"
 		)
 	]
 
