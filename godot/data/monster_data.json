@@ -1,0 +1,407 @@
+{
+  "schema_version": 1,
+  "monsters": {
+    "slime_igneous": {
+      "name": "Igneous Slime",
+      "family": "Slime",
+      "attribute": "igneous",
+      "rarity": 1,
+      "max_health": 7600,
+      "attack": 485,
+      "defense": 330,
+      "speed": 138,
+      "skills": [
+        "ooze_slam"
+      ]
+    },
+    "slime_abyssal": {
+      "name": "Abyssal Slime",
+      "family": "Slime",
+      "attribute": "abyssal",
+      "rarity": 1,
+      "max_health": 8300,
+      "attack": 420,
+      "defense": 390,
+      "speed": 130,
+      "skills": [
+        "ooze_slam"
+      ]
+    },
+    "slime_storm": {
+      "name": "Storm Slime",
+      "family": "Slime",
+      "attribute": "storm",
+      "rarity": 1,
+      "max_health": 7200,
+      "attack": 455,
+      "defense": 320,
+      "speed": 150,
+      "skills": [
+        "ooze_slam"
+      ]
+    },
+    "sprout_igneous": {
+      "name": "Igneous Sprout",
+      "family": "Sprout",
+      "attribute": "igneous",
+      "rarity": 1,
+      "max_health": 6900,
+      "attack": 410,
+      "defense": 470,
+      "speed": 142,
+      "skills": [
+        "nurturing_lash"
+      ]
+    },
+    "sprout_abyssal": {
+      "name": "Abyssal Sprout",
+      "family": "Sprout",
+      "attribute": "abyssal",
+      "rarity": 1,
+      "max_health": 7400,
+      "attack": 350,
+      "defense": 535,
+      "speed": 134,
+      "skills": [
+        "nurturing_lash"
+      ]
+    },
+    "sprout_storm": {
+      "name": "Storm Sprout",
+      "family": "Sprout",
+      "attribute": "storm",
+      "rarity": 1,
+      "max_health": 6600,
+      "attack": 380,
+      "defense": 455,
+      "speed": 154,
+      "skills": [
+        "nurturing_lash"
+      ]
+    },
+    "wisp_igneous": {
+      "name": "Igneous Wisp",
+      "family": "Wisp",
+      "attribute": "igneous",
+      "rarity": 1,
+      "max_health": 5500,
+      "attack": 465,
+      "defense": 292,
+      "speed": 158,
+      "skills": [
+        "will_o_glow"
+      ]
+    },
+    "wisp_abyssal": {
+      "name": "Abyssal Wisp",
+      "family": "Wisp",
+      "attribute": "abyssal",
+      "rarity": 1,
+      "max_health": 5750,
+      "attack": 425,
+      "defense": 318,
+      "speed": 154,
+      "skills": [
+        "will_o_glow"
+      ]
+    },
+    "wisp_storm": {
+      "name": "Storm Wisp",
+      "family": "Wisp",
+      "attribute": "storm",
+      "rarity": 1,
+      "max_health": 5250,
+      "attack": 445,
+      "defense": 278,
+      "speed": 166,
+      "skills": [
+        "will_o_glow"
+      ]
+    },
+    "thornet_igneous": {
+      "name": "Igneous Thornet",
+      "family": "Thornet",
+      "attribute": "igneous",
+      "rarity": 2,
+      "max_health": 6150,
+      "attack": 675,
+      "defense": 352,
+      "speed": 166,
+      "skills": [
+        "needle_rush",
+        "fever_sting"
+      ]
+    },
+    "thornet_abyssal": {
+      "name": "Abyssal Thornet",
+      "family": "Thornet",
+      "attribute": "abyssal",
+      "rarity": 2,
+      "max_health": 6400,
+      "attack": 585,
+      "defense": 382,
+      "speed": 174,
+      "skills": [
+        "needle_rush",
+        "numbing_sting"
+      ]
+    },
+    "thornet_storm": {
+      "name": "Storm Thornet",
+      "family": "Thornet",
+      "attribute": "storm",
+      "rarity": 2,
+      "max_health": 5850,
+      "attack": 640,
+      "defense": 338,
+      "speed": 181,
+      "skills": [
+        "needle_rush",
+        "swarm_pierce"
+      ]
+    },
+    "dryad_storm": {
+      "name": "???",
+      "family": "Dryad",
+      "attribute": "storm",
+      "rarity": 3,
+      "max_health": 11150,
+      "attack": 545,
+      "defense": 760,
+      "speed": 204,
+      "skills": [
+        "vine_barrage",
+        "breath_of_the_grove"
+      ]
+    },
+    "griffon_igneous": {
+      "name": "???",
+      "family": "Griffon",
+      "attribute": "igneous",
+      "rarity": 4,
+      "max_health": 8900,
+      "attack": 890,
+      "defense": 595,
+      "speed": 232,
+      "skills": [
+        "rending_talons",
+        "searing_gale",
+        "meteor_dive"
+      ]
+    },
+    "dullahan_igneous": {
+      "name": "???",
+      "family": "Dullahan",
+      "attribute": "igneous",
+      "rarity": 4,
+      "max_health": 9200,
+      "attack": 915,
+      "defense": 610,
+      "speed": 218,
+      "skills": [
+        "severing_blade",
+        "relentless_pursuit",
+        "death_sentence"
+      ]
+    },
+    "dullahan_abyssal": {
+      "name": "???",
+      "family": "Dullahan",
+      "attribute": "abyssal",
+      "rarity": 4,
+      "max_health": 10800,
+      "attack": 650,
+      "defense": 790,
+      "speed": 212,
+      "skills": [
+        "severing_blade",
+        "spectral_shackles"
+      ],
+      "passives": [
+        "chilling_presence"
+      ]
+    },
+    "dullahan_storm": {
+      "name": "???",
+      "family": "Dullahan",
+      "attribute": "storm",
+      "rarity": 4,
+      "max_health": 9800,
+      "attack": 700,
+      "defense": 650,
+      "speed": 236,
+      "skills": [
+        "severing_blade",
+        "gale_pursuit",
+        "headlong_charge"
+      ]
+    },
+    "dullahan_aether": {
+      "name": "???",
+      "family": "Dullahan",
+      "attribute": "aether",
+      "rarity": 5,
+      "max_health": 11200,
+      "attack": 900,
+      "defense": 720,
+      "speed": 222,
+      "skills": [
+        "severing_blade",
+        "soulpiercer",
+        "beyond_the_veil"
+      ],
+      "passives": [
+        "soul_vessel"
+      ]
+    },
+    "dullahan_void": {
+      "name": "???",
+      "family": "Dullahan",
+      "attribute": "void",
+      "rarity": 5,
+      "max_health": 10500,
+      "attack": 1015,
+      "defense": 650,
+      "speed": 228,
+      "skills": [
+        "severing_blade",
+        "spinal_scourge",
+        "deaths_gaze"
+      ],
+      "passives": [
+        "headless_rider"
+      ]
+    },
+    "drake_igneous": {
+      "name": "Kaelgor",
+      "family": "Drake",
+      "attribute": "igneous",
+      "rarity": 5,
+      "max_health": 12125,
+      "attack": 963,
+      "defense": 707,
+      "speed": 224,
+      "skills": [
+        "draconic_claw",
+        "scorching_breath",
+        "flame_devourer"
+      ],
+      "passives": [
+        "cinderblood"
+      ]
+    },
+    "drake_abyssal": {
+      "name": "Vharak",
+      "family": "Drake",
+      "attribute": "abyssal",
+      "rarity": 5,
+      "max_health": 14075,
+      "attack": 693,
+      "defense": 921,
+      "speed": 216,
+      "skills": [
+        "draconic_claw",
+        "rime_breath",
+        "glacial_collapse"
+      ],
+      "passives": [
+        "frozen_scales"
+      ]
+    },
+    "drake_storm": {
+      "name": "???",
+      "family": "Drake",
+      "attribute": "storm",
+      "rarity": 5,
+      "max_health": 9875,
+      "attack": 1047,
+      "defense": 653,
+      "speed": 236,
+      "skills": [
+        "draconic_claw",
+        "lightning_rush",
+        "stormbreak"
+      ],
+      "passives": [
+        "thunderheart"
+      ]
+    },
+    "drake_aether": {
+      "name": "???",
+      "family": "Drake",
+      "attribute": "aether",
+      "rarity": 5,
+      "max_health": 12850,
+      "attack": 725,
+      "defense": 815,
+      "speed": 230,
+      "skills": [
+        "draconic_claw",
+        "sovereign_breath",
+        "heavens_decree"
+      ],
+      "passives": [
+        "celestial_authority"
+      ]
+    },
+    "drake_void": {
+      "name": "???",
+      "family": "Drake",
+      "attribute": "void",
+      "rarity": 5,
+      "max_health": 10750,
+      "attack": 995,
+      "defense": 670,
+      "speed": 230,
+      "skills": [
+        "draconic_claw",
+        "null_rend",
+        "dismantle"
+      ],
+      "passives": [
+        "bottomless_hunger"
+      ]
+    },
+    "goblin_igneous": {
+      "name": "Trull",
+      "family": "Goblin",
+      "attribute": "igneous",
+      "rarity": 2,
+      "max_health": 75,
+      "attack": 13,
+      "defense": 8,
+      "speed": 160,
+      "skills": [
+        "drake_claw"
+      ]
+    },
+    "golem_storm": {
+      "name": "Gorga'th",
+      "family": "Golem",
+      "attribute": "storm",
+      "rarity": 3,
+      "max_health": 160,
+      "attack": 5,
+      "defense": 38,
+      "speed": 90,
+      "skills": [
+        "heavy_slam",
+        "earths_echo"
+      ]
+    },
+    "piñata": {
+      "name": "Piñata",
+      "family": "Piñata",
+      "attribute": "aether",
+      "rarity": 10,
+      "max_health": 100000,
+      "attack": 1000,
+      "defense": 1000,
+      "speed": 200,
+      "skills": [
+        "drake_claw"
+      ],
+      "passives": []
+    }
+  }
+}
