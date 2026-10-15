@@ -61,9 +61,13 @@ func set_visual_state(state: String) -> void:
     base_style.content_margin_left = 4
     base_style.content_margin_right = 4
 
-    var hover_style: StyleBoxFlat = base_style.duplicate()
+    var hover_style: StyleBoxFlat = (
+        base_style.duplicate() as StyleBoxFlat
+    )
     hover_style.bg_color = background.lightened(0.13)
-    var pressed_style: StyleBoxFlat = base_style.duplicate()
+    var pressed_style: StyleBoxFlat = (
+        base_style.duplicate() as StyleBoxFlat
+    )
     pressed_style.bg_color = background.lightened(0.20)
 
     add_theme_stylebox_override("normal", base_style)
