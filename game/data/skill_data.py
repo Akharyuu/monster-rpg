@@ -1652,8 +1652,7 @@ SKILL_DATA = {
         "damage_handler_data": {
             "damage_per_charge": 0.10,
             "max_charges": 5,
-            "use_consumed_charges": True,
-            "disable_bonus_if_ally_dead": True
+            "use_consumed_charges": True
         }
     },
 
