@@ -906,6 +906,78 @@ static func _attach_passive_description(monster) -> void:
         {}
     )
 
+    if monster.monster_id == "drake_void":
+        var bottomless_data: Dictionary = passive_data.get(
+            "drake_void",
+            {}
+        )
+
+        monster.passive_tooltips = []
+        if not bottomless_data.is_empty():
+            monster.passive_tooltips.append(
+                bottomless_data
+            )
+            monster.passive_tooltip = bottomless_data
+
+        if monster.resonance >= 2:
+            var voidborn_data: Dictionary = {
+                "name": (
+                    "Voidborn: Transcendence"
+                    if monster.resonance >= 3
+                    else "Voidborn"
+                ),
+                "summary": "Feeds on stripped power until the Void Drake erupts into a protected state.",
+                "effects": [
+                    {
+                        "kind": "special",
+                        "text": "Each enemy buff removed grants [b]1 Voidborn[/b], up to [b]5[/b]."
+                    },
+                    {
+                        "kind": "buff",
+                        "text": "At [b]5 Voidborn[/b], consumes all stacks and grants [color=#70c8ff]Invincibility[/color] for [b]2 turns[/b]."
+                    }
+                ]
+            }
+
+            if monster.resonance >= 3:
+                voidborn_data["effects"].append(
+                    {
+                        "kind": "special",
+                        "text": "Activation also removes all debuffs from the caster."
+                    }
+                )
+
+            monster.passive_tooltips.append(
+                voidborn_data
+            )
+
+    if (
+        monster.monster_id == "dullahan_igneous"
+        and monster.resonance >= 2
+    ):
+        monster.passive_tooltip = {
+            "name": (
+                "Final Omen: Fulfilled"
+                if monster.resonance >= 4
+                else "Final Omen"
+            ),
+            "summary": "Preys on wounded enemies that try to recover.",
+            "effects": [
+                {
+                    "kind": "buff",
+                    "text": "When an enemy below [b]50% HP[/b] is healed, gains [color=#70c8ff]Attack Up[/color] for [b]1 turn[/b]."
+                }
+            ]
+        }
+
+        if monster.resonance >= 4:
+            monster.passive_tooltip["effects"].append(
+                {
+                    "kind": "special",
+                    "text": "Enemies below [b]50% HP[/b] receive reduced healing."
+                }
+            )
+
     if monster.monster_id == "drake_storm":
         var thunderheart_data: Dictionary = {
             "name": (
