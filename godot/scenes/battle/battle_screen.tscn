@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://3i4tp7fvp1d0"]
+[gd_scene load_steps=4 format=3 uid="uid://3i4tp7fvp1d0"]
 
 [ext_resource type="Script" uid="uid://bx70psvrc64ug" path="res://scenes/battle/battle_screen.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/battle/monster_battle_hud.tscn" id="2"]
+[ext_resource type="Script" path="res://scenes/battle/skill_button.gd" id="3"]
 
 [node name="Control" type="Control"]
 layout_mode = 3
@@ -61,6 +62,7 @@ theme_override_font_sizes/font_size = 18
 
 [node name="Skill 1 Button" type="Button" parent="."]
 layout_mode = 0
+script = ExtResource("3")
 offset_left = 245.0
 offset_top = 515.0
 offset_right = 405.0
@@ -69,6 +71,7 @@ text = "S1"
 
 [node name="Skill 2 Button" type="Button" parent="."]
 layout_mode = 0
+script = ExtResource("3")
 offset_left = 485.0
 offset_top = 515.0
 offset_right = 645.0
@@ -77,6 +80,7 @@ text = "S2"
 
 [node name="Skill 3 Button" type="Button" parent="."]
 layout_mode = 0
+script = ExtResource("3")
 offset_left = 725.0
 offset_top = 515.0
 offset_right = 885.0
