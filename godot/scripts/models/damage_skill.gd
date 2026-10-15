@@ -722,6 +722,52 @@ func execute_on_target(
         )
 
         if (
+            attacker.monster_id == "drake_storm"
+            and attacker.resonance >= 1
+            and not attacker.has_oblivion()
+            and attacker.has_buff("speed_up")
+            and skill_id in [
+                "draconic_claw",
+                "lightning_rush",
+                "lightning_rush_blitz"
+            ]
+            and defender.is_alive()
+            and randf() <= 0.10
+        ):
+            var short_circuit_result: Dictionary = (
+                try_apply_effect(
+                    {
+                        "effect_id": "stun",
+                        "chance": 1.00,
+                        "turns": 1
+                    },
+                    attacker,
+                    defender,
+                    effects_applied
+                )
+            )
+
+            var short_circuit_stun = (
+                short_circuit_result["applied_effect"]
+            )
+
+            if short_circuit_stun != null:
+                effects_applied.append(
+                    short_circuit_stun
+                )
+
+                if attacker.resonance >= 4:
+                    var stormbreak_skill = (
+                        attacker.get_skill(3)
+                    )
+
+                    if stormbreak_skill != null:
+                        stormbreak_skill.current_cooldown = max(
+                            0,
+                            stormbreak_skill.current_cooldown - 1
+                        )
+
+        if (
             action_gauge_reduction_per_hit > 0.0
             and randf() <= action_gauge_reduction_chance
         ):
