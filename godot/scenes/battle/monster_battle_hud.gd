@@ -94,8 +94,13 @@ func _update_monster_sprite() -> void:
     monster_sprite.position = config.get("position", Vector2.ZERO)
     monster_sprite.size = config.get("size", Vector2(236.0, 200.0))
     var sprite_scale: float = float(config.get("scale", 1.0))
-    monster_sprite.scale = Vector2.ONE * sprite_scale
-    monster_sprite.flip_h = bool(config.get("flip_h", false))
+    var flip_h: bool = bool(config.get("flip_h", false))
+    monster_sprite.scale = Vector2(
+        -sprite_scale if flip_h else sprite_scale,
+        sprite_scale
+    )
+    if flip_h:
+        monster_sprite.position.x += monster_sprite.size.x
     monster_sprite.visible = true
 
 
