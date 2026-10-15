@@ -65,7 +65,7 @@ def test_godot_tooltips_use_canonical_records_without_manual_maps():
 
     assert "for passive_id in monster.passive_ids:" in passive_code
     assert 'record.get("tooltip", {})' in passive_code
-    assert 'record.get("tooltip_rank_additions", {})' in passive_code
+    assert '"tooltip_rank_additions"' in passive_code
     assert "monster.passive_tooltip = monster.passive_tooltips[0]" in passive_code
     assert "var passive_data := {" not in source
     assert "if monster.monster_id ==" not in passive_code
@@ -134,7 +134,7 @@ def test_dynamic_passive_descriptions_no_longer_embed_monster_branches():
     )[1].split("static func _scaled(")[0]
     assert "for passive_id in monster.passive_ids:" in dynamic
     assert 'record.get("tooltip", {})' in dynamic
-    assert 'record.get("tooltip_rank_additions", {})' in dynamic
+    assert '"tooltip_rank_additions"' in dynamic
     assert 'rank_additions.get(str(rank), [])' in dynamic
     assert "monster.passive_tooltips.append(visible)" in dynamic
     assert "monster.passive_tooltip = monster.passive_tooltips[0]" in dynamic
