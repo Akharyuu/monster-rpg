@@ -882,12 +882,14 @@ func _update_passive_button() -> void:
             else Control.CURSOR_ARROW
         )
 
+        # Soul Charges are already displayed in the monster HUD.
+        # Availability is conveyed by the button's visual state.
+        action_button.text = "Soul Recall"
+
         if selected:
-            action_button.text = "Soul Recall\nCANCEL"
             action_button.set_visual_state("active_selected")
             _set_action_button_state(action_button, false)
         elif unlocked:
-            action_button.text = "Soul Recall\nREADY"
             action_button.set_visual_state(
                 "active_locked" if blocked else "active_ready"
             )
@@ -898,9 +900,6 @@ func _update_passive_button() -> void:
                 false
             )
         else:
-            action_button.text = (
-                "Soul Recall\n%d/5" % charges
-            )
             action_button.set_visual_state("active_locked")
             _set_action_button_state(
                 action_button,
