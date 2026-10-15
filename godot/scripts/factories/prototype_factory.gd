@@ -32,6 +32,12 @@ static func create_level_one_monster(monster_id: String):
             monster = _create_abyssal_dullahan()
         "dullahan_storm":
             monster = _create_storm_dullahan()
+        "sprout_igneous":
+            monster = _create_sprout("igneous")
+        "sprout_abyssal":
+            monster = _create_sprout("abyssal")
+        "sprout_storm":
+            monster = _create_sprout("storm")
         "griffon_igneous":
             monster = _create_igneous_griffon()
         "dryad_storm":
@@ -187,6 +193,16 @@ static func _attach_skill_descriptions(monster) -> void:
                 {
                     "kind": "debuff",
                     "text": "[b]Hits 2-3:[/b] each has a [b]30% chance[/b] to apply [color=#ff7777]Defense Break[/color] for [b]2 turns[/b]."
+                }
+            ]
+        },
+
+        "nurturing_lash": {
+            "summary": "Strikes one enemy with a living vine, then restores a wounded ally.",
+            "effects": [
+                {
+                    "kind": "heal",
+                    "text": "After attacking, heals the living ally with the lowest HP ratio for [b]5% of the caster's Max HP[/b]."
                 }
             ]
         },
@@ -706,6 +722,57 @@ static func _create_abyssal_drake():
     ] = 3
 
     return monster
+
+
+static func _create_sprout(attribute: String):
+    var nurturing_lash = DamageSkillScript.new(
+        "nurturing_lash",
+        "Nurturing Lash",
+        1.60,
+        1,
+        [],
+        "attack",
+        0,
+        []
+    )
+
+    var monster_id: String = "sprout_%s" % attribute
+    var display_name: String = "%s Sprout" % attribute.capitalize()
+
+    var hp: int = 6900
+    var attack: int = 410
+    var defense: int = 470
+    var speed: int = 142
+
+    match attribute:
+        "abyssal":
+            hp = 7400
+            attack = 350
+            defense = 535
+            speed = 134
+        "storm":
+            hp = 6600
+            attack = 380
+            defense = 455
+            speed = 154
+
+    var skills: Array = [
+        nurturing_lash
+    ]
+
+    return MonsterScript.new(
+        monster_id,
+        display_name,
+        "Sprout",
+        attribute,
+        1,
+        _scaled(hp),
+        _scaled(attack),
+        _scaled(defense),
+        _scaled(speed),
+        skills,
+        LEVEL_ONE_MULTIPLIER
+    )
 
 
 static func _create_igneous_griffon():
