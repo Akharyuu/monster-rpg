@@ -938,18 +938,14 @@ static func _attach_passive_description(monster) -> void:
                     },
                     {
                         "kind": "buff",
-                        "text": "At [b]5 Voidborn[/b], consumes all stacks and grants [color=#70c8ff]Invincibility[/color] for [b]2 turns[/b]."
+                        "text": (
+                            "At [b]5 Voidborn stacks[/b], consumes all stacks to cleanse all debuffs and grant [color=#70c8ff]Invincibility[/color] for [b]2 turns[/b]."
+                            if monster.resonance >= 3
+                            else "At [b]5 Voidborn stacks[/b], consumes all stacks and grants [color=#70c8ff]Invincibility[/color] for [b]2 turns[/b]."
+                        )
                     }
                 ]
             }
-
-            if monster.resonance >= 3:
-                voidborn_data["effects"].append(
-                    {
-                        "kind": "special",
-                        "text": "Activation also removes all debuffs from the caster."
-                    }
-                )
 
             monster.passive_tooltips.append(
                 voidborn_data
