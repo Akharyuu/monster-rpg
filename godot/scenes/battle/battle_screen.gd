@@ -124,38 +124,38 @@ func _ready() -> void:
 const ALLY_ARCS := {
     1: [Vector2(260, 350)],
     2: [
-        Vector2(90, 315),
-        Vector2(355, 375)
+        Vector2(90, 320),
+        Vector2(355, 390)
     ],
     3: [
         Vector2(35, 300),
-        Vector2(215, 340),
-        Vector2(420, 382)
+        Vector2(215, 360),
+        Vector2(420, 390)
     ],
     4: [
         Vector2(10, 290),
-        Vector2(160, 325),
-        Vector2(315, 355),
-        Vector2(470, 382)
+        Vector2(155, 340),
+        Vector2(305, 390),
+        Vector2(470, 375)
     ]
 }
 
 const ENEMY_ARCS := {
     1: [Vector2(915, 120)],
     2: [
-        Vector2(760, 85),
-        Vector2(1010, 150)
+        Vector2(760, 120),
+        Vector2(1010, 145)
     ],
     3: [
-        Vector2(690, 70),
-        Vector2(865, 110),
-        Vector2(1050, 165)
+        Vector2(690, 95),
+        Vector2(865, 60),
+        Vector2(1050, 120)
     ],
     4: [
-        Vector2(665, 60),
-        Vector2(815, 98),
-        Vector2(970, 132),
-        Vector2(1120, 178)
+        Vector2(665, 95),
+        Vector2(815, 60),
+        Vector2(970, 78),
+        Vector2(1120, 140)
     ]
 }
 
