@@ -222,6 +222,10 @@ func _status_short_name(effect_id: String) -> String:
             return "SIL"
         "oblivion":
             return "OBL"
+        "heal_block":
+            return "HEAL✕"
+        "vulnerability":
+            return "VULN"
         _:
             return effect_id.left(4).to_upper()
 
@@ -278,6 +282,10 @@ func _battle_state_display_name(state_id: String) -> String:
             return "Frozen Scales"
         "bottomless_hunger":
             return "Bottomless Hunger"
+        "named":
+            return "Named"
+        "headless":
+            return "Headless"
         _:
             return state_id.replace("_", " ").capitalize()
 
