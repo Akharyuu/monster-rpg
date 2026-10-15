@@ -1081,6 +1081,120 @@ static func _attach_passive_description(monster) -> void:
         {}
     )
 
+    if monster.monster_id == "dullahan_aether":
+        var soul_vessel_data: Dictionary = {
+            "name": (
+                "Soul Vessel: Requiem"
+                if monster.resonance >= 4
+                else (
+                    "Soul Vessel: Last Rites"
+                    if monster.resonance >= 1
+                    else "Soul Vessel"
+                )
+            ),
+            "summary": "Collects Soul Charges and converts them into offensive or restorative power.",
+            "effects": [
+                {
+                    "kind": "special",
+                    "text": "Gains [b]1 Soul Charge[/b] after using a damage skill, up to [b]5[/b]."
+                },
+                {
+                    "kind": "special",
+                    "text": (
+                        "Gains [b]2 Soul Charges[/b] whenever any monster dies."
+                        if monster.resonance >= 4
+                        else "Gains [b]1 Soul Charge[/b] whenever any monster dies."
+                    )
+                },
+                {
+                    "kind": "special",
+                    "text": "[b]Beyond the Veil[/b] consumes all stored Soul Charges to increase its damage."
+                }
+            ]
+        }
+
+        if monster.resonance >= 1:
+            soul_vessel_data["effects"].append(
+                {
+                    "kind": "special",
+                    "text": "[b]Severing Blade[/b] grants [b]1 additional Soul Charge[/b] when used against a target below [b]50% HP[/b]."
+                }
+            )
+
+        if monster.resonance >= 2:
+            soul_vessel_data["effects"].append(
+                {
+                    "kind": "special",
+                    "text": "At [b]5 Soul Charges[/b], [color=#d9a6ff]Soul Recall[/color] becomes available as an active action."
+                }
+            )
+
+        monster.passive_tooltip = soul_vessel_data
+        monster.passive_tooltips = [
+            soul_vessel_data
+        ]
+
+    if monster.monster_id == "dullahan_void":
+        var headless_data: Dictionary = {
+            "name": (
+                "Headless Rider: Unbound"
+                if monster.resonance >= 3
+                else "Headless Rider"
+            ),
+            "summary": "Empowers the Dullahan while it has a Named target.",
+            "effects": [
+                {
+                    "kind": "special",
+                    "text": (
+                        "While [color=#d9a6ff]Headless[/color], gains [b]+30% Speed[/b]."
+                        if monster.resonance >= 3
+                        else "While [color=#d9a6ff]Headless[/color], gains [b]+20% Speed[/b]."
+                    )
+                },
+                {
+                    "kind": "special",
+                    "text": "While Headless, cannot be Silenced unless affected by [color=#ff7777]Oblivion[/color]."
+                }
+            ]
+        }
+
+        monster.passive_tooltip = headless_data
+        monster.passive_tooltips = [
+            headless_data
+        ]
+
+        if monster.resonance >= 2:
+            monster.passive_tooltips.append(
+                {
+                    "name": "Deathless Rider",
+                    "summary": "Keeps the Dullahan's momentum alive between turns.",
+                    "effects": [
+                        {
+                            "kind": "special",
+                            "text": "After this monster's turn, gains [b]15% Action Gauge[/b]. Can activate once every [b]6 turns[/b]."
+                        }
+                    ]
+                }
+            )
+
+        if monster.resonance >= 5:
+            monster.passive_tooltips.append(
+                {
+                    "name": "Death's Gaze: Death March",
+                    "summary": "Carries the death sentence forward when a Named enemy falls.",
+                    "effects": [
+                        {
+                            "kind": "special",
+                            "text": "When the [color=#d9a6ff]Named[/color] target dies, the living enemy with the lowest HP ratio becomes [color=#d9a6ff]Named[/color] for [b]2 turns[/b]."
+                        },
+                        {
+                            "kind": "debuff",
+                            "text": "Attempts to apply [color=#ff7777]Vulnerability[/color] to the new target for [b]3 turns[/b]."
+                        }
+                    ]
+                }
+            )
+
     if monster.monster_id == "dullahan_abyssal":
         if monster.resonance >= 3:
             monster.passive_tooltip = {
