@@ -43,6 +43,8 @@ var ally_dead_for_soul_bonus: bool = false
 var on_hit_action_gauge_granted_this_skill: bool = false
 var banished: bool = false
 var combat_opponents: Array = []
+var death_named_by = null
+var internal_cooldowns: Dictionary = {}
 var passive_tooltip: Dictionary = {}
 var passive_tooltips: Array = []
 
@@ -219,7 +221,11 @@ func get_effective_stat(stat: String) -> float:
         and is_headless()
         and not has_oblivion()
     ):
-        value += speed * 0.20
+        value += speed * (
+            0.30
+            if resonance >= 3
+            else 0.20
+        )
 
     if (
         stat == "crit_rate"
@@ -399,6 +405,10 @@ func receive_damage(
 
 
 func _clear_combat_state_on_death() -> void:
+    # Preserve who Named this monster so Death March can react
+    # after normal death cleanup has removed linked combat states.
+    death_named_by = named_by
+
     # Resolve linked special states before clearing local containers.
     if named_by != null:
         var source = named_by
@@ -719,6 +729,28 @@ func get_skill(index: int):
 func reduce_skill_cooldowns() -> void:
     for skill in skills:
         skill.reduce_cooldown()
+
+    for cooldown_id in internal_cooldowns.keys():
+        internal_cooldowns[cooldown_id] = maxi(
+            0,
+            int(internal_cooldowns[cooldown_id]) - 1
+        )
+
+
+func get_internal_cooldown(cooldown_id: String) -> int:
+    return int(
+        internal_cooldowns.get(cooldown_id, 0)
+    )
+
+
+func set_internal_cooldown(
+    cooldown_id: String,
+    turns: int
+) -> void:
+    internal_cooldowns[cooldown_id] = maxi(
+        0,
+        turns
+    )
 
 
 func increase_action_gauge(amount: float) -> void:
