@@ -35,6 +35,7 @@ var special_states: Dictionary = {}
 var named_target = null
 var named_by = null
 var battle_dead_count: int = 0
+var passive_tooltip: Dictionary = {}
 
 # Lightweight prototype representation of passive effects that trigger
 # whenever this monster lands a hit. This will later become the full
