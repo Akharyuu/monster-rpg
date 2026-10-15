@@ -32,6 +32,9 @@ var debuffs: Array = []
 var combat_resources: Dictionary = {}
 var combat_resource_maximums: Dictionary = {}
 var special_states: Dictionary = {}
+var named_target = null
+var named_by = null
+var battle_dead_count: int = 0
 
 # Lightweight prototype representation of passive effects that trigger
 # whenever this monster lands a hit. This will later become the full
@@ -80,11 +83,23 @@ func is_frozen() -> bool:
 
 
 func is_silenced() -> bool:
+    if (
+        is_headless()
+        and not has_oblivion()
+    ):
+        return false
+
     return get_debuff("silence") != null
 
 
 func has_oblivion() -> bool:
     return get_debuff("oblivion") != null
+
+
+func is_headless() -> bool:
+    return bool(
+        special_states.get("headless", false)
+    )
 
 
 func cannot_act() -> bool:
@@ -174,11 +189,21 @@ func get_effective_stat(stat: String) -> float:
             elif debuff.modifier != null:
                 multiplicative_modifier *= float(debuff.modifier)
 
-    return (
+    var value: float = (
         get_base_stat(stat)
         * multiplicative_modifier
         + additive_modifier
     )
+
+    if (
+        stat == "speed"
+        and monster_id == "dullahan_void"
+        and is_headless()
+        and not has_oblivion()
+    ):
+        value += speed * 0.20
+
+    return value
 
 
 func get_passive_damage_multiplier() -> float:
@@ -224,6 +249,9 @@ func heal(amount: int) -> int:
     if not is_alive():
         return 0
 
+    if get_debuff("heal_block") != null:
+        return 0
+
     var old_health: int = health
     health = mini(max_health, health + amount)
     return health - old_health
@@ -238,6 +266,13 @@ func apply_status_effect(effect):
     if effect.effect_type == "buff":
         effects_list = buffs
     elif effect.effect_type == "debuff":
+        if (
+            effect.effect_id == "silence"
+            and is_headless()
+            and not has_oblivion()
+        ):
+            return null
+
         if has_buff("immunity"):
             return null
 
@@ -263,6 +298,61 @@ func apply_status_effect(effect):
         return effect
 
     return null
+
+
+func apply_named(
+    target,
+    turns: int = 2
+) -> void:
+    clear_named_target()
+
+    named_target = target
+    special_states["headless"] = true
+
+    target.named_by = self
+    target.special_states["named"] = turns
+
+
+func clear_named_target() -> void:
+    if (
+        named_target != null
+        and named_target.named_by == self
+    ):
+        named_target.named_by = null
+        named_target.special_states.erase("named")
+
+    named_target = null
+    special_states.erase("headless")
+
+
+func reduce_special_state_turns() -> void:
+    if named_by == null:
+        return
+
+    var remaining: int = int(
+        special_states.get("named", 0)
+    ) - 1
+
+    if remaining > 0:
+        special_states["named"] = remaining
+        return
+
+    var source = named_by
+    named_by = null
+    special_states.erase("named")
+
+    if (
+        source != null
+        and source.named_target == self
+    ):
+        source.clear_named_target()
+
+
+func get_direct_damage_taken_multiplier() -> float:
+    if get_debuff("vulnerability") != null:
+        return 1.15
+
+    return 1.0
 
 
 func remove_buffs_for_strip() -> int:
