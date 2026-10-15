@@ -38,6 +38,10 @@ var max_missing_health_bonus: float = 0.0
 var execute_health_threshold: float = 0.0
 var execute_defense_ignore_ratio: float = 0.0
 var speed_damage_scaling: float = 0.0
+var conditional_required_debuff_id: String = ""
+var conditional_requires_any_debuff: bool = false
+var conditional_damage_multiplier: float = 1.0
+var conditional_hit_damage_multipliers: Array = []
 
 
 func _init(
@@ -202,10 +206,12 @@ func damage_calc(
     attacker,
     defender,
     hit_multiplier: float = 1.0,
-    snapshot_health_ratio: float = -1.0
+    snapshot_health_ratio: float = -1.0,
+    condition_multiplier: float = 1.0
 ) -> Dictionary:
-    var bonus_damage: float = get_burn_damage_multiplier(
-        defender
+    var bonus_damage: float = (
+        get_burn_damage_multiplier(defender)
+        * condition_multiplier
     )
 
     if damage_per_soul_charge > 0.0:
@@ -316,7 +322,8 @@ func damage_calc(
 
 func effect_condition_met(
     condition: Dictionary,
-    defender
+    defender,
+    applied_effects_this_use: Array = []
 ) -> bool:
     if condition.is_empty():
         return true
@@ -333,6 +340,19 @@ func effect_condition_met(
                 )
                 != null
             )
+        "target_gained_debuff":
+            var required_id: String = str(
+                condition.get("effect_id", "")
+            )
+
+            for effect in applied_effects_this_use:
+                if (
+                    effect != null
+                    and effect.effect_id == required_id
+                ):
+                    return true
+
+            return false
         _:
             return true
 
@@ -340,7 +360,8 @@ func effect_condition_met(
 func try_apply_effect(
     effect_config: Dictionary,
     attacker,
-    defender
+    defender,
+    applied_effects_this_use: Array = []
 ) -> Dictionary:
     var effect_id: String = str(
         effect_config["effect_id"]
@@ -359,7 +380,8 @@ func try_apply_effect(
 
     if not effect_condition_met(
         condition,
-        defender
+        defender,
+        applied_effects_this_use
     ):
         return result
 
@@ -516,6 +538,18 @@ func execute_on_target(
         else 0.0
     )
 
+    var condition_met_at_start := false
+
+    if not conditional_required_debuff_id.is_empty():
+        condition_met_at_start = (
+            defender.get_debuff(
+                conditional_required_debuff_id
+            )
+            != null
+        )
+    elif conditional_requires_any_debuff:
+        condition_met_at_start = not defender.debuffs.is_empty()
+
     if apply_named_before_hit and defender.is_alive():
         attacker.apply_named(
             defender,
@@ -553,11 +587,24 @@ func execute_on_target(
         if not hit_multipliers.is_empty():
             hit_multiplier = hit_multipliers[hit_index]
 
+        var condition_multiplier := 1.0
+
+        if condition_met_at_start:
+            if not conditional_hit_damage_multipliers.is_empty():
+                condition_multiplier = float(
+                    conditional_hit_damage_multipliers[
+                        hit_index
+                    ]
+                )
+            else:
+                condition_multiplier = conditional_damage_multiplier
+
         var result: Dictionary = damage_calc(
             attacker,
             defender,
             hit_multiplier,
-            starting_health_ratio
+            starting_health_ratio,
+            condition_multiplier
         )
 
         var actual_damage: int = defender.receive_damage(
@@ -631,7 +678,8 @@ func execute_on_target(
             var effect_result: Dictionary = try_apply_effect(
                 effect_config,
                 attacker,
-                defender
+                defender,
+                effects_applied
             )
 
             var applied_effect = effect_result[
