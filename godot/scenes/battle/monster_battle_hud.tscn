@@ -20,6 +20,18 @@ offset_bottom = 135.0
 mouse_filter = 2
 script = ExtResource("2")
 
+[node name="Monster Sprite" type="TextureRect" parent="."]
+visible = false
+layout_mode = 0
+offset_left = 9.0
+offset_top = 19.0
+offset_right = 129.0
+offset_bottom = 135.0
+mouse_filter = 2
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+
 [node name="Turn Indicator" type="Panel" parent="."]
 visible = false
 layout_mode = 0
