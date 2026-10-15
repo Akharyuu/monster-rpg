@@ -6,6 +6,7 @@ const StatusEffectFactoryScript = preload(
 )
 
 var buffs_to_apply: Array = []
+var healing_hp_ratio: float = 0.0
 
 
 func _init(
@@ -42,12 +43,26 @@ func execute_targets(
 
     var effects_applied: Array = []
     var target_results: Array = []
+    var total_healing: int = 0
 
     for target in targets:
         if target == null or not target.is_alive():
             continue
 
         var target_effects: Array = []
+        var target_healing: int = 0
+
+        if healing_hp_ratio > 0.0:
+            var intended_heal: int = int(
+                caster.get_healing_hp()
+                * healing_hp_ratio
+                * caster.get_direct_heal_multiplier(target)
+            )
+
+            target_healing = target.heal(
+                intended_heal
+            )
+            total_healing += target_healing
 
         for buff_config in buffs_to_apply:
             var status_effect = (
@@ -73,7 +88,7 @@ func execute_targets(
             "critical_hits": 0,
             "effects_applied": target_effects,
             "resisted_effects": [],
-            "healing": 0
+            "healing": target_healing
         })
 
     trigger_cooldown()
@@ -84,6 +99,6 @@ func execute_targets(
         "critical_hits": 0,
         "effects_applied": effects_applied,
         "resisted_effects": [],
-        "healing": 0,
+        "healing": total_healing,
         "target_results": target_results
     }
