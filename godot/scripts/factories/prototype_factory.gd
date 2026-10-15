@@ -230,6 +230,20 @@ static func _attach_skill_descriptions(monster) -> void:
             ]
         },
 
+        "lightning_rush_blitz": {
+            "summary": "Rushes one enemy with two rapid lightning-infused strikes.",
+            "effects": [
+                {
+                    "kind": "buff",
+                    "text": "After attacking, grants the caster [color=#70c8ff]Speed Up[/color] for [b]2 turns[/b]."
+                },
+                {
+                    "kind": "special",
+                    "text": "After attacking, gains [b]15% Action Gauge[/b]."
+                }
+            ]
+        },
+
         "stormbreak": {
             "summary": "Unleashes ten lightning strikes across random enemies.",
             "effects": [
@@ -248,6 +262,24 @@ static func _attach_skill_descriptions(monster) -> void:
             ]
         },
 
+        "stormbreak_requiem": {
+            "summary": "Unleashes ten lightning strikes across random enemies, followed by a final sweeping discharge.",
+            "effects": [
+                {
+                    "kind": "special",
+                    "text": "Hits every living enemy at least once before distributing the remaining strikes randomly."
+                },
+                {
+                    "kind": "control",
+                    "text": "A target hit [b]3+ times[/b] has a [b]50% chance[/b] to be [color=#ff7777]Stunned[/color]."
+                },
+                {
+                    "kind": "damage",
+                    "text": "After the ten strikes, unleashes an additional attack against all living enemies at reduced damage."
+                }
+            ]
+        },
+
         "sovereign_breath": {
             "summary": "Blasts all enemies with sovereign aether.",
             "effects": [
@@ -262,12 +294,40 @@ static func _attach_skill_descriptions(monster) -> void:
             ]
         },
 
+        "sovereign_breath_subjugation": {
+            "summary": "Blasts all enemies with overwhelming sovereign aether.",
+            "effects": [
+                {
+                    "kind": "debuff",
+                    "text": "Attempts to apply [color=#ff7777]Silence[/color] for [b]1 turn[/b]."
+                },
+                {
+                    "kind": "special",
+                    "text": "Silence chance starts at [b]50%[/b] and gains [b]+10% per caster buff[/b], up to [b]100%[/b]."
+                }
+            ]
+        },
+
         "heavens_decree": {
             "summary": "Empowers the entire allied team with celestial authority.",
             "effects": [
                 {
                     "kind": "buff",
                     "text": "Grants [color=#70c8ff]Attack Up[/color], [color=#70c8ff]Immunity[/color] and [color=#70c8ff]Veil[/color] for [b]2 turns[/b]."
+                }
+            ]
+        },
+
+        "heavens_decree_apotheosis": {
+            "summary": "Elevates the entire allied team under overwhelming celestial authority.",
+            "effects": [
+                {
+                    "kind": "buff",
+                    "text": "Grants [color=#70c8ff]Attack Up[/color], [color=#70c8ff]Immunity[/color] and [color=#70c8ff]Veil[/color] for [b]3 turns[/b]."
+                },
+                {
+                    "kind": "special",
+                    "text": "Grants the caster an [b]extra turn[/b]."
                 }
             ]
         },
@@ -916,6 +976,98 @@ static func _scaled(value: float) -> int:
 
 
 static func _apply_resonance(monster) -> void:
+    if monster.monster_id == "drake_storm":
+        if monster.resonance >= 2:
+            var blitz = DamageSkillScript.new(
+                "lightning_rush_blitz",
+                "Lightning Rush: Blitz",
+                1.75,
+                2,
+                [],
+                "attack",
+                3,
+                []
+            )
+            monster.skills[1] = blitz
+
+        if monster.resonance >= 5:
+            var requiem = DamageSkillScript.new(
+                "stormbreak_requiem",
+                "Stormbreak: Requiem",
+                1.60,
+                10,
+                [],
+                "attack",
+                6,
+                [
+                    {
+                        "effect_id": "stun",
+                        "chance": 0.50,
+                        "turns": 1,
+                        "trigger": "hit_count_threshold",
+                        "min_hits": 3
+                    }
+                ],
+                {},
+                {},
+                "random_enemies",
+                0.0,
+                "one_each_then_random",
+                {
+                    "full_damage_hits": 5,
+                    "later_hit_multiplier": 0.25,
+                    "first_hit_bonus_if_caster_buff": {
+                        "effect_id": "speed_up",
+                        "multiplier": 1.50
+                    }
+                }
+            )
+            monster.skills[2] = requiem
+
+        return
+
+    if monster.monster_id == "drake_aether":
+        if monster.resonance >= 3:
+            var subjugation = DamageSkillScript.new(
+                "sovereign_breath_subjugation",
+                "Sovereign Breath: Subjugation",
+                3.00,
+                1,
+                [],
+                "attack",
+                3,
+                [],
+                {},
+                {},
+                "all_enemies"
+            )
+            monster.skills[1] = subjugation
+
+        if monster.resonance >= 5:
+            var apotheosis = SupportSkillScript.new(
+                "heavens_decree_apotheosis",
+                "Heaven's Decree: Apotheosis",
+                6,
+                [
+                    {
+                        "effect_id": "attack_up",
+                        "turns": 3
+                    },
+                    {
+                        "effect_id": "immunity",
+                        "turns": 3
+                    },
+                    {
+                        "effect_id": "veil",
+                        "turns": 3
+                    }
+                ],
+                "all_allies"
+            )
+            monster.skills[2] = apotheosis
+
+        return
+
     if monster.monster_id == "drake_igneous":
         if monster.resonance >= 1:
             monster.on_hit_effects = [
