@@ -51,9 +51,10 @@ func execute_targets(
 
         var target_effects: Array = []
         var target_healing: int = 0
+        var intended_heal: int = 0
 
         if healing_hp_ratio > 0.0:
-            var intended_heal: int = int(
+            intended_heal = int(
                 caster.get_healing_hp()
                 * healing_hp_ratio
                 * caster.get_direct_heal_multiplier(target)
@@ -88,7 +89,8 @@ func execute_targets(
             "critical_hits": 0,
             "effects_applied": target_effects,
             "resisted_effects": [],
-            "healing": target_healing
+            "healing": target_healing,
+            "intended_healing": intended_heal
         })
 
     trigger_cooldown()
