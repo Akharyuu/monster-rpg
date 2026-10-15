@@ -33,7 +33,7 @@ SKILL_DATA = {
             {
                 "handler": "heal_lowest_hp_ally",
                 "data": {
-                    "max_health_ratio": 0.05
+                    "healing_hp_ratio": 0.05
                 }
             }
         ]
