@@ -3,6 +3,7 @@ extends SceneTree
 # This is a real runtime smoke test, not a text-only GDScript assertion.
 # It is run by: godot --headless --path godot --script res://tests/headless_smoke.gd
 const Factory = preload("res://scripts/factories/prototype_factory.gd")
+const Battle = preload("res://scripts/battle/battle_controller.gd")
 
 const MONSTER_IDS = [
     "drake_igneous", "drake_abyssal", "drake_storm",
@@ -180,6 +181,8 @@ func _run_smoke() -> void:
                         ]
                     )
 
+    failures.append_array(_run_combat_regressions())
+
     if not failures.is_empty():
         for problem in failures:
             push_error("HEADLESS SMOKE: %s" % problem)
@@ -192,3 +195,79 @@ func _run_smoke() -> void:
         % [MONSTER_IDS.size(), built]
     )
     quit(0)
+
+
+# Run real, deterministic battle actions so CI checks more than scene import
+# and roster construction. Random criticals/debuffs are not asserted.
+func _run_combat_regressions() -> Array[String]:
+    var errors: Array[String] = []
+    var battle = Battle.new()
+
+    # Damage: first skill must reduce enemy HP and report damage.
+    var attacker = Factory.create_level_one_monster("drake_igneous", 0)
+    var defender = Factory.create_level_one_monster("drake_abyssal", 0)
+    if attacker == null or defender == null:
+        errors.append("Damage fixture could not be constructed")
+        return errors
+
+    battle.setup([attacker], [defender])
+    battle.active_monster = attacker
+    var before_hp: int = defender.health
+    var attack_result: Dictionary = battle.execute_active_skill(
+        attacker.skills[0], [defender]
+    )
+    if (
+        not bool(attack_result.get("success", false))
+        or int(attack_result.get("damage", 0)) <= 0
+        or defender.health >= before_hp
+    ):
+        errors.append("Draconic Claw did not deal damage")
+
+    # Healing: the shared healing handler must restore wounded ally HP.
+    var dryad = Factory.create_level_one_monster("dryad_storm", 0)
+    var ally = Factory.create_level_one_monster("slime_igneous", 0)
+    var foe = Factory.create_level_one_monster("slime_storm", 0)
+    if dryad == null or ally == null or foe == null:
+        errors.append("Healing fixture could not be constructed")
+        return errors
+
+    ally.health = maxi(1, int(ally.max_health * 0.3))
+    var injured_hp: int = ally.health
+    battle.setup([dryad, ally], [foe])
+    battle.active_monster = dryad
+    var healing_result: Dictionary = battle.execute_active_skill(
+        dryad.skills[1], [ally]
+    )
+    if (
+        not bool(healing_result.get("success", false))
+        or ally.health <= injured_hp
+        or int(healing_result.get("healing", 0)) <= 0
+    ):
+        errors.append("Breath of the Grove did not heal")
+
+    # Resurrection: Soul Recall spends its resource, revives, and grants AG.
+    var dullahan = Factory.create_level_one_monster("dullahan_aether", 5)
+    var fallen = Factory.create_level_one_monster("slime_abyssal", 0)
+    if dullahan == null or fallen == null:
+        errors.append("Soul Recall fixture could not be constructed")
+        return errors
+
+    fallen.health = 0
+    battle.setup([dullahan, fallen], [foe])
+    battle.active_monster = dullahan
+    dullahan.combat_resources["soul_charges"] = 5
+    if not battle.can_use_soul_recall(dullahan):
+        errors.append("Soul Recall should be available at 5 charges")
+    else:
+        var recall: Dictionary = battle.execute_soul_recall(fallen)
+        if (
+            not bool(recall.get("success", false))
+            or fallen.health <= 0
+            or fallen.action_gauge < 0.999
+            or dullahan.get_combat_resource("soul_charges") != 0
+        ):
+            errors.append("Soul Recall did not revive and spend charges")
+
+    if errors.is_empty():
+        print("GODOT_COMBAT_OK: damage, healing and Soul Recall")
+    return errors

@@ -43,3 +43,17 @@ def test_smoke_file_has_all_24_playable_monsters_and_rank_checks():
     assert "Factory.create_level_one_monster(" in source
     assert "for rank in range(max_rank + 1):" in source
     assert "GODOT_SMOKE_OK:" in source
+
+
+def test_godot_smoke_executes_damage_healing_and_revive():
+    from pathlib import Path
+
+    script = (
+        Path(__file__).resolve().parents[1]
+        / "godot" / "tests" / "headless_smoke.gd"
+    ).read_text(encoding="utf-8")
+    assert "func _run_combat_regressions()" in script
+    assert 'battle.execute_active_skill(' in script
+    assert 'battle.execute_soul_recall(fallen)' in script
+    assert "GODOT_COMBAT_OK:" in script
+    assert "failures.append_array(_run_combat_regressions())" in script
