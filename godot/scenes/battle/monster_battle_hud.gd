@@ -216,6 +216,8 @@ func _status_short_name(effect_id: String) -> String:
             return "IMM"
         "shield":
             return "SHD"
+        "regrowth":
+            return "RGW"
         "stun":
             return "STN"
         "freeze":
