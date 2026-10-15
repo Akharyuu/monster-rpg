@@ -214,6 +214,8 @@ func _status_short_name(effect_id: String) -> String:
             return "SPD↑"
         "immunity":
             return "IMM"
+        "invincibility":
+            return "INV"
         "shield":
             return "SHD"
         "regrowth":
@@ -288,6 +290,8 @@ func _battle_state_display_name(state_id: String) -> String:
             return "Frozen Scales"
         "soul_charges":
             return "Soul Charges"
+        "voidborn":
+            return "Voidborn"
         "bottomless_hunger":
             return "Bottomless Hunger"
         "named":
