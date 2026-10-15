@@ -246,16 +246,16 @@ func receive_damage(amount: int) -> int:
     health = maxi(0, health - amount)
 
     if was_alive and not is_alive():
-        _clear_special_states_on_death()
+        _clear_combat_state_on_death()
 
     return actual_damage
 
 
-func _clear_special_states_on_death() -> void:
+func _clear_combat_state_on_death() -> void:
+    # Resolve linked special states before clearing local containers.
     if named_by != null:
         var source = named_by
         named_by = null
-        special_states.erase("named")
 
         if (
             source != null
@@ -265,6 +265,15 @@ func _clear_special_states_on_death() -> void:
 
     if named_target != null:
         clear_named_target()
+
+    buffs.clear()
+    debuffs.clear()
+    combat_resources.clear()
+    special_states.clear()
+
+    named_target = null
+    named_by = null
+    action_gauge = 0.0
 
 
 func heal(amount: int) -> int:
