@@ -66,7 +66,7 @@ script = ExtResource("3")
 offset_left = 35.0
 offset_top = 515.0
 offset_right = 195.0
-offset_bottom = 558.0
+offset_bottom = 543.0
 text = "PASSIVE"
 focus_mode = 0
 mouse_default_cursor_shape = 0
@@ -75,7 +75,18 @@ mouse_default_cursor_shape = 0
 layout_mode = 0
 script = ExtResource("3")
 offset_left = 35.0
-offset_top = 562.0
+offset_top = 546.0
+offset_right = 195.0
+offset_bottom = 574.0
+text = "PASSIVE"
+focus_mode = 0
+mouse_default_cursor_shape = 0
+
+[node name="Passive Button 3" type="Button" parent="."]
+layout_mode = 0
+script = ExtResource("3")
+offset_left = 35.0
+offset_top = 577.0
 offset_right = 195.0
 offset_bottom = 605.0
 text = "PASSIVE"
@@ -112,3 +123,5 @@ text = "S3"
 [connection signal="pressed" from="Skill 1 Button" to="." method="_on_skill_1_button_pressed"]
 [connection signal="pressed" from="Skill 2 Button" to="." method="_on_skill_2_button_pressed"]
 [connection signal="pressed" from="Skill 3 Button" to="." method="_on_skill_3_button_pressed"]
+
+[connection signal="pressed" from="Passive Button 2" to="." method="_on_passive_button_2_pressed"]
