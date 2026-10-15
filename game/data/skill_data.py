@@ -1671,15 +1671,15 @@ SKILL_DATA = {
             "use_consumed_charges": True
         },
 
-        # R2 also unlocks Soul Recall as a separate active action.
-        # At 5 Soul Charges, the player may spend all 5 to revive
-        # a selected non-Banished ally at 70% HP and 30% AG.
+        # At 5 Soul Charges, Soul Vessel becomes an active revive
+        # action: spend all 5 to revive a selected non-Banished ally
+        # with 50% HP and 100% Action Gauge.
         "active_action": {
             "id": "soul_recall",
             "required_charges": 5,
             "consume_charges": 5,
-            "revive_health_ratio": 0.70,
-            "action_gauge": 0.30,
+            "revive_health_ratio": 0.50,
+            "action_gauge": 1.00,
             "target": "selected_dead_ally"
         }
     },
@@ -1704,8 +1704,8 @@ SKILL_DATA = {
             "id": "soul_recall_convergence",
             "required_charges": 5,
             "consume_charges": 5,
-            "revive_health_ratio": 0.70,
-            "action_gauge": 0.30,
+            "revive_health_ratio": 0.50,
+            "action_gauge": 1.00,
             "target": "selected_dead_ally"
         }
     },
