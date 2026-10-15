@@ -799,79 +799,58 @@ func _update_passive_button() -> void:
                 cooldown_id
             )
 
-        button.visible = true
-        button.text = str(
-            passive_data.get("name", "PASSIVE")
-        )
-
-        if remaining_cd > 0:
-            button.text += "\nCD %d" % remaining_cd
-
         var tooltip_data: Dictionary = (
             passive_data.duplicate(true)
         )
         tooltip_data["cooldown_remaining"] = remaining_cd
-        button.set_tooltip_passive(tooltip_data)
 
-        # Silence does not deactivate ordinary passives;
-        # Oblivion does. Passive cooldowns only block their
-        # cooldown-based effect, not their other effects.
-        _set_action_button_state(
-            button,
-            active.has_oblivion() or remaining_cd > 0,
-            false
+        var soul_recall_unlocked: bool = (
+            index == 0
+            and active.monster_id == "dullahan_aether"
+            and active.resonance >= 2
+            and active.get_combat_resource("soul_charges") >= 5
         )
 
-    if (
-        active.monster_id == "dullahan_aether"
-        and active.resonance >= 2
-        and active.get_combat_resource("soul_charges") >= 5
-        and visible_count < buttons.size()
-    ):
-        var has_revivable_ally := false
+        button.visible = true
 
-        for ally in allies:
-            if (
-                not ally.is_alive()
-                and not ally.banished
-            ):
-                has_revivable_ally = true
-                break
+        if soul_recall_unlocked:
+            # At five charges Soul Vessel itself becomes the active
+            # revive action, rather than creating an extra button.
+            button.text = "Soul Recall"
+            tooltip_data["badge"] = "ACTIVE"
+            button.set_tooltip_passive(tooltip_data)
 
-        if has_revivable_ally:
-            var action_button = buttons[visible_count]
-            var action_name: String = (
-                "Soul Recall: Convergence"
-                if active.resonance >= 5
-                else "Soul Recall"
-            )
-            var action_data: Dictionary = {
-                "name": action_name,
-                "badge": "ACTIVE",
-                "summary": "Consumes stored souls to return a fallen ally to battle.",
-                "effects": [
-                    {
-                        "kind": "special",
-                        "text": "Consumes all [color=#d9a6ff]5 Soul Charges[/color] and revives a selected non-Banished ally with [b]70% HP[/b] and [b]30% Action Gauge[/b]."
-                    }
-                ]
-            }
-
-            action_button.visible = true
-            action_button.text = action_name
-            action_button.set_tooltip_passive(action_data)
             _set_action_button_state(
-                action_button,
+                button,
                 battle_finished
                 or action_in_progress
-                or active.has_oblivion()
                 or active.is_silenced()
+                or not battle_controller.can_use_soul_recall(
+                    active
+                )
             )
-            visible_count += 1
+        else:
+            button.text = str(
+                passive_data.get("name", "PASSIVE")
+            )
+
+            if remaining_cd > 0:
+                button.text += "\nCD %d" % remaining_cd
+
+            button.set_tooltip_passive(tooltip_data)
+
+            # Passive cooldowns only suppress their cooldown-based
+            # effect. Other passive bonuses remain in force.
+            _set_action_button_state(
+                button,
+                active.has_oblivion() or remaining_cd > 0,
+                false
+            )
 
     _layout_passive_buttons(visible_count)
 
-func _on_passive_button_2_pressed() -> void:
+
+func _on_soul_recall_pressed() -> void:
     if (
         battle_finished
         or action_in_progress
@@ -898,7 +877,6 @@ func _on_passive_button_2_pressed() -> void:
     set_revive_target_selection(true)
     update_skill_buttons()
     turn_label.text = "Choose a fallen ally to revive"
-
 
 func set_target_selection(enabled: bool) -> void:
     for hud in enemy_huds:
