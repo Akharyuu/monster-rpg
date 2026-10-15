@@ -1,0 +1,1513 @@
+{
+  "schema_version": 1,
+  "skills": {
+    "ooze_slam": {
+      "name": "Ooze Slam",
+      "type": "damage",
+      "multiplier": 2.3,
+      "hits": 1,
+      "target_type": "single_enemy",
+      "cooldown": 0
+    },
+    "nurturing_lash": {
+      "name": "Nurturing Lash",
+      "type": "damage",
+      "multiplier": 1.6,
+      "hits": 1,
+      "target_type": "single_enemy",
+      "cooldown": 0,
+      "after_use_handlers": [
+        {
+          "handler": "heal_lowest_hp_ally",
+          "data": {
+            "healing_hp_ratio": 0.05
+          }
+        }
+      ]
+    },
+    "will_o_glow": {
+      "name": "Will-o'-Glow",
+      "type": "damage",
+      "multiplier": 2.6,
+      "hits": 1,
+      "target_type": "single_enemy",
+      "cooldown": 0,
+      "on_hit_handlers": [
+        {
+          "handler": "reduce_action_gauge",
+          "data": {
+            "chance": 0.6,
+            "amount": 0.1
+          }
+        }
+      ]
+    },
+    "needle_rush": {
+      "name": "Needle Rush",
+      "type": "damage",
+      "multiplier": 1.65,
+      "hits": 2,
+      "target_type": "single_enemy",
+      "cooldown": 0,
+      "effects": [
+        {
+          "effect_id": "poison",
+          "chance": 0.35,
+          "turns": 2,
+          "trigger": "per_hit"
+        }
+      ]
+    },
+    "fever_sting": {
+      "name": "Fever Sting",
+      "type": "damage",
+      "multiplier": 1.55,
+      "hits": 3,
+      "target_type": "single_enemy",
+      "cooldown": 4,
+      "damage_handler": "damage_if_condition",
+      "damage_handler_data": {
+        "condition": {
+          "type": "target_has_debuff",
+          "effect_id": "poison",
+          "state": "skill_start"
+        },
+        "damage_multiplier": 1.15
+      }
+    },
+    "numbing_sting": {
+      "name": "Numbing Sting",
+      "type": "damage",
+      "multiplier": 2.5,
+      "hits": 2,
+      "target_type": "single_enemy",
+      "cooldown": 4,
+      "effects": [
+        {
+          "effect_id": "poison",
+          "chance": 0.25,
+          "turns": 2,
+          "trigger": "per_hit"
+        },
+        {
+          "effect_id": "stun",
+          "chance": 0.6,
+          "turns": 1,
+          "trigger": "after_skill",
+          "condition": {
+            "type": "target_gained_debuff",
+            "effect_id": "poison"
+          }
+        }
+      ]
+    },
+    "swarm_pierce": {
+      "name": "Swarm Pierce",
+      "type": "damage",
+      "multiplier": 2.5,
+      "hits": 3,
+      "target_type": "single_enemy",
+      "cooldown": 4,
+      "damage_handler": "damage_if_condition",
+      "damage_handler_data": {
+        "condition": {
+          "type": "target_has_any_debuff",
+          "state": "skill_start"
+        },
+        "multipliers_by_hit": {
+          "1": 1,
+          "2": 1.15,
+          "3": 1.3
+        }
+      }
+    },
+    "vine_barrage": {
+      "name": "Vine Barrage",
+      "type": "damage",
+      "multiplier": 0.7,
+      "hits": 3,
+      "target_type": "single_enemy",
+      "cooldown": 0,
+      "after_use_handlers": [
+        {
+          "handler": "heal_lowest_hp_ally",
+          "data": {
+            "healing_hp_ratio": 0.08
+          }
+        }
+      ]
+    },
+    "vine_barrage_nourishment": {
+      "name": "Vine Barrage: Nourishment",
+      "type": "damage",
+      "multiplier": 0.7,
+      "hits": 3,
+      "target_type": "single_enemy",
+      "cooldown": 0,
+      "after_use_handlers": [
+        {
+          "handler": "heal_lowest_hp_ally",
+          "data": {
+            "healing_hp_ratio": 0.15
+          }
+        }
+      ]
+    },
+    "breath_of_the_grove": {
+      "name": "Breath of the Grove",
+      "type": "healing",
+      "target_type": "all_allies",
+      "cooldown": 5,
+      "after_use_handlers": [
+        {
+          "handler": "heal_all_allies",
+          "data": {
+            "healing_hp_ratio": 0.25
+          }
+        }
+      ]
+    },
+    "breath_of_the_grove_sanctuary": {
+      "name": "Breath of the Grove: Sanctuary",
+      "type": "healing",
+      "target_type": "all_allies",
+      "cooldown": 5,
+      "after_use_handlers": [
+        {
+          "handler": "heal_all_allies",
+          "data": {
+            "healing_hp_ratio": 0.35
+          }
+        },
+        {
+          "handler": "apply_aoe_buff",
+          "data": {
+            "effect_id": "immunity",
+            "turns": 1
+          }
+        }
+      ]
+    },
+    "breath_of_the_grove_evergreen": {
+      "name": "Breath of the Grove: Evergreen",
+      "type": "healing",
+      "target_type": "all_allies",
+      "cooldown": 4,
+      "after_use_handlers": [
+        {
+          "handler": "heal_all_allies",
+          "data": {
+            "healing_hp_ratio": 0.35
+          }
+        },
+        {
+          "handler": "apply_aoe_buff",
+          "data": {
+            "effect_id": "immunity",
+            "turns": 1
+          }
+        },
+        {
+          "handler": "apply_aoe_buff",
+          "data": {
+            "effect_id": "regrowth",
+            "turns": 2
+          }
+        }
+      ]
+    },
+    "rending_talons": {
+      "name": "Rending Talons",
+      "type": "damage",
+      "multiplier": 1.8,
+      "hits": 1,
+      "target_type": "single_enemy",
+      "cooldown": 0
+    },
+    "searing_gale": {
+      "name": "Searing Gale",
+      "type": "damage",
+      "multiplier": 2,
+      "hits": 2,
+      "target_type": "all_enemies",
+      "cooldown": 4,
+      "on_hit_handlers": [
+        {
+          "handler": "reduce_action_gauge",
+          "data": {
+            "chance": 0.5,
+            "amount": 0.2
+          }
+        }
+      ]
+    },
+    "searing_gale_turbulence": {
+      "name": "Searing Gale: Turbulence",
+      "type": "damage",
+      "multiplier": 2,
+      "hits": 2,
+      "target_type": "all_enemies",
+      "cooldown": 4,
+      "on_hit_handlers": [
+        {
+          "handler": "reduce_action_gauge",
+          "data": {
+            "chance": 0.75,
+            "amount": 0.2
+          }
+        }
+      ]
+    },
+    "searing_gale_heatstorm": {
+      "name": "Searing Gale: Heatstorm",
+      "type": "damage",
+      "multiplier": 2,
+      "hits": 2,
+      "target_type": "all_enemies",
+      "cooldown": 3,
+      "on_hit_handlers": [
+        {
+          "handler": "reduce_action_gauge",
+          "data": {
+            "chance": 0.75,
+            "amount": 0.3
+          }
+        }
+      ]
+    },
+    "meteor_dive": {
+      "name": "Meteor Dive",
+      "type": "damage",
+      "multiplier": 4.2,
+      "hits": 1,
+      "target_type": "single_enemy",
+      "cooldown": 5,
+      "damage_handler": "damage_with_speed_scaling",
+      "damage_handler_data": {
+        "speed_scaling": 0.001
+      }
+    },
+    "meteor_dive_violent_crash": {
+      "name": "Meteor Dive: Violent Crash",
+      "type": "damage",
+      "multiplier": 4.2,
+      "hits": 1,
+      "target_type": "single_enemy",
+      "cooldown": 5,
+      "damage_handler": "damage_with_speed_scaling",
+      "damage_handler_data": {
+        "speed_scaling": 0.001
+      },
+      "effects": [
+        {
+          "effect_id": "stun",
+          "chance": 0.75,
+          "turns": 1,
+          "trigger": "after_skill",
+          "condition": {
+            "type": "target_action_gauge_below",
+            "threshold": 0.5
+          }
+        }
+      ]
+    },
+    "meteor_dive_terminal_impact": {
+      "name": "Meteor Dive: Terminal Impact",
+      "type": "damage",
+      "multiplier": 4.2,
+      "hits": 1,
+      "target_type": "single_enemy",
+      "cooldown": 4,
+      "damage_handler": "damage_with_speed_scaling",
+      "damage_handler_data": {
+        "speed_scaling": 0.001
+      },
+      "effects": [
+        {
+          "effect_id": "stun",
+          "chance": 1,
+          "turns": 1,
+          "trigger": "after_skill",
+          "condition": {
+            "type": "target_action_gauge_below",
+            "threshold": 0.5,
+            "threshold_if_caster_has_buff": {
+              "effect_id": "speed_up",
+              "threshold": 0.7
+            }
+          }
+        }
+      ]
+    },
+    "draconic_claw": {
+      "name": "Draconic Claw",
+      "type": "damage",
+      "multiplier": 2.5,
+      "hits": 1,
+      "target_type": "single_enemy",
+      "cooldown": 0,
+      "effects": [
+        {
+          "effect_id": "defense_break",
+          "chance": 0.3,
+          "turns": 2
+        }
+      ]
+    },
+    "scorching_breath": {
+      "name": "Scorching Breath",
+      "type": "damage",
+      "multiplier": 3.75,
+      "hits": 2,
+      "target_type": "all_enemies",
+      "cooldown": 4,
+      "damage_handler": "damage_for_burn_stacks",
+      "damage_handler_data": {
+        "multipliers_by_stacks": {
+          "1": 1.08,
+          "2": 1.16,
+          "3": 1.24
+        }
+      }
+    },
+    "scorching_breath_afterburn": {
+      "name": "Scorching Breath: Afterburn",
+      "type": "damage",
+      "multiplier": 3.75,
+      "hits": 2,
+      "target_type": "all_enemies",
+      "cooldown": 4,
+      "damage_handler": "damage_for_burn_stacks",
+      "damage_handler_data": {
+        "multipliers_by_stacks": {
+          "1": 1.08,
+          "2": 1.16,
+          "3": 1.24
+        }
+      },
+      "after_skill_handlers": [
+        {
+          "handler": "add_burn_if_target_started_with_burn",
+          "data": {
+            "stacks": 1,
+            "turns": 3
+          }
+        }
+      ]
+    },
+    "flame_devourer": {
+      "name": "Flame Devourer",
+      "type": "damage",
+      "multiplier": 4.6,
+      "hits": 1,
+      "target_type": "single_enemy",
+      "cooldown": 5,
+      "damage_handler": "damage_for_burn_stacks",
+      "damage_handler_data": {
+        "multipliers_by_stacks": {
+          "1": 1.15,
+          "2": 1.3,
+          "3": 1.45
+        }
+      },
+      "after_skill_handlers": [
+        {
+          "handler": "consume_burn_and_heal",
+          "data": {
+            "heal_by_stacks": {
+              "1": 0.12,
+              "2": 0.25,
+              "3": 0.4
+            }
+          }
+        }
+      ]
+    },
+    "flame_devourer_rekindled": {
+      "name": "Flame Devourer: Rekindled",
+      "type": "damage",
+      "multiplier": 4.6,
+      "hits": 1,
+      "target_type": "single_enemy",
+      "cooldown": 5,
+      "damage_handler": "damage_for_burn_stacks",
+      "damage_handler_data": {
+        "multipliers_by_stacks": {
+          "1": 1.15,
+          "2": 1.3,
+          "3": 1.45
+        }
+      },
+      "after_skill_handlers": [
+        {
+          "handler": "consume_burn_and_heal",
+          "data": {
+            "heal_by_stacks": {
+              "1": 0.12,
+              "2": 0.25,
+              "3": 0.4
+            }
+          }
+        },
+        {
+          "handler": "reset_cooldown_by_burn_stacks",
+          "data": {
+            "required_stacks": 3,
+            "skill_slot": 2
+          }
+        }
+      ]
+    },
+    "flame_devourer_incineration": {
+      "name": "Flame Devourer: Incineration",
+      "type": "damage",
+      "multiplier": 4.6,
+      "hits": 1,
+      "target_type": "single_enemy",
+      "cooldown": 5,
+      "damage_handler": "damage_for_burn_stacks",
+      "damage_handler_data": {
+        "multipliers_by_stacks": {
+          "1": 1.15,
+          "2": 1.3,
+          "3": 1.45
+        },
+        "ignore_defense_at_stacks": 3
+      },
+      "after_skill_handlers": [
+        {
+          "handler": "consume_burn_and_heal",
+          "data": {
+            "heal_by_stacks": {
+              "1": 0.12,
+              "2": 0.25,
+              "3": 0.4
+            }
+          }
+        },
+        {
+          "handler": "reset_cooldown_by_burn_stacks",
+          "data": {
+            "required_stacks": 3,
+            "skill_slot": 2
+          }
+        }
+      ]
+    },
+    "rime_breath": {
+      "name": "Rime Breath",
+      "type": "damage",
+      "multiplier": 3.15,
+      "hits": 2,
+      "target_type": "all_enemies",
+      "cooldown": 4,
+      "effects": [
+        {
+          "effect_id": "speed_break",
+          "chance": 0.5,
+          "turns": 2,
+          "trigger": "per_hit"
+        }
+      ]
+    },
+    "rime_breath_frigid": {
+      "name": "Rime Breath: Frigid",
+      "type": "damage",
+      "multiplier": 3.15,
+      "hits": 2,
+      "target_type": "all_enemies",
+      "cooldown": 4,
+      "on_hit_handlers": [
+        {
+          "handler": "reduce_action_gauge_if_debuff",
+          "data": {
+            "effect_id": "speed_break",
+            "amount": 0.1
+          }
+        }
+      ],
+      "effects": [
+        {
+          "effect_id": "speed_break",
+          "chance": 0.5,
+          "turns": 2,
+          "trigger": "per_hit"
+        }
+      ]
+    },
+    "glacial_collapse": {
+      "name": "Glacial Collapse",
+      "type": "damage",
+      "multiplier": 4.1,
+      "hits": 1,
+      "target_type": "all_enemies",
+      "cooldown": 5,
+      "on_hit_handlers": [
+        {
+          "handler": "reduce_action_gauge",
+          "data": {
+            "amount": 0.1
+          }
+        }
+      ],
+      "effects": [
+        {
+          "effect_id": "freeze",
+          "chance": 1,
+          "turns": 1,
+          "trigger": "per_hit",
+          "condition": {
+            "type": "target_has_debuff",
+            "effect_id": "speed_break"
+          }
+        }
+      ]
+    },
+    "glacial_collapse_absolute_zero": {
+      "name": "Glacial Collapse: Absolute Zero",
+      "type": "damage",
+      "multiplier": 4.1,
+      "hits": 1,
+      "target_type": "all_enemies",
+      "cooldown": 5,
+      "on_hit_handlers": [
+        {
+          "handler": "reduce_action_gauge",
+          "data": {
+            "amount": 0.1
+          }
+        }
+      ],
+      "effects": [
+        {
+          "effect_id": "freeze",
+          "chance": 1,
+          "turns": 1,
+          "trigger": "per_hit",
+          "ignore_resistance": true,
+          "condition": {
+            "type": "target_has_debuff",
+            "effect_id": "speed_break"
+          }
+        },
+        {
+          "effect_id": "freeze",
+          "chance": 0.75,
+          "turns": 1,
+          "trigger": "per_hit",
+          "ignore_resistance": true,
+          "condition": {
+            "type": "target_lacks_debuff",
+            "effect_id": "speed_break"
+          }
+        }
+      ]
+    },
+    "lightning_rush": {
+      "name": "Lightning Rush",
+      "type": "damage",
+      "multiplier": 1.75,
+      "hits": 2,
+      "target_type": "single_enemy",
+      "cooldown": 4,
+      "after_use_handlers": [
+        {
+          "handler": "apply_self_buff",
+          "data": {
+            "effect_id": "speed_up",
+            "turns": 2
+          }
+        }
+      ]
+    },
+    "lightning_rush_blitz": {
+      "name": "Lightning Rush: Blitz",
+      "type": "damage",
+      "multiplier": 1.75,
+      "hits": 2,
+      "target_type": "single_enemy",
+      "cooldown": 3,
+      "after_use_handlers": [
+        {
+          "handler": "apply_self_buff",
+          "data": {
+            "effect_id": "speed_up",
+            "turns": 2
+          }
+        },
+        {
+          "handler": "increase_action_gauge",
+          "data": {
+            "amount": 0.15
+          }
+        }
+      ]
+    },
+    "stormbreak": {
+      "name": "Stormbreak",
+      "type": "damage",
+      "multiplier": 1.6,
+      "hits": 10,
+      "target_type": "random_enemies",
+      "cooldown": 6,
+      "hit_distribution": "one_each_then_random",
+      "repeated_target_damage": {
+        "full_damage_hits": 5,
+        "later_hit_multiplier": 0.25,
+        "first_hit_bonus_if_caster_buff": {
+          "effect_id": "speed_up",
+          "multiplier": 1.5
+        }
+      },
+      "effects": [
+        {
+          "effect_id": "stun",
+          "chance": 0.5,
+          "turns": 1,
+          "trigger": "hit_count_threshold",
+          "min_hits": 3
+        }
+      ]
+    },
+    "stormbreak_requiem": {
+      "name": "Stormbreak: Requiem",
+      "type": "damage",
+      "multiplier": 1.6,
+      "hits": 10,
+      "target_type": "random_enemies",
+      "cooldown": 6,
+      "hit_distribution": "one_each_then_random",
+      "repeated_target_damage": {
+        "full_damage_hits": 5,
+        "later_hit_multiplier": 0.25,
+        "first_hit_bonus_if_caster_buff": {
+          "effect_id": "speed_up",
+          "multiplier": 1.5
+        }
+      },
+      "effects": [
+        {
+          "effect_id": "stun",
+          "chance": 0.5,
+          "turns": 1,
+          "trigger": "hit_count_threshold",
+          "min_hits": 3
+        }
+      ],
+      "after_use_handlers": [
+        {
+          "handler": "aoe_follow_up_attack",
+          "data": {
+            "damage_multiplier": 0.75
+          }
+        }
+      ]
+    },
+    "sovereign_breath": {
+      "name": "Sovereign Breath",
+      "type": "damage",
+      "multiplier": 3,
+      "hits": 1,
+      "target_type": "all_enemies",
+      "cooldown": 4,
+      "after_use_handlers": [
+        {
+          "handler": "apply_scaling_silence",
+          "data": {
+            "base_chance": 0.3,
+            "chance_per_buff": 0.1,
+            "max_chance": 0.8,
+            "turns": 1
+          }
+        }
+      ]
+    },
+    "sovereign_breath_subjugation": {
+      "name": "Sovereign Breath: Subjugation",
+      "type": "damage",
+      "multiplier": 3,
+      "hits": 1,
+      "target_type": "all_enemies",
+      "cooldown": 3,
+      "after_use_handlers": [
+        {
+          "handler": "apply_scaling_silence",
+          "data": {
+            "base_chance": 0.5,
+            "chance_per_buff": 0.1,
+            "max_chance": 1,
+            "turns": 1
+          }
+        }
+      ]
+    },
+    "heavens_decree": {
+      "name": "Heaven's Decree",
+      "type": "support",
+      "target_type": "all_allies",
+      "cooldown": 6,
+      "after_use_handlers": [
+        {
+          "handler": "apply_aoe_buff",
+          "data": {
+            "effect_id": "attack_up",
+            "turns": 2
+          }
+        },
+        {
+          "handler": "apply_aoe_buff",
+          "data": {
+            "effect_id": "immunity",
+            "turns": 2
+          }
+        },
+        {
+          "handler": "apply_aoe_buff",
+          "data": {
+            "effect_id": "veil",
+            "turns": 2
+          }
+        }
+      ]
+    },
+    "heavens_decree_apotheosis": {
+      "name": "Heaven's Decree: Apotheosis",
+      "type": "support",
+      "target_type": "all_allies",
+      "cooldown": 6,
+      "after_use_handlers": [
+        {
+          "handler": "apply_aoe_buff",
+          "data": {
+            "effect_id": "attack_up",
+            "turns": 3
+          }
+        },
+        {
+          "handler": "apply_aoe_buff",
+          "data": {
+            "effect_id": "immunity",
+            "turns": 3
+          }
+        },
+        {
+          "handler": "apply_aoe_buff",
+          "data": {
+            "effect_id": "veil",
+            "turns": 3
+          }
+        },
+        {
+          "handler": "grant_extra_turn",
+          "data": {}
+        }
+      ]
+    },
+    "null_rend": {
+      "name": "Null Rend",
+      "type": "damage",
+      "multiplier": 2.1,
+      "hits": 2,
+      "target_type": "single_enemy",
+      "cooldown": 4,
+      "on_hit_handlers": [
+        {
+          "handler": "apply_debuff_on_hit_indices",
+          "data": {
+            "effect_id": "oblivion",
+            "chance": 0.6,
+            "turns": 2,
+            "hit_indices": [
+              1
+            ]
+          }
+        }
+      ]
+    },
+    "null_rend_obliterate": {
+      "name": "Null Rend: Obliterate",
+      "type": "damage",
+      "multiplier": 2.1,
+      "hits": 2,
+      "hit_multipliers": [
+        1,
+        1.3
+      ],
+      "target_type": "single_enemy",
+      "cooldown": 4,
+      "on_hit_handlers": [
+        {
+          "handler": "apply_debuff_on_hit_indices",
+          "data": {
+            "effect_id": "oblivion",
+            "chance": 0.8,
+            "turns": 2,
+            "hit_indices": [
+              1
+            ]
+          }
+        }
+      ]
+    },
+    "null_rend_annihilation": {
+      "name": "Null Rend: Annihilation",
+      "type": "damage",
+      "multiplier": 2.1,
+      "hits": 2,
+      "hit_multipliers": [
+        1,
+        1.3
+      ],
+      "target_type": "single_enemy",
+      "cooldown": 4,
+      "on_hit_handlers": [
+        {
+          "handler": "apply_debuff_on_hit_indices",
+          "data": {
+            "effect_id": "oblivion",
+            "chance": 0.8,
+            "turns": 2,
+            "hit_indices": [
+              1
+            ]
+          }
+        }
+      ],
+      "after_use_handlers": [
+        {
+          "handler": "banish_killed_oblivion_targets",
+          "data": {}
+        }
+      ]
+    },
+    "dismantle": {
+      "name": "Dismantle",
+      "type": "damage",
+      "multiplier": 1.45,
+      "hits": 3,
+      "target_type": "all_enemies",
+      "resolve_hits_by_round": true,
+      "cooldown": 5,
+      "damage_handler": "damage_for_removed_buffs",
+      "damage_handler_data": {
+        "affected_hit_indices": [
+          1,
+          2
+        ],
+        "damage_per_removed_buff": 0.08
+      },
+      "on_hit_handlers": [
+        {
+          "handler": "strip_buffs_on_hit",
+          "data": {
+            "hit_index": 0,
+            "track_removed_buffs_for_skill_damage": true
+          }
+        },
+        {
+          "handler": "apply_debuff_on_hit_indices",
+          "data": {
+            "effect_id": "defense_break",
+            "chance": 0.3,
+            "turns": 2,
+            "hit_indices": [
+              1,
+              2
+            ]
+          }
+        }
+      ]
+    },
+    "dismantle_decimation": {
+      "name": "Dismantle: Decimation",
+      "type": "damage",
+      "multiplier": 1.45,
+      "hits": 3,
+      "target_type": "all_enemies",
+      "resolve_hits_by_round": true,
+      "cooldown": 4,
+      "damage_handler": "damage_for_removed_buffs",
+      "damage_handler_data": {
+        "affected_hit_indices": [
+          1,
+          2
+        ],
+        "damage_per_removed_buff": 0.08
+      },
+      "on_hit_handlers": [
+        {
+          "handler": "strip_buffs_on_hit",
+          "data": {
+            "hit_index": 0,
+            "track_removed_buffs_for_skill_damage": true
+          }
+        },
+        {
+          "handler": "apply_debuff_on_hit_indices",
+          "data": {
+            "effect_id": "defense_break",
+            "chance": 0.5,
+            "turns": 2,
+            "hit_indices": [
+              1,
+              2
+            ]
+          }
+        }
+      ]
+    },
+    "severing_blade": {
+      "name": "Severing Blade",
+      "type": "damage",
+      "multiplier": 2.6,
+      "hits": 1,
+      "target_type": "single_enemy",
+      "cooldown": 0,
+      "effects": [
+        {
+          "effect_id": "heal_block",
+          "chance": 0.3,
+          "turns": 2,
+          "trigger": "after_skill"
+        }
+      ]
+    },
+    "relentless_pursuit": {
+      "name": "Relentless Pursuit",
+      "type": "damage",
+      "multiplier": 1.85,
+      "hits": 2,
+      "target_type": "single_enemy",
+      "cooldown": 4,
+      "damage_handler": "damage_by_missing_health",
+      "damage_handler_data": {
+        "max_bonus_damage": 0.3
+      }
+    },
+    "relentless_pursuit_blood_trail": {
+      "name": "Relentless Pursuit: Blood Trail",
+      "type": "damage",
+      "multiplier": 1.85,
+      "hits": 2,
+      "target_type": "single_enemy",
+      "cooldown": 4,
+      "damage_handler": "damage_by_missing_health",
+      "damage_handler_data": {
+        "max_bonus_damage": 0.45
+      },
+      "on_hit_handlers": [
+        {
+          "handler": "gain_action_gauge_if_target_low_hp",
+          "data": {
+            "health_threshold": 0.5,
+            "amount": 0.2
+          }
+        }
+      ]
+    },
+    "death_sentence": {
+      "name": "Death Sentence",
+      "type": "damage",
+      "multiplier": 4.6,
+      "hits": 1,
+      "target_type": "single_enemy",
+      "cooldown": 5,
+      "damage_handler": "execute_below_health_threshold",
+      "damage_handler_data": {
+        "health_threshold": 0.25,
+        "defense_ignore_ratio": 0.5
+      }
+    },
+    "death_sentence_execution": {
+      "name": "Death Sentence: Execution",
+      "type": "damage",
+      "multiplier": 4.6,
+      "hits": 1,
+      "target_type": "single_enemy",
+      "cooldown": 4,
+      "damage_handler": "execute_below_health_threshold",
+      "damage_handler_data": {
+        "health_threshold": 0.33,
+        "defense_ignore_ratio": 0.5
+      }
+    },
+    "death_sentence_massacre": {
+      "name": "Death Sentence: Massacre",
+      "type": "damage",
+      "multiplier": 4.6,
+      "hits": 1,
+      "target_type": "single_enemy",
+      "cooldown": 4,
+      "damage_handler": "execute_below_health_threshold",
+      "damage_handler_data": {
+        "health_threshold": 0.33,
+        "defense_ignore_ratio": 0.5
+      },
+      "after_use_handlers": [
+        {
+          "handler": "follow_up_skill_on_kill",
+          "data": {
+            "skill_slot": 2
+          }
+        }
+      ]
+    },
+    "spectral_shackles": {
+      "name": "Spectral Shackles",
+      "type": "damage",
+      "multiplier": 1.95,
+      "hits": 2,
+      "target_type": "single_enemy",
+      "cooldown": 4,
+      "on_hit_handlers": [
+        {
+          "handler": "apply_debuff_on_hit_indices",
+          "data": {
+            "effect_id": "speed_break",
+            "chance": 0.5,
+            "turns": 2,
+            "hit_indices": [
+              0
+            ]
+          }
+        },
+        {
+          "handler": "apply_debuff_on_hit_indices",
+          "data": {
+            "effect_id": "attack_break",
+            "chance": 0.5,
+            "turns": 2,
+            "hit_indices": [
+              1
+            ]
+          }
+        }
+      ]
+    },
+    "spectral_shackles_binding": {
+      "name": "Spectral Shackles: Binding",
+      "type": "damage",
+      "multiplier": 1.95,
+      "hits": 2,
+      "target_type": "single_enemy",
+      "cooldown": 4,
+      "on_hit_handlers": [
+        {
+          "handler": "apply_debuff_on_hit_indices",
+          "data": {
+            "effect_id": "speed_break",
+            "chance": 0.7,
+            "turns": 2,
+            "hit_indices": [
+              0
+            ]
+          }
+        },
+        {
+          "handler": "apply_debuff_on_hit_indices",
+          "data": {
+            "effect_id": "attack_break",
+            "chance": 0.7,
+            "turns": 2,
+            "hit_indices": [
+              1
+            ]
+          }
+        }
+      ]
+    },
+    "spectral_shackles_lockdown": {
+      "name": "Spectral Shackles: Lockdown",
+      "type": "damage",
+      "multiplier": 1.95,
+      "hits": 2,
+      "target_type": "single_enemy",
+      "cooldown": 4,
+      "on_hit_handlers": [
+        {
+          "handler": "apply_debuff_on_hit_indices",
+          "data": {
+            "effect_id": "speed_break",
+            "chance": 0.9,
+            "turns": 2,
+            "hit_indices": [
+              0
+            ]
+          }
+        },
+        {
+          "handler": "apply_debuff_on_hit_indices",
+          "data": {
+            "effect_id": "attack_break",
+            "chance": 0.9,
+            "turns": 2,
+            "hit_indices": [
+              1
+            ]
+          }
+        }
+      ],
+      "after_use_handlers": [
+        {
+          "handler": "reduce_action_gauge_if_both_debuffs_applied",
+          "data": {
+            "effect_ids": [
+              "speed_break",
+              "attack_break"
+            ],
+            "amount": 0.2
+          }
+        }
+      ]
+    },
+    "inescapable_fate": {
+      "name": "Inescapable Fate",
+      "type": "damage",
+      "multiplier": 3,
+      "hits": 1,
+      "target_type": "single_enemy",
+      "cooldown": 5,
+      "after_skill_handlers": [
+        {
+          "handler": "extend_target_debuffs",
+          "data": {
+            "turns": 1,
+            "silence_required_debuffs": 3,
+            "silence_turns": 1
+          }
+        }
+      ]
+    },
+    "inescapable_fate_ironbound": {
+      "name": "Inescapable Fate: Ironbound",
+      "type": "damage",
+      "multiplier": 3,
+      "hits": 1,
+      "target_type": "single_enemy",
+      "cooldown": 4,
+      "damage_handler": "damage_with_bonus_stat",
+      "damage_handler_data": {
+        "bonus_stat": "defense",
+        "bonus_scaling": 1.2
+      },
+      "after_skill_handlers": [
+        {
+          "handler": "extend_target_debuffs",
+          "data": {
+            "turns": 1,
+            "silence_required_debuffs": 3,
+            "silence_turns": 1
+          }
+        }
+      ]
+    },
+    "gale_pursuit": {
+      "name": "Gale Pursuit",
+      "type": "damage",
+      "multiplier": 2.25,
+      "hits": 1,
+      "target_type": "all_enemies",
+      "cooldown": 4,
+      "on_hit_handlers": [
+        {
+          "handler": "reduce_action_gauge",
+          "data": {
+            "amount": 0.2
+          }
+        }
+      ]
+    },
+    "gale_pursuit_crosswind": {
+      "name": "Gale Pursuit: Crosswind",
+      "type": "damage",
+      "multiplier": 2.25,
+      "hits": 1,
+      "target_type": "all_enemies",
+      "cooldown": 4,
+      "on_hit_handlers": [
+        {
+          "handler": "reduce_action_gauge_with_threshold_bonus",
+          "data": {
+            "amount": 0.25,
+            "threshold": 0.5,
+            "bonus_amount": 0.1
+          }
+        }
+      ]
+    },
+    "gale_pursuit_tempest": {
+      "name": "Gale Pursuit: Tempest",
+      "type": "damage",
+      "multiplier": 2.25,
+      "hits": 1,
+      "target_type": "all_enemies",
+      "cooldown": 4,
+      "on_hit_handlers": [
+        {
+          "handler": "reduce_action_gauge_with_threshold_bonus",
+          "data": {
+            "amount": 0.25,
+            "threshold": 0.5,
+            "bonus_amount": 0.1
+          }
+        }
+      ],
+      "after_use_handlers": [
+        {
+          "handler": "apply_team_buff",
+          "data": {
+            "effect_id": "speed_up",
+            "turns": 2
+          }
+        }
+      ]
+    },
+    "headlong_charge": {
+      "name": "Headlong Charge",
+      "type": "support",
+      "target_type": "self",
+      "cooldown": 5,
+      "after_use_handlers": [
+        {
+          "handler": "support_lowest_gauge_ally",
+          "data": {
+            "self_buffs": [
+              {
+                "effect_id": "attack_up",
+                "turns": 2
+              },
+              {
+                "effect_id": "speed_up",
+                "turns": 2
+              }
+            ],
+            "ally_action_gauge": 0.2
+          }
+        }
+      ]
+    },
+    "headlong_charge_rally": {
+      "name": "Headlong Charge: Rally",
+      "type": "support",
+      "target_type": "self",
+      "cooldown": 5,
+      "after_use_handlers": [
+        {
+          "handler": "support_lowest_gauge_ally",
+          "data": {
+            "self_buffs": [
+              {
+                "effect_id": "attack_up",
+                "turns": 2
+              },
+              {
+                "effect_id": "speed_up",
+                "turns": 2
+              }
+            ],
+            "ally_buffs": [
+              {
+                "effect_id": "attack_up",
+                "turns": 2
+              },
+              {
+                "effect_id": "speed_up",
+                "turns": 2
+              }
+            ],
+            "ally_action_gauge": 0.3
+          }
+        }
+      ]
+    },
+    "headlong_charge_stampede": {
+      "name": "Headlong Charge: Stampede",
+      "type": "support",
+      "target_type": "self",
+      "cooldown": 5,
+      "after_use_handlers": [
+        {
+          "handler": "support_lowest_gauge_ally",
+          "data": {
+            "self_buffs": [
+              {
+                "effect_id": "attack_up",
+                "turns": 2
+              },
+              {
+                "effect_id": "speed_up",
+                "turns": 2
+              }
+            ],
+            "ally_buffs": [
+              {
+                "effect_id": "attack_up",
+                "turns": 2
+              },
+              {
+                "effect_id": "speed_up",
+                "turns": 2
+              }
+            ],
+            "ally_action_gauge": 0.3,
+            "force_next_turn": true
+          }
+        }
+      ]
+    },
+    "soulpiercer": {
+      "name": "Soulpiercer",
+      "type": "damage",
+      "multiplier": 4.1,
+      "hits": 1,
+      "target_type": "single_enemy",
+      "cooldown": 3,
+      "damage_handler": "damage_for_soul_charges",
+      "damage_handler_data": {
+        "damage_per_charge": 0.06,
+        "max_charges": 5
+      }
+    },
+    "soulpiercer_ascension": {
+      "name": "Soulpiercer: Ascension",
+      "type": "damage",
+      "multiplier": 4.1,
+      "hits": 1,
+      "target_type": "single_enemy",
+      "cooldown": 3,
+      "damage_handler": "damage_for_soul_charges",
+      "damage_handler_data": {
+        "damage_per_charge": 0.08,
+        "max_charges": 5
+      }
+    },
+    "beyond_the_veil": {
+      "name": "Beyond the Veil",
+      "type": "damage",
+      "multiplier": 1.25,
+      "hits": 4,
+      "target_type": "all_enemies",
+      "cooldown": 7,
+      "damage_handler": "damage_for_soul_charges",
+      "damage_handler_data": {
+        "damage_per_charge": 0.1,
+        "max_charges": 5,
+        "use_consumed_charges": true
+      }
+    },
+    "beyond_the_veil_soul_recall": {
+      "name": "Beyond the Veil: Soul Recall",
+      "type": "damage",
+      "multiplier": 1.25,
+      "hits": 4,
+      "target_type": "all_enemies",
+      "cooldown": 6,
+      "damage_handler": "damage_for_soul_charges",
+      "damage_handler_data": {
+        "damage_per_charge": 0.1,
+        "max_charges": 5,
+        "use_consumed_charges": true
+      },
+      "active_action": {
+        "id": "soul_recall",
+        "required_charges": 5,
+        "consume_charges": 5,
+        "revive_health_ratio": 0.5,
+        "action_gauge": 1,
+        "target": "selected_dead_ally"
+      }
+    },
+    "beyond_the_veil_convergence": {
+      "name": "Beyond the Veil: Convergence",
+      "type": "damage",
+      "multiplier": 1.25,
+      "hits": 4,
+      "target_type": "all_enemies",
+      "cooldown": 6,
+      "damage_handler": "damage_for_soul_charges",
+      "damage_handler_data": {
+        "damage_per_charge": 0.1,
+        "max_charges": 5,
+        "use_consumed_charges": true
+      },
+      "active_action": {
+        "id": "soul_recall_convergence",
+        "required_charges": 5,
+        "consume_charges": 5,
+        "revive_health_ratio": 0.5,
+        "action_gauge": 1,
+        "target": "selected_dead_ally"
+      }
+    },
+    "spinal_scourge": {
+      "name": "Spinal Scourge",
+      "type": "damage",
+      "multiplier": 1.4,
+      "hits": 3,
+      "target_type": "all_enemies",
+      "cooldown": 4,
+      "damage_handler": "damage_for_dead_monsters",
+      "damage_handler_data": {
+        "damage_per_dead_monster": 0.05,
+        "max_dead_monsters": 5,
+        "max_bonus_damage": 0.25
+      }
+    },
+    "spinal_scourge_ossuary": {
+      "name": "Spinal Scourge: Ossuary",
+      "type": "damage",
+      "multiplier": 1.4,
+      "hits": 3,
+      "target_type": "all_enemies",
+      "cooldown": 4,
+      "damage_handler": "damage_for_dead_monsters",
+      "damage_handler_data": {
+        "damage_per_dead_monster": 0.08,
+        "max_dead_monsters": 5,
+        "max_bonus_damage": 0.4
+      }
+    },
+    "deaths_gaze": {
+      "name": "Death's Gaze",
+      "type": "damage",
+      "multiplier": 4.7,
+      "hits": 1,
+      "target_type": "single_enemy",
+      "cooldown": 6,
+      "before_hit_handlers": [
+        {
+          "handler": "apply_named_and_vulnerability",
+          "data": {
+            "hit_indices": [
+              0
+            ],
+            "named_turns": 2,
+            "vulnerability_chance": 1,
+            "vulnerability_turns": 2
+          }
+        }
+      ]
+    },
+    "deaths_gaze_last_name": {
+      "name": "Death's Gaze: Last Name",
+      "type": "damage",
+      "multiplier": 4.7,
+      "hits": 1,
+      "target_type": "single_enemy",
+      "cooldown": 5,
+      "before_hit_handlers": [
+        {
+          "handler": "apply_named_and_vulnerability",
+          "data": {
+            "hit_indices": [
+              0
+            ],
+            "named_turns": 2,
+            "vulnerability_chance": 1,
+            "vulnerability_turns": 3
+          }
+        }
+      ]
+    }
+  }
+}

@@ -22,15 +22,28 @@ the Godot front end. Do not create separate per-engine copies.
   `PrototypeFactory._make_monster_from_data`, and checks that base skill IDs
   still match the skills the factory currently constructs.
 
+## `skill_data.json` (schema version 1)
+
+- Contains all 68 skill definitions, including Resonance upgrades, by ID.
+- `type` and `target_type` use lowercase identifiers, such as `damage`
+  and `single_enemy`.
+- Python imports `SKILL_DATA` from `game.data.skill_data`, which now reads
+  the shared file and restores enum values and numeric lookup-table keys.
+- Godot reads this same JSON after applying Resonance, to synchronize common
+  parameters and straightforward healing/buff values.
+- The current Godot factory still contains skill constructors and adapters
+  for complex handlers. Their data duplication will be removed in a later
+  handler-migration step without changing the combat engine behavior.
+
 ## Migration status
 
-**Migrated:** monster identity, rarity, attributes, base stats, base skill and
-passive references (Python consumes all of them; Godot consumes identity and
-stats, and validates its base skill IDs).
+**Migrated:** monster identity, rarity, attributes, base stats, base skill
+and passive references, and canonical skill definitions. Godot consumes shared
+core skill parameters and selected handler data.
 
-**Still to migrate:** skill definitions, passive definitions, Resonance upgrade
-rules, localized names and tooltip descriptions. Until those are migrated,
-combat handlers remain implemented independently in Python and GDScript.
+**Still to migrate:** remaining Godot skill handler adapters, passive
+definitions, Resonance upgrade rules, localized names and tooltip descriptions.
+Combat handler implementations remain independent in Python and GDScript.
 
 Run `python -m pytest -q` after editing JSON. Open the battle scene in Godot
 to check parsing and battle setup as well. Data/schema changes should be

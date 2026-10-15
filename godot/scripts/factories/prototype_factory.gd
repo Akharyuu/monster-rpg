@@ -7,8 +7,10 @@ const SupportSkillScript = preload("res://scripts/models/support_skill.gd")
 
 const LEVEL_ONE_MULTIPLIER := 0.35
 const SHARED_MONSTER_DATA_PATH := "res://data/monster_data.json"
+const SHARED_SKILL_DATA_PATH := "res://data/skill_data.json"
 
 static var _shared_monsters: Dictionary = {}
+static var _shared_skills: Dictionary = {}
 
 
 static func _get_shared_monsters() -> Dictionary:
@@ -36,6 +38,108 @@ static func _get_shared_monsters() -> Dictionary:
 
     _shared_monsters = records
     return _shared_monsters
+
+
+# Core skill parameters use the same data file as the Python engine.
+# Godot-specific handler execution is retained during the next migration.
+static func _get_shared_skills() -> Dictionary:
+    if not _shared_skills.is_empty():
+        return _shared_skills
+
+    var raw_json: String = FileAccess.get_file_as_string(
+        SHARED_SKILL_DATA_PATH
+    )
+    var parsed: Variant = JSON.parse_string(raw_json)
+
+    if not (parsed is Dictionary):
+        push_error("Invalid shared skill JSON")
+        return {}
+    if int(parsed.get("schema_version", -1)) != 1:
+        push_error("Unsupported skill data schema version")
+        return {}
+
+    var records: Variant = parsed.get("skills", {})
+    if not (records is Dictionary):
+        push_error("Missing skills in shared JSON")
+        return {}
+
+    _shared_skills = records
+    return _shared_skills
+
+
+static func _sync_skill_from_shared_data(skill) -> bool:
+    var definitions: Dictionary = _get_shared_skills()
+    var skill_id: String = str(skill.skill_id)
+
+    if not definitions.has(skill_id):
+        push_error("Missing shared skill id: %s" % skill_id)
+        return false
+
+    var entry: Dictionary = definitions[skill_id]
+    var skill_type: String = str(entry.get("type", ""))
+
+    if skill_type == "damage":
+        if not (skill is DamageSkill):
+            push_error("Expected damage skill: %s" % skill_id)
+            return false
+    elif skill_type == "healing" or skill_type == "support":
+        if not (skill is SupportSkill):
+            push_error("Expected support skill: %s" % skill_id)
+            return false
+    else:
+        push_error("Unknown skill type: %s" % skill_id)
+        return false
+
+    skill.skill_name = str(entry["name"])
+    skill.cooldown = int(entry["cooldown"])
+    skill.target_type = str(entry["target_type"])
+
+    if skill is DamageSkill:
+        skill.multiplier = float(entry["multiplier"])
+        skill.hits = int(entry.get("hits", 1))
+        skill.hit_multipliers = entry.get("hit_multipliers", [])
+        skill.scaling_stat = str(entry.get("scaling_stat", "attack"))
+        skill.hit_distribution = str(entry.get("hit_distribution", ""))
+        skill.repeated_target_damage = entry.get(
+            "repeated_target_damage", {}
+        )
+        skill.resolve_hits_by_round = bool(
+            entry.get("resolve_hits_by_round", false)
+        )
+
+        # Handler-adapter effects can exist only in Godot; overwrite
+        # them only when the shared data declares direct effects.
+        if entry.has("effects"):
+            skill.effects = entry["effects"]
+
+    elif skill_type == "healing":
+        var buffs: Array = []
+        for handler_config in entry.get("after_use_handlers", []):
+            var handler_id: String = str(
+                handler_config.get("handler", "")
+            )
+            var handler_data: Dictionary = handler_config.get(
+                "data", {}
+            )
+            if handler_id == "heal_all_allies":
+                skill.healing_hp_ratio = float(
+                    handler_data.get("healing_hp_ratio", 0.0)
+                )
+            elif handler_id == "apply_aoe_buff":
+                buffs.append({
+                    "effect_id": str(handler_data["effect_id"]),
+                    "turns": int(handler_data["turns"])
+                })
+        skill.buffs_to_apply = buffs
+
+    return true
+
+
+static func _sync_monster_skills(monster) -> bool:
+    for skill in monster.skills:
+        if not _sync_skill_from_shared_data(skill):
+            return false
+    return true
 
 
 static func _make_monster_from_data(
@@ -150,6 +254,8 @@ static func create_level_one_monster(
 
     monster.resonance = clampi(resonance, 0, 5)
     _apply_resonance(monster)
+    if not _sync_monster_skills(monster):
+        return null
     _attach_skill_descriptions(monster)
     _attach_passive_description(monster)
     return monster
