@@ -33,6 +33,9 @@ var max_soul_charges: int = 0
 var use_consumed_soul_charges: bool = false
 var disable_soul_bonus_if_ally_dead: bool = false
 var soul_charges_consumed: int = 0
+var max_missing_health_bonus: float = 0.0
+var execute_health_threshold: float = 0.0
+var execute_defense_ignore_ratio: float = 0.0
 
 
 func _init(
@@ -196,7 +199,8 @@ func get_burn_damage_multiplier(defender) -> float:
 func damage_calc(
     attacker,
     defender,
-    hit_multiplier: float = 1.0
+    hit_multiplier: float = 1.0,
+    snapshot_health_ratio: float = -1.0
 ) -> Dictionary:
     var bonus_damage: float = get_burn_damage_multiplier(
         defender
@@ -227,6 +231,26 @@ func damage_calc(
             + soul_charges * damage_per_soul_charge
         )
 
+    if max_missing_health_bonus > 0.0:
+        var current_health_ratio: float = (
+            float(defender.health) / float(defender.max_health)
+            if defender.max_health > 0
+            else 0.0
+        )
+
+        var missing_health_ratio: float = maxf(
+            0.0,
+            1.0 - current_health_ratio
+        )
+
+        bonus_damage *= (
+            1.0
+            + minf(
+                missing_health_ratio * max_missing_health_bonus,
+                max_missing_health_bonus
+            )
+        )
+
     if damage_per_dead_monster > 0.0:
         var counted_dead: int = mini(
             attacker.battle_dead_count,
@@ -240,11 +264,22 @@ func damage_calc(
 
         bonus_damage *= 1.0 + dead_bonus
 
+    var defense_ignore_ratio: float = 0.0
+
+    if (
+        execute_health_threshold > 0.0
+        and snapshot_health_ratio >= 0.0
+        and snapshot_health_ratio < execute_health_threshold
+    ):
+        defense_ignore_ratio = execute_defense_ignore_ratio
+
     var base_damage: float = base_damage_calc(
         attacker,
         defender,
         hit_multiplier,
-        bonus_damage
+        bonus_damage,
+        false,
+        defense_ignore_ratio
     )
 
     var critical := false
@@ -466,6 +501,12 @@ func execute_on_target(
         defender.get_debuff_stacks("burn")
     )
 
+    var starting_health_ratio: float = (
+        float(defender.health) / float(defender.max_health)
+        if defender.max_health > 0
+        else 0.0
+    )
+
     if apply_named_before_hit and defender.is_alive():
         attacker.apply_named(
             defender,
@@ -506,7 +547,8 @@ func execute_on_target(
         var result: Dictionary = damage_calc(
             attacker,
             defender,
-            hit_multiplier
+            hit_multiplier,
+            starting_health_ratio
         )
 
         var actual_damage: int = defender.receive_damage(
