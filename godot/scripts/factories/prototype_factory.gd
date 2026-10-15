@@ -28,6 +28,8 @@ static func create_level_one_monster(monster_id: String):
             monster = _create_aether_dullahan()
         "dullahan_igneous":
             monster = _create_igneous_dullahan()
+        "dullahan_abyssal":
+            monster = _create_abyssal_dullahan()
         "slime_storm":
             monster = _create_storm_slime()
         "slime_abyssal":
@@ -179,6 +181,20 @@ static func _attach_skill_descriptions(monster) -> void:
                 {
                     "kind": "debuff",
                     "text": "[b]Hits 2-3:[/b] each has a [b]30% chance[/b] to apply [color=#ff7777]Defense Break[/color] for [b]2 turns[/b]."
+                }
+            ]
+        },
+
+        "spectral_shackles": {
+            "summary": "Binds one enemy with two spectral strikes.",
+            "effects": [
+                {
+                    "kind": "debuff",
+                    "text": "[b]Hit 1:[/b] 50% chance to apply [color=#ff7777]Speed Break[/color] for [b]2 turns[/b]."
+                },
+                {
+                    "kind": "debuff",
+                    "text": "[b]Hit 2:[/b] 50% chance to apply [color=#ff7777]Attack Break[/color] for [b]2 turns[/b]."
                 }
             ]
         },
@@ -349,6 +365,21 @@ static func _attach_passive_description(monster) -> void:
                 {
                     "kind": "special",
                     "text": "For each enemy buff removed, gains [b]8% Action Gauge[/b]."
+                }
+            ]
+        },
+
+        "dullahan_abyssal": {
+            "name": "Chilling Presence",
+            "summary": "Extends the enemy team's debuffs after every turn.",
+            "effects": [
+                {
+                    "kind": "special",
+                    "text": "After this monster's turn, extends [b]1 random extendable debuff[/b] on each living enemy by [b]1 turn[/b]."
+                },
+                {
+                    "kind": "special",
+                    "text": "[color=#d9a6ff]Stun[/color] and [color=#d9a6ff]Freeze[/color] cannot be extended."
                 }
             ]
         },
@@ -578,6 +609,69 @@ static func _create_abyssal_drake():
     ] = 3
 
     return monster
+
+
+static func _create_abyssal_dullahan():
+    var severing_blade = DamageSkillScript.new(
+        "severing_blade",
+        "Severing Blade",
+        2.60,
+        1,
+        [],
+        "attack",
+        0,
+        [
+            {
+                "effect_id": "heal_block",
+                "chance": 0.30,
+                "turns": 2,
+                "trigger": "after_skill"
+            }
+        ]
+    )
+
+    var spectral_shackles = DamageSkillScript.new(
+        "spectral_shackles",
+        "Spectral Shackles",
+        1.95,
+        2,
+        [],
+        "attack",
+        4,
+        [
+            {
+                "effect_id": "speed_break",
+                "chance": 0.50,
+                "turns": 2,
+                "hit_indices": [0]
+            },
+            {
+                "effect_id": "attack_break",
+                "chance": 0.50,
+                "turns": 2,
+                "hit_indices": [1]
+            }
+        ]
+    )
+
+    var skills: Array = [
+        severing_blade,
+        spectral_shackles
+    ]
+
+    return MonsterScript.new(
+        "dullahan_abyssal",
+        "Abyssal Dullahan",
+        "Dullahan",
+        "abyssal",
+        4,
+        _scaled(10800),
+        _scaled(650),
+        _scaled(790),
+        _scaled(212),
+        skills,
+        LEVEL_ONE_MULTIPLIER
+    )
 
 
 static func _create_igneous_dullahan():
