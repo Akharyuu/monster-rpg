@@ -41,11 +41,11 @@ var action_in_progress := true
 func _ready() -> void:
     allies = [
         PrototypeFactoryScript.create_level_one_monster(
-            "drake_void",
+            "dullahan_abyssal",
             5
         ),
         PrototypeFactoryScript.create_level_one_monster(
-            "dullahan_igneous",
+            "dullahan_storm",
             5
         )
     ]
@@ -64,19 +64,6 @@ func _ready() -> void:
     for enemy in enemies:
         enemy.max_health = 100000
         enemy.health = enemy.max_health
-
-        for buff_id in [
-            "attack_up",
-            "defense_up",
-            "speed_up"
-        ]:
-            enemy.apply_status_effect(
-                StatusEffectFactoryScript.create_status_effect(
-                    buff_id,
-                    99,
-                    enemy
-                )
-            )
 
     battle_controller = BattleControllerScript.new()
     battle_controller.setup(
