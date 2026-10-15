@@ -334,6 +334,30 @@ static func _attach_skill_descriptions(monster) -> void:
             ]
         },
 
+        "null_rend_obliterate": {
+            "summary": "Tears into one enemy with two increasingly destructive void strikes.",
+            "effects": [
+                {
+                    "kind": "debuff",
+                    "text": "The second hit has an [b]80% chance[/b] to apply [color=#ff7777]Oblivion[/color] for [b]2 turns[/b]."
+                }
+            ]
+        },
+
+        "null_rend_annihilation": {
+            "summary": "Tears into one enemy with two void strikes that can erase the fallen from battle.",
+            "effects": [
+                {
+                    "kind": "debuff",
+                    "text": "The second hit has an [b]80% chance[/b] to apply [color=#ff7777]Oblivion[/color] for [b]2 turns[/b]."
+                },
+                {
+                    "kind": "special",
+                    "text": "If this skill defeats a target that was already affected by [color=#ff7777]Oblivion[/color], [color=#d9a6ff]Banishes[/color] it."
+                }
+            ]
+        },
+
         "dismantle": {
             "summary": "Disassembles the enemy team's defenses over three sweeping hits.",
             "effects": [
@@ -343,11 +367,29 @@ static func _attach_skill_descriptions(monster) -> void:
                 },
                 {
                     "kind": "damage",
-                    "text": "[b]Hits 2-3:[/b] gain [b]+8% damage[/b] for every buff removed."
+                    "text": "[b]Hits 2-3:[/b] deal increased damage for every buff removed."
                 },
                 {
                     "kind": "debuff",
                     "text": "[b]Hits 2-3:[/b] each has a [b]30% chance[/b] to apply [color=#ff7777]Defense Break[/color] for [b]2 turns[/b]."
+                }
+            ]
+        },
+
+        "dismantle_decimation": {
+            "summary": "Disassembles the enemy team's defenses over three sweeping hits.",
+            "effects": [
+                {
+                    "kind": "special",
+                    "text": "[b]Hit 1:[/b] strips enemy buffs."
+                },
+                {
+                    "kind": "damage",
+                    "text": "[b]Hits 2-3:[/b] deal increased damage for every buff removed."
+                },
+                {
+                    "kind": "debuff",
+                    "text": "[b]Hits 2-3:[/b] each has a [b]50% chance[/b] to apply [color=#ff7777]Defense Break[/color] for [b]2 turns[/b]."
                 }
             ]
         },
@@ -595,7 +637,21 @@ static func _attach_skill_descriptions(monster) -> void:
             "effects": [
                 {
                     "kind": "damage",
-                    "text": "Damage increases as the target loses Health, up to [b]+30%[/b] at 0% HP."
+                    "text": "Damage increases as the target loses Health."
+                }
+            ]
+        },
+
+        "relentless_pursuit_blood_trail": {
+            "summary": "Relentlessly hunts down a wounded enemy with two increasingly dangerous strikes.",
+            "effects": [
+                {
+                    "kind": "damage",
+                    "text": "Damage increases as the target loses Health."
+                },
+                {
+                    "kind": "special",
+                    "text": "Each hit against a target below [b]50% HP[/b] grants [b]20% Action Gauge[/b]."
                 }
             ]
         },
@@ -605,7 +661,31 @@ static func _attach_skill_descriptions(monster) -> void:
             "effects": [
                 {
                     "kind": "damage",
-                    "text": "If the target starts the skill below [b]25% HP[/b], ignores [b]50% of its Defense[/b]."
+                    "text": "Partially ignores Defense if the target is below [b]25% HP[/b]."
+                }
+            ]
+        },
+
+        "death_sentence_execution": {
+            "summary": "Delivers a lethal strike designed to execute weakened enemies.",
+            "effects": [
+                {
+                    "kind": "damage",
+                    "text": "Partially ignores Defense if the target is below [b]33% HP[/b]."
+                }
+            ]
+        },
+
+        "death_sentence_massacre": {
+            "summary": "Executes a weakened enemy and immediately continues the hunt.",
+            "effects": [
+                {
+                    "kind": "damage",
+                    "text": "Partially ignores Defense if the target is below [b]33% HP[/b]."
+                },
+                {
+                    "kind": "special",
+                    "text": "If this skill defeats an enemy, immediately uses [b]Relentless Pursuit[/b] against the living enemy with the lowest HP ratio."
                 }
             ]
         },
@@ -1086,6 +1166,113 @@ static func _scaled(value: float) -> int:
 
 
 static func _apply_resonance(monster) -> void:
+    if monster.monster_id == "drake_void":
+        if monster.resonance >= 1:
+            var obliterate = DamageSkillScript.new(
+                (
+                    "null_rend_annihilation"
+                    if monster.resonance >= 5
+                    else "null_rend_obliterate"
+                ),
+                (
+                    "Null Rend: Annihilation"
+                    if monster.resonance >= 5
+                    else "Null Rend: Obliterate"
+                ),
+                2.10,
+                2,
+                [1.00, 1.30],
+                "attack",
+                4,
+                [
+                    {
+                        "effect_id": "oblivion",
+                        "chance": 0.80,
+                        "turns": 2,
+                        "hit_indices": [1]
+                    }
+                ]
+            )
+            monster.skills[1] = obliterate
+
+        if monster.resonance >= 2:
+            monster.combat_resources["voidborn"] = 0
+            monster.combat_resource_maximums["voidborn"] = 5
+
+        if monster.resonance >= 4:
+            var decimation = DamageSkillScript.new(
+                "dismantle_decimation",
+                "Dismantle: Decimation",
+                1.45,
+                3,
+                [],
+                "attack",
+                4,
+                [
+                    {
+                        "effect_id": "defense_break",
+                        "chance": 0.50,
+                        "turns": 2,
+                        "hit_indices": [1, 2]
+                    }
+                ],
+                {},
+                {},
+                "all_enemies",
+                0.0,
+                "",
+                {},
+                true,
+                0,
+                0.08,
+                [1, 2]
+            )
+            monster.skills[2] = decimation
+
+        return
+
+    if monster.monster_id == "dullahan_igneous":
+        if monster.resonance >= 1:
+            var blood_trail = DamageSkillScript.new(
+                "relentless_pursuit_blood_trail",
+                "Relentless Pursuit: Blood Trail",
+                1.85,
+                2,
+                [],
+                "attack",
+                4,
+                []
+            )
+            blood_trail.max_missing_health_bonus = 0.45
+            blood_trail.action_gauge_gain_if_target_low_hp_threshold = 0.50
+            blood_trail.action_gauge_gain_if_target_low_hp_amount = 0.20
+            monster.skills[1] = blood_trail
+
+        if monster.resonance >= 3:
+            var execution = DamageSkillScript.new(
+                (
+                    "death_sentence_massacre"
+                    if monster.resonance >= 5
+                    else "death_sentence_execution"
+                ),
+                (
+                    "Death Sentence: Massacre"
+                    if monster.resonance >= 5
+                    else "Death Sentence: Execution"
+                ),
+                4.60,
+                1,
+                [],
+                "attack",
+                4,
+                []
+            )
+            execution.execute_health_threshold = 0.33
+            execution.execute_defense_ignore_ratio = 0.50
+            monster.skills[2] = execution
+
+        return
+
     if monster.monster_id == "drake_storm":
         if monster.resonance >= 2:
             var blitz = DamageSkillScript.new(
