@@ -32,6 +32,12 @@ static func create_level_one_monster(monster_id: String):
             monster = _create_abyssal_dullahan()
         "dullahan_storm":
             monster = _create_storm_dullahan()
+        "thornet_igneous":
+            monster = _create_thornet("igneous")
+        "thornet_abyssal":
+            monster = _create_thornet("abyssal")
+        "thornet_storm":
+            monster = _create_thornet("storm")
         "wisp_igneous":
             monster = _create_wisp("igneous")
         "wisp_abyssal":
@@ -199,6 +205,50 @@ static func _attach_skill_descriptions(monster) -> void:
                 {
                     "kind": "debuff",
                     "text": "[b]Hits 2-3:[/b] each has a [b]30% chance[/b] to apply [color=#ff7777]Defense Break[/color] for [b]2 turns[/b]."
+                }
+            ]
+        },
+
+        "needle_rush": {
+            "summary": "Strikes one enemy twice with venomous needles.",
+            "effects": [
+                {
+                    "kind": "debuff",
+                    "text": "Each hit has a [b]35% chance[/b] to apply [color=#ff7777]Poison[/color] for [b]2 turns[/b]."
+                }
+            ]
+        },
+
+        "fever_sting": {
+            "summary": "Drives three fevered stings into one enemy.",
+            "effects": [
+                {
+                    "kind": "damage",
+                    "text": "Deals increased damage if the target is already affected by [color=#ff7777]Poison[/color] when the skill begins."
+                }
+            ]
+        },
+
+        "numbing_sting": {
+            "summary": "Pierces one enemy twice with numbing venom.",
+            "effects": [
+                {
+                    "kind": "debuff",
+                    "text": "Each hit has a [b]25% chance[/b] to apply [color=#ff7777]Poison[/color] for [b]2 turns[/b]."
+                },
+                {
+                    "kind": "debuff",
+                    "text": "If this skill applies Poison, has a [b]60% chance[/b] to apply [color=#ff7777]Stun[/color] for [b]1 turn[/b]."
+                }
+            ]
+        },
+
+        "swarm_pierce": {
+            "summary": "Overwhelms one enemy with three rapid piercing attacks.",
+            "effects": [
+                {
+                    "kind": "damage",
+                    "text": "If the target already has a debuff when the skill begins, each successive hit deals more damage."
                 }
             ]
         },
@@ -738,6 +788,129 @@ static func _create_abyssal_drake():
     ] = 3
 
     return monster
+
+
+static func _create_thornet(attribute: String):
+    var needle_rush = DamageSkillScript.new(
+        "needle_rush",
+        "Needle Rush",
+        1.65,
+        2,
+        [],
+        "attack",
+        0,
+        [
+            {
+                "effect_id": "poison",
+                "chance": 0.35,
+                "turns": 2,
+                "trigger": "per_hit"
+            }
+        ]
+    )
+
+    var second_skill = null
+
+    match attribute:
+        "igneous":
+            second_skill = DamageSkillScript.new(
+                "fever_sting",
+                "Fever Sting",
+                1.55,
+                3,
+                [],
+                "attack",
+                4,
+                []
+            )
+            second_skill.conditional_required_debuff_id = "poison"
+            second_skill.conditional_damage_multiplier = 1.15
+
+        "abyssal":
+            second_skill = DamageSkillScript.new(
+                "numbing_sting",
+                "Numbing Sting",
+                2.50,
+                2,
+                [],
+                "attack",
+                4,
+                [
+                    {
+                        "effect_id": "poison",
+                        "chance": 0.25,
+                        "turns": 2,
+                        "trigger": "per_hit"
+                    },
+                    {
+                        "effect_id": "stun",
+                        "chance": 0.60,
+                        "turns": 1,
+                        "trigger": "after_skill",
+                        "condition": {
+                            "type": "target_gained_debuff",
+                            "effect_id": "poison"
+                        }
+                    }
+                ]
+            )
+
+        "storm":
+            second_skill = DamageSkillScript.new(
+                "swarm_pierce",
+                "Swarm Pierce",
+                2.50,
+                3,
+                [],
+                "attack",
+                4,
+                []
+            )
+            second_skill.conditional_requires_any_debuff = true
+            second_skill.conditional_hit_damage_multipliers = [
+                1.00,
+                1.15,
+                1.30
+            ]
+
+    var monster_id: String = "thornet_%s" % attribute
+    var display_name: String = "%s Thornet" % attribute.capitalize()
+
+    var hp: int = 6150
+    var attack: int = 675
+    var defense: int = 352
+    var speed: int = 166
+
+    match attribute:
+        "abyssal":
+            hp = 6400
+            attack = 585
+            defense = 382
+            speed = 174
+        "storm":
+            hp = 5850
+            attack = 640
+            defense = 338
+            speed = 181
+
+    var skills: Array = [
+        needle_rush,
+        second_skill
+    ]
+
+    return MonsterScript.new(
+        monster_id,
+        display_name,
+        "Thornet",
+        attribute,
+        2,
+        _scaled(hp),
+        _scaled(attack),
+        _scaled(defense),
+        _scaled(speed),
+        skills,
+        LEVEL_ONE_MULTIPLIER
+    )
 
 
 static func _create_wisp(attribute: String):
