@@ -361,6 +361,61 @@ func execute_active_skill(
     )
 
     if (
+        active_monster.monster_id == "dryad_storm"
+        and skill.skill_id == "vine_barrage"
+    ):
+        var team: Array = (
+            allies
+            if active_monster in allies
+            else enemies
+        )
+
+        var living_allies: Array = []
+
+        for ally in team:
+            if ally.is_alive():
+                living_allies.append(ally)
+
+        if not living_allies.is_empty():
+            var heal_target = living_allies[0]
+
+            for ally in living_allies:
+                var ally_ratio: float = (
+                    float(ally.health) / float(ally.max_health)
+                )
+                var target_ratio: float = (
+                    float(heal_target.health)
+                    / float(heal_target.max_health)
+                )
+
+                if ally_ratio < target_ratio:
+                    heal_target = ally
+
+            var intended_heal: int = int(
+                active_monster.get_healing_hp()
+                * 0.08
+                * active_monster.get_direct_heal_multiplier(
+                    heal_target
+                )
+            )
+
+            var actual_heal: int = heal_target.heal(
+                intended_heal
+            )
+
+            result["healing"] = int(
+                result.get("healing", 0)
+            ) + actual_heal
+
+            caster_feedback.append(
+                "VINE BARRAGE - %s +%d HP"
+                % [
+                    heal_target.monster_name,
+                    actual_heal
+                ]
+            )
+
+    if (
         active_monster.monster_id == "dullahan_storm"
         and skill.skill_id == "headlong_charge"
     ):
