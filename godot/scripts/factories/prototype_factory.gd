@@ -266,16 +266,12 @@ static func _attach_skill_descriptions(monster) -> void:
             "summary": "Unleashes ten lightning strikes across random enemies, followed by a final sweeping discharge.",
             "effects": [
                 {
-                    "kind": "special",
-                    "text": "Hits every living enemy at least once before distributing the remaining strikes randomly."
-                },
-                {
                     "kind": "control",
-                    "text": "A target hit [b]3+ times[/b] has a [b]50% chance[/b] to be [color=#ff7777]Stunned[/color]."
+                    "text": "A target hit [b]3+ times[/b] has a [b]50% chance[/b] to be [color=#ff7777]Stunned[/color] for [b]1 turn[/b]."
                 },
                 {
                     "kind": "damage",
-                    "text": "After the ten strikes, unleashes an additional attack against all living enemies at reduced damage."
+                    "text": "After the ten strikes, unleashes an additional attack against all living enemies."
                 }
             ]
         },
