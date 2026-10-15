@@ -96,6 +96,20 @@ static func _attach_skill_descriptions(monster) -> void:
             ]
         },
 
+        "scorching_breath_afterburn": {
+            "summary": "Engulfs all enemies in a two-hit breath attack and feeds existing flames.",
+            "effects": [
+                {
+                    "kind": "damage",
+                    "text": "Damage increases with the target's [color=#ff7777]Burn[/color] stacks."
+                },
+                {
+                    "kind": "debuff",
+                    "text": "If the target is already affected by [color=#ff7777]Burn[/color], applies [b]1 additional Burn stack[/b] for [b]3 turns[/b]."
+                }
+            ]
+        },
+
         "flame_devourer": {
             "summary": "Consumes the target's flames to empower the strike and restore the caster.",
             "effects": [
@@ -110,9 +124,63 @@ static func _attach_skill_descriptions(monster) -> void:
             ]
         },
 
+        "flame_devourer_rekindled": {
+            "summary": "Consumes the target's flames to empower the strike and restore the caster.",
+            "effects": [
+                {
+                    "kind": "damage",
+                    "text": "Deals increased damage based on [color=#ff7777]Burn[/color] stacks."
+                },
+                {
+                    "kind": "heal",
+                    "text": "Consumes the Burn present before the attack and [color=#76e6a8]heals the caster[/color]."
+                },
+                {
+                    "kind": "special",
+                    "text": "Consuming [b]3 Burn stacks[/b] resets [b]Scorching Breath[/b]."
+                }
+            ]
+        },
+
+        "flame_devourer_incineration": {
+            "summary": "Consumes the target's flames in a devastating finishing strike.",
+            "effects": [
+                {
+                    "kind": "damage",
+                    "text": "Deals increased damage based on [color=#ff7777]Burn[/color] stacks."
+                },
+                {
+                    "kind": "damage",
+                    "text": "At [b]3 Burn stacks[/b], ignores the target's Defense."
+                },
+                {
+                    "kind": "heal",
+                    "text": "Consumes the Burn present before the attack and [color=#76e6a8]heals the caster[/color]."
+                },
+                {
+                    "kind": "special",
+                    "text": "Consuming [b]3 Burn stacks[/b] resets [b]Scorching Breath[/b]."
+                }
+            ]
+        },
+
         "rime_breath": {
             "summary": "A freezing breath that strikes the entire enemy team twice.",
             "effects": [
+                {
+                    "kind": "debuff",
+                    "text": "Each hit has a [b]50% chance[/b] to apply [color=#ff7777]Speed Break[/color] for [b]2 turns[/b]."
+                }
+            ]
+        },
+
+        "rime_breath_frigid": {
+            "summary": "A freezing breath that strikes the entire enemy team twice.",
+            "effects": [
+                {
+                    "kind": "control",
+                    "text": "Each hit reduces [b]10% Action Gauge[/b] if the target is affected by [color=#ff7777]Speed Break[/color]."
+                },
                 {
                     "kind": "debuff",
                     "text": "Each hit has a [b]50% chance[/b] to apply [color=#ff7777]Speed Break[/color] for [b]2 turns[/b]."
@@ -130,6 +198,24 @@ static func _attach_skill_descriptions(monster) -> void:
                 {
                     "kind": "control",
                     "text": "Targets with [color=#ff7777]Speed Break[/color] can be [color=#ff7777]Frozen[/color] for [b]1 turn[/b]."
+                }
+            ]
+        },
+
+        "glacial_collapse_absolute_zero": {
+            "summary": "Crushes the enemy team under an absolute glacial collapse.",
+            "effects": [
+                {
+                    "kind": "control",
+                    "text": "Reduces each target's [b]Action Gauge by 10%[/b]."
+                },
+                {
+                    "kind": "debuff",
+                    "text": "Targets with [color=#ff7777]Speed Break[/color] are [color=#ff7777]Frozen[/color] for [b]1 turn[/b], ignoring Resistance."
+                },
+                {
+                    "kind": "debuff",
+                    "text": "Other targets have a [b]75% chance[/b] to be [color=#ff7777]Frozen[/color] for [b]1 turn[/b], ignoring Resistance."
                 }
             ]
         },
@@ -736,6 +822,185 @@ static func _scaled(value: float) -> int:
 
 
 static func _apply_resonance(monster) -> void:
+    if monster.monster_id == "drake_igneous":
+        if monster.resonance >= 1:
+            monster.on_hit_effects = [
+                {
+                    "effect_id": "burn",
+                    "chance": (
+                        0.65
+                        if monster.resonance >= 4
+                        else 0.50
+                    ),
+                    "turns": 2,
+                    "stacks": 1,
+                    "action_gauge": (
+                        0.10
+                        if monster.resonance >= 4
+                        else 0.0
+                    ),
+                    "action_gauge_once_per_skill": (
+                        monster.resonance >= 4
+                    )
+                }
+            ]
+
+        if monster.resonance >= 2:
+            var afterburn = DamageSkillScript.new(
+                "scorching_breath_afterburn",
+                "Scorching Breath: Afterburn",
+                3.75,
+                2,
+                [],
+                "attack",
+                4,
+                [],
+                {
+                    "multipliers_by_stacks": {
+                        1: 1.08,
+                        2: 1.16,
+                        3: 1.24
+                    }
+                },
+                {},
+                "all_enemies"
+            )
+            afterburn.add_burn_if_started_with_burn = true
+            afterburn.extra_burn_stacks = 1
+            afterburn.extra_burn_turns = 3
+            monster.skills[1] = afterburn
+
+        if monster.resonance >= 3:
+            var rekindled = DamageSkillScript.new(
+                "flame_devourer_rekindled",
+                "Flame Devourer: Rekindled",
+                4.60,
+                1,
+                [],
+                "attack",
+                5,
+                [],
+                {
+                    "multipliers_by_stacks": {
+                        1: 1.15,
+                        2: 1.30,
+                        3: 1.45
+                    }
+                },
+                {
+                    "heal_by_stacks": {
+                        1: 0.12,
+                        2: 0.25,
+                        3: 0.40
+                    }
+                }
+            )
+            rekindled.reset_skill_slot_if_burn_stacks = 2
+            rekindled.reset_skill_required_burn_stacks = 3
+            monster.skills[2] = rekindled
+
+        if monster.resonance >= 5:
+            var incineration = DamageSkillScript.new(
+                "flame_devourer_incineration",
+                "Flame Devourer: Incineration",
+                4.60,
+                1,
+                [],
+                "attack",
+                5,
+                [],
+                {
+                    "multipliers_by_stacks": {
+                        1: 1.15,
+                        2: 1.30,
+                        3: 1.45
+                    },
+                    "ignore_defense_at_stacks": 3
+                },
+                {
+                    "heal_by_stacks": {
+                        1: 0.12,
+                        2: 0.25,
+                        3: 0.40
+                    }
+                }
+            )
+            incineration.reset_skill_slot_if_burn_stacks = 2
+            incineration.reset_skill_required_burn_stacks = 3
+            monster.skills[2] = incineration
+
+        return
+
+    if monster.monster_id == "drake_abyssal":
+        if monster.resonance >= 1:
+            var frigid = DamageSkillScript.new(
+                "rime_breath_frigid",
+                "Rime Breath: Frigid",
+                3.15,
+                2,
+                [],
+                "attack",
+                4,
+                [
+                    {
+                        "effect_id": "speed_break",
+                        "chance": 0.50,
+                        "turns": 2,
+                        "trigger": "per_hit"
+                    }
+                ],
+                {},
+                {},
+                "all_enemies"
+            )
+            frigid.action_gauge_reduction_if_debuff_id = (
+                "speed_break"
+            )
+            frigid.action_gauge_reduction_if_debuff_amount = 0.10
+            monster.skills[1] = frigid
+
+        if monster.resonance >= 5:
+            var absolute_zero = DamageSkillScript.new(
+                "glacial_collapse_absolute_zero",
+                "Glacial Collapse: Absolute Zero",
+                4.10,
+                1,
+                [],
+                "attack",
+                5,
+                [
+                    {
+                        "effect_id": "freeze",
+                        "chance": 1.00,
+                        "turns": 1,
+                        "trigger": "per_hit",
+                        "ignore_resistance": true,
+                        "condition": {
+                            "type": "target_has_debuff",
+                            "effect_id": "speed_break"
+                        }
+                    },
+                    {
+                        "effect_id": "freeze",
+                        "chance": 0.75,
+                        "turns": 1,
+                        "trigger": "per_hit",
+                        "ignore_resistance": true,
+                        "condition": {
+                            "type": "target_lacks_debuff",
+                            "effect_id": "speed_break"
+                        }
+                    }
+                ],
+                {},
+                {},
+                "all_enemies",
+                0.10
+            )
+            monster.skills[2] = absolute_zero
+
+        return
+
     if monster.monster_id == "dryad_storm":
         if monster.resonance >= 2:
             var sanctuary = SupportSkillScript.new(
