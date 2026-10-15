@@ -9,28 +9,87 @@ const LEVEL_ONE_MULTIPLIER := 0.35
 
 
 static func create_level_one_monster(monster_id: String):
+    var monster = null
+
     match monster_id:
         "drake_igneous":
-            return _create_igneous_drake()
+            monster = _create_igneous_drake()
         "drake_abyssal":
-            return _create_abyssal_drake()
+            monster = _create_abyssal_drake()
         "drake_aether":
-            return _create_aether_drake()
+            monster = _create_aether_drake()
         "drake_storm":
-            return _create_storm_drake()
+            monster = _create_storm_drake()
         "drake_void":
-            return _create_void_drake()
+            monster = _create_void_drake()
         "dullahan_void":
-            return _create_void_dullahan()
+            monster = _create_void_dullahan()
         "slime_storm":
-            return _create_storm_slime()
+            monster = _create_storm_slime()
         "slime_abyssal":
-            return _create_abyssal_slime()
+            monster = _create_abyssal_slime()
         "slime_igneous":
-            return _create_igneous_slime()
+            monster = _create_igneous_slime()
         _:
             push_error("Unknown prototype monster id: %s" % monster_id)
             return null
+
+    _attach_skill_descriptions(monster)
+    return monster
+
+
+static func _attach_skill_descriptions(monster) -> void:
+    var descriptions := {
+        "draconic_claw":
+            "Attacks one enemy. Has a 30% chance to apply Defense Break for 2 turns.",
+
+        "scorching_breath":
+            "Attacks all enemies twice. Deals increased damage based on the target's Burn stacks.",
+
+        "flame_devourer":
+            "Attacks one enemy. Deals increased damage based on Burn stacks, then consumes the Burn present before the attack to heal the caster.",
+
+        "rime_breath":
+            "Attacks all enemies twice. Each hit has a 50% chance to apply Speed Break for 2 turns.",
+
+        "glacial_collapse":
+            "Attacks all enemies, reducing their Action Gauge by 10%. Enemies with Speed Break are also subject to Freeze for 1 turn.",
+
+        "lightning_rush":
+            "Attacks one enemy twice, then grants the caster Speed Up for 2 turns.",
+
+        "stormbreak":
+            "Strikes enemies 10 times at random, hitting each living enemy at least once first. A target hit 3 or more times has a 50% chance to be Stunned. Later repeated hits deal reduced damage, while the first hit gains bonus damage if the caster has Speed Up.",
+
+        "sovereign_breath":
+            "Attacks all enemies. Afterwards, attempts to Silence them for 1 turn. Silence chance increases by 10% for each buff on the caster, from 30% up to 80%.",
+
+        "heavens_decree":
+            "Grants all allies Attack Up, Immunity and Veil for 2 turns.",
+
+        "null_rend":
+            "Attacks one enemy twice. The second hit has a 60% chance to apply Oblivion for 2 turns.",
+
+        "dismantle":
+            "Attacks all enemies 3 times. The first hit strips buffs. Hits 2 and 3 gain 8% damage for every buff removed and each has a 30% chance to apply Defense Break for 2 turns.",
+
+        "severing_blade":
+            "Attacks one enemy. Has a 30% chance to apply Heal Block for 2 turns.",
+
+        "spinal_scourge":
+            "Attacks all enemies 3 times. Damage increases by 5% for each monster that has died in battle, up to 25%.",
+
+        "deaths_gaze":
+            "Names one enemy for 2 turns before dealing damage and attempts to apply Vulnerability for 2 turns. While a target is Named, this Dullahan becomes Headless, gaining 20% Speed and immunity to Silence unless affected by Oblivion.",
+
+        "ooze_slam":
+            "Attacks one enemy."
+    }
+
+    for skill in monster.skills:
+        skill.description = str(
+            descriptions.get(skill.skill_id, "")
+        )
 
 
 static func _scaled(value: float) -> int:
