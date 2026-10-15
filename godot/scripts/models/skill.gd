@@ -6,6 +6,7 @@ var skill_name: String
 var cooldown: int
 var current_cooldown: int = 0
 var target_type: String = "single_enemy"
+var description: String = ""
 
 
 func _init(
@@ -35,3 +36,18 @@ func reduce_cooldown() -> void:
 
 func reset_cooldown() -> void:
     current_cooldown = 0
+
+
+func get_tooltip_text() -> String:
+    var lines: Array[String] = [skill_name]
+
+    if cooldown > 0:
+        lines.append("Cooldown: %d turns" % cooldown)
+    else:
+        lines.append("Cooldown: None")
+
+    if not description.is_empty():
+        lines.append("")
+        lines.append(description)
+
+    return "\n".join(lines)
