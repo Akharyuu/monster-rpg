@@ -184,7 +184,11 @@ static func _assign_shared_passives(monster) -> bool:
         elif handler_id == "frozen_scales":
             maximum_key = "max_scales"
 
-        var data: Dictionary = passive.get("handler_data", {})
+        # Frozen Scales defines max_scales at the top level;
+        # Soul Vessel and Voidborn use nested handler_data.
+        var data: Dictionary = passive.get(
+            "handler_data", passive
+        )
         var maximum: int = int(data.get(maximum_key, 0))
         if maximum <= 0:
             push_error("Invalid passive resource cap: %s" % handler_id)

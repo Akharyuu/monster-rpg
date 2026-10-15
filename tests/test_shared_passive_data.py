@@ -1,5 +1,6 @@
 """Contract checks for canonical passive and Resonance data."""
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -110,8 +111,14 @@ def test_godot_resolves_and_consumes_shared_passive_data():
     assert 'get_passive_by_handler("thunderheart")' in monster
     assert 'get_passive_by_handler("natures_grace")' in monster
     assert 'get_passive_by_handler("deathless_rider")' in monster
-    assert 'get_passive_by_handler("chilling_presence")' in battle
-    assert 'get_passive_by_handler("the_hunt")' in battle
+    assert re.search(
+        r'get_passive_by_handler\(\s*"chilling_presence"\s*\)',
+        battle,
+    )
+    assert re.search(
+        r'get_passive_by_handler\(\s*"the_hunt"\s*\)',
+        battle,
+    )
 
 
 @pytest.mark.parametrize(
@@ -146,3 +153,22 @@ def test_resonance_resolves_expected_passive_kits(
                 active.add(action["new"])
 
     assert active == expected_passives
+
+
+def test_passive_resource_caps_handle_top_level_and_nested_data():
+    # Frozen Scales stores its cap directly in the passive record.
+    # Soul Vessel and Voidborn store caps under handler_data.
+    definitions = passive_module.PASSIVE_DATA
+    assert definitions["frozen_scales"]["max_scales"] == 3
+    assert definitions["frozen_scales_everfrost"]["max_scales"] == 3
+    assert definitions["soul_vessel"]["handler_data"]["max_charges"] == 5
+    assert definitions["voidborn"]["handler_data"]["max_stacks"] == 5
+
+    factory = (
+        ROOT / "godot" / "scripts" / "factories" / "prototype_factory.gd"
+    ).read_text(encoding="utf-8")
+    assert re.search(
+        r'passive\.get\(\s*"handler_data",\s*passive\s*\)',
+        factory,
+    )
+    assert 'monster.combat_resource_maximums[key] = maximum' in factory

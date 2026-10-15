@@ -296,7 +296,12 @@ def test_advanced_damage_handler_adapters_are_present():
         assert handler in source
     assert "skill.apply_named_before_hit = true" in source
     assert "skill.use_consumed_soul_charges = bool(" in source
-    assert 'monster.combat_resources["soul_charges"] = 0' in source
+    # Soul Charges are initialized by the shared passive adapter,
+    # not by a hand-written Aether Dullahan constructor.
+    assert '"soul_vessel": "soul_charges"' in source
+    assert 'maximum_key = "max_charges"' in source
+    assert 'monster.combat_resources[key] = 0' in source
+    assert 'monster.combat_resource_maximums[key] = maximum' in source
 
 
 def test_special_revival_and_turn_rules_remain_canonical():
