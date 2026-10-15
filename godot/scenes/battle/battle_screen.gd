@@ -42,14 +42,20 @@ var action_in_progress := true
 
 
 func _ready() -> void:
+    # Temporary 4v4 battle to inspect both curved formations, targeting,
+    # AoE effects, healing and passives. Change these lists for future demos.
     allies = [
         PrototypeFactoryScript.create_level_one_monster(
-            "dullahan_aether",
-            5
+            "dullahan_aether", 5
         ),
         PrototypeFactoryScript.create_level_one_monster(
-            "dullahan_void",
-            5
+            "dullahan_void", 5
+        ),
+        PrototypeFactoryScript.create_level_one_monster(
+            "drake_igneous"
+        ),
+        PrototypeFactoryScript.create_level_one_monster(
+            "dryad_storm"
         )
     ]
 
@@ -59,13 +65,20 @@ func _ready() -> void:
         ),
         PrototypeFactoryScript.create_level_one_monster(
             "slime_igneous"
+        ),
+        PrototypeFactoryScript.create_level_one_monster(
+            "thornet_abyssal"
+        ),
+        PrototypeFactoryScript.create_level_one_monster(
+            "sprout_abyssal"
         )
     ]
 
-    # Temporary resonance-test setup only.
-    # Enemies are damage sponges so long resonance rotations are easy to test.
+    # The old 100,000-HP dummy enemies made a full 4v4 unnecessarily long.
+    # A modest HP boost allows repeated attacks without making the test
+    # battle unreasonably slow. This does NOT modify canonical monster data.
     for enemy in enemies:
-        enemy.max_health = 100000
+        enemy.max_health = int(round(enemy.max_health * 2.0))
         enemy.health = enemy.max_health
 
     _layout_team_huds(ally_huds, allies.size())
