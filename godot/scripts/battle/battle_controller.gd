@@ -327,7 +327,11 @@ func execute_active_skill(
         + (enemies.size() - get_living(enemies).size())
     )
 
-    if active_monster.monster_id == "dullahan_aether":
+    var soul_passive: Dictionary = active_monster.get_passive_by_handler(
+        "soul_vessel"
+    )
+    var soul_data: Dictionary = soul_passive.get("handler_data", {})
+    if not soul_passive.is_empty():
         active_monster.ally_dead_for_soul_bonus = (
             get_living(allies).size() < allies.size()
             if active_monster in allies
@@ -336,11 +340,9 @@ func execute_active_skill(
 
         if (
             not active_monster.has_oblivion()
-            and skill.skill_id in [
-                "beyond_the_veil",
-                "beyond_the_veil_soul_recall",
-                "beyond_the_veil_convergence"
-            ]
+            and skill.skill_id in soul_data.get(
+                "consume_all_on_skill_ids", []
+            )
         ):
             var soul_charges: int = (
                 active_monster.get_combat_resource(
@@ -409,9 +411,8 @@ func execute_active_skill(
     var last_rites_low_hp_target := false
 
     if (
-        active_monster.monster_id == "dullahan_aether"
-        and active_monster.resonance >= 1
-        and skill.skill_id == "severing_blade"
+        not soul_passive.is_empty()
+        and skill.skill_id in soul_data.get("last_rites_skill_ids", [])
         and not targets.is_empty()
         and targets[0] != null
         and targets[0].max_health > 0
@@ -419,7 +420,7 @@ func execute_active_skill(
         last_rites_low_hp_target = (
             float(targets[0].health)
             / float(targets[0].max_health)
-            < 0.50
+            < float(soul_data.get("last_rites_threshold", 0.0))
         )
 
     var result: Dictionary = skill.execute_targets(
@@ -1025,32 +1026,29 @@ func execute_active_skill(
                         "EVERFROST - GLACIAL COLLAPSE READY!"
                     )
 
-    if (
-        active_monster.monster_id == "dullahan_aether"
-        and not active_monster.has_oblivion()
-    ):
+    if not soul_passive.is_empty() and not active_monster.has_oblivion():
+        var soul_max: int = int(soul_data.get("max_charges", 0))
         var new_total: int = active_monster.add_combat_resource(
             "soul_charges",
-            1,
-            5
+            int(soul_data.get("charges_per_damage_skill", 0)),
+            soul_max
         )
 
         if (
-            active_monster.resonance >= 1
-            and skill.skill_id == "severing_blade"
+            skill.skill_id in soul_data.get("last_rites_skill_ids", [])
             and last_rites_low_hp_target
         ):
             new_total = active_monster.add_combat_resource(
                 "soul_charges",
                 1,
-                5
+                soul_max
             )
             caster_feedback.append(
                 "LAST RITES +1 SOUL CHARGE"
             )
 
         caster_feedback.append(
-            "SOUL CHARGE %d/5" % new_total
+            "SOUL CHARGE %d/%d" % [new_total, soul_max]
         )
 
     # Finalize Deathless Rider only after the entire skill (including
@@ -1303,27 +1301,36 @@ func _resolve_new_deaths(
         recorded_dead_monsters.append(monster)
 
         for owner in combatants:
+            var owner_soul: Dictionary = owner.get_passive_by_handler(
+                "soul_vessel"
+            )
             if (
                 not owner.is_alive()
-                or owner.monster_id != "dullahan_aether"
+                or owner_soul.is_empty()
                 or owner.has_oblivion()
             ):
                 continue
 
-            var charges_from_death: int = (
-                2
-                if owner.resonance >= 4
-                else 1
+            var owner_soul_data: Dictionary = owner_soul.get(
+                "handler_data", {}
             )
+            var charges_from_death: int = int(
+                owner_soul_data.get("charges_per_death", 0)
+            )
+            var soul_limit: int = int(owner_soul_data.get(
+                "max_charges", 0
+            ))
             var new_total: int = owner.add_combat_resource(
                 "soul_charges",
                 charges_from_death,
-                5
+                soul_limit
             )
 
             if owner == active_monster:
                 caster_feedback.append(
-                    "SOUL VESSEL - DEATH %d/5" % new_total
+                    "SOUL VESSEL - DEATH %d/%d" % [
+                        new_total, soul_limit
+                    ]
                 )
 
         var death_march_owner = monster.death_named_by
@@ -1407,57 +1414,64 @@ func _resolve_new_deaths(
         monster.death_named_by = null
 
 
+# The extra action is part of the R2+ skill definition, not a
+# Dullahan-specific numeric exception in the battle controller.
+func _soul_recall_action(caster) -> Dictionary:
+    if caster == null:
+        return {}
+    var skill = caster.get_skill(3)
+    if skill == null:
+        return {}
+    var action: Dictionary = skill.shared_definition.get(
+        "active_action", {}
+    )
+    if str(action.get("id", "")) not in [
+        "soul_recall", "soul_recall_convergence"
+    ]:
+        return {}
+    return action
+
+
 func can_use_soul_recall(caster) -> bool:
+    if caster == null or not caster.is_alive():
+        return false
+    var action: Dictionary = _soul_recall_action(caster)
     if (
-        caster == null
-        or not caster.is_alive()
-        or caster.monster_id != "dullahan_aether"
-        or caster.resonance < 2
+        action.is_empty()
         or caster.has_oblivion()
         or caster.is_silenced()
-        or caster.get_combat_resource("soul_charges") < 5
+        or caster.get_combat_resource("soul_charges") < int(
+            action.get("required_charges", 0)
+        )
     ):
         return false
-
-    # The active is available at five charges, even when no ally is
-    # dead. Valid targets are checked only when a revive is executed.
     return caster in allies or caster in enemies
 
 
 func execute_soul_recall(target) -> Dictionary:
     var caster = active_monster
-
     if (
         not can_use_soul_recall(caster)
         or target == null
         or target.is_alive()
         or target.banished
     ):
-        return {
-            "success": false
-        }
+        return {"success": false}
 
-    var team: Array = (
-        allies
-        if caster in allies
-        else enemies
-    )
-
+    var team: Array = allies if caster in allies else enemies
     if target not in team:
-        return {
-            "success": false
-        }
+        return {"success": false}
 
+    var action: Dictionary = _soul_recall_action(caster)
     caster.consume_combat_resource(
-        "soul_charges",
-        5
+        "soul_charges", int(action.get("consume_charges", 0))
     )
-
     target.health = maxi(
-        1,
-        int(target.max_health * 0.50)
+        1, int(target.max_health * float(action.get(
+            "revive_health_ratio", 0.0
+        )))
     )
-    target.action_gauge = 1.0
+    target.action_gauge = float(action.get("action_gauge", 0.0))
     target.buffs.clear()
     target.debuffs.clear()
     target.special_states.clear()
@@ -1482,7 +1496,6 @@ func execute_soul_recall(target) -> Dictionary:
             "SOUL RECALL - %s REVIVED!" % target.monster_name
         ]
     }
-
 
 func _resolve_receive_hit_passives(
     attacker,
