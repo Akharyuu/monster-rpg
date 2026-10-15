@@ -13,6 +13,7 @@ const StatusEffectFactoryScript = preload(
 )
 
 @onready var passive_button = $"Passive Button"
+@onready var passive_button_2 = $"Passive Button 2"
 @onready var skill_1_button = $"Skill 1 Button"
 @onready var skill_2_button = $"Skill 2 Button"
 @onready var skill_3_button = $"Skill 3 Button"
@@ -631,30 +632,45 @@ func update_skill_buttons() -> void:
 
 
 func _update_passive_button() -> void:
+    var buttons := [
+        passive_button,
+        passive_button_2
+    ]
+
+    for button in buttons:
+        button.text = "PASSIVE"
+        button.set_tooltip_passive({})
+        button.visible = false
+
     if (
         battle_controller.active_monster == null
         or battle_controller.active_monster not in allies
     ):
-        passive_button.text = "PASSIVE"
-        passive_button.set_tooltip_passive({})
-        passive_button.visible = false
         return
 
-    var passive_data: Dictionary = (
-        battle_controller.active_monster.passive_tooltip
+    var passive_list: Array = (
+        battle_controller.active_monster.passive_tooltips
     )
 
-    if passive_data.is_empty():
-        passive_button.text = "PASSIVE"
-        passive_button.set_tooltip_passive({})
-        passive_button.visible = false
-        return
+    if passive_list.is_empty():
+        var legacy: Dictionary = (
+            battle_controller.active_monster.passive_tooltip
+        )
 
-    passive_button.visible = true
-    passive_button.text = "PASSIVE\n%s" % str(
-        passive_data.get("name", "")
-    )
-    passive_button.set_tooltip_passive(passive_data)
+        if not legacy.is_empty():
+            passive_list = [legacy]
+
+    for index in range(
+        mini(buttons.size(), passive_list.size())
+    ):
+        var button = buttons[index]
+        var passive_data: Dictionary = passive_list[index]
+
+        button.visible = true
+        button.text = str(
+            passive_data.get("name", "PASSIVE")
+        )
+        button.set_tooltip_passive(passive_data)
 
 
 func set_target_selection(enabled: bool) -> void:
