@@ -786,7 +786,7 @@ static func _attach_passive_description(monster) -> void:
                     },
                     {
                         "kind": "special",
-                        "text": "The first Burn applied each skill grants [b]10% Action Gauge[/b]."
+                        "text": "The first Burn applied by each skill grants [b]10% Action Gauge[/b]."
                     }
                 ]
             }
@@ -846,18 +846,14 @@ static func _attach_passive_description(monster) -> void:
                 "effects": [
                     {
                         "kind": "special",
-                        "text": "Damage dealt by this monster does not break [color=#ff7777]Freeze[/color]."
+                        "text": (
+                            "[color=#ff7777]Freeze[/color] applied by this monster cannot be broken by any source of damage."
+                            if monster.resonance >= 4
+                            else "Damage dealt by this monster does not break [color=#ff7777]Freeze[/color]."
+                        )
                     }
                 ]
             }
-
-            if monster.resonance >= 4:
-                frostborne_data["effects"].append(
-                    {
-                        "kind": "special",
-                        "text": "[color=#ff7777]Freeze[/color] applied by this monster cannot be broken by damage."
-                    }
-                )
 
             monster.passive_tooltips.append(
                 frostborne_data
