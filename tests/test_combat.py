@@ -6413,6 +6413,70 @@ def test_headless_rider_grants_speed_and_blocks_silence():
 
 
 
+@pytest.mark.parametrize(
+    "resonance, expected_skill_ids, expected_passive_ids",
+    [
+        (
+            0,
+            ["severing_blade", "spinal_scourge", "deaths_gaze"],
+            ["headless_rider"]
+        ),
+        (
+            1,
+            ["severing_blade", "spinal_scourge", "deaths_gaze"],
+            ["headless_rider_unbound"]
+        ),
+        (
+            2,
+            ["severing_blade", "spinal_scourge_ossuary", "deaths_gaze"],
+            ["headless_rider_unbound"]
+        ),
+        (
+            3,
+            ["severing_blade", "spinal_scourge_ossuary", "deaths_gaze_last_name"],
+            ["headless_rider_unbound"]
+        ),
+        (
+            4,
+            ["severing_blade", "spinal_scourge_ossuary", "deaths_gaze_last_name"],
+            ["deathless_rider"]
+        ),
+        (
+            5,
+            ["severing_blade", "spinal_scourge_ossuary", "deaths_gaze_last_name"],
+            ["deathless_rider", "death_march"]
+        )
+    ]
+)
+def test_void_dullahan_resonance_progression_has_at_most_two_passives(
+    resonance,
+    expected_skill_ids,
+    expected_passive_ids
+):
+    void = create_monster("dullahan_void")
+    void.resonance = resonance
+    update_resonance_kit(void)
+
+    assert [skill.skill_id for skill in void.skills] == expected_skill_ids
+    assert [passive.skill_id for passive in void.passives] == expected_passive_ids
+    assert len(void.passives) <= 2
+
+
+def test_deathless_rider_keeps_unbound_speed_bonus():
+    void = create_monster("dullahan_void")
+    void.resonance = 4
+    update_resonance_kit(void)
+
+    target = create_monster("slime_igneous")
+    base_speed = void.get_effective_stat("speed")
+
+    void.apply_named(target, turns=2)
+
+    assert void.get_effective_stat("speed") == pytest.approx(
+        base_speed + void.speed * 0.30
+    )
+
+
 def test_deathless_rider_survives_full_multihit_skill_then_enters_cooldown(
     monkeypatch
 ):
@@ -6421,7 +6485,7 @@ def test_deathless_rider_survives_full_multihit_skill_then_enters_cooldown(
         "dullahan_void"
     )
 
-    void.resonance = 2
+    void.resonance = 4
     update_resonance_kit(
         void
     )
