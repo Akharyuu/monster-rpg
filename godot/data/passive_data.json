@@ -163,7 +163,11 @@
             "text": "Before casting Glacial Collapse at [b]3/3[/b], consumes all scales and grants [color=#70c8ff]Defense Up[/color] and [color=#70c8ff]Immunity[/color] for [b]2 turns[/b]."
           }
         ]
-      }
+      },
+      "trigger_skill_ids": [
+        "glacial_collapse",
+        "glacial_collapse_absolute_zero"
+      ]
     },
     "frozen_scales_everfrost": {
       "name": "Frozen Scales: Everfrost",
@@ -202,7 +206,11 @@
             "text": "Reaching [b]3 Frozen Scales[/b] resets [b]Glacial Collapse[/b]."
           }
         ]
-      }
+      },
+      "trigger_skill_ids": [
+        "glacial_collapse",
+        "glacial_collapse_absolute_zero"
+      ]
     },
     "frostborne": {
       "name": "Frostborne",

@@ -313,6 +313,9 @@ func execute_active_skill(
 
     var caster_feedback: Array[String] = []
     var block_frozen_scales_generation := false
+    var frozen_passive: Dictionary = active_monster.get_passive_by_handler(
+        "frozen_scales"
+    )
     var annihilation_oblivion_snapshot: Dictionary = {}
 
     if skill.skill_id == "null_rend_annihilation":
@@ -365,48 +368,34 @@ func execute_active_skill(
             skill.soul_charges_consumed = 0
 
     if (
-        active_monster.monster_id == "drake_abyssal"
+        not frozen_passive.is_empty()
         and not active_monster.has_oblivion()
-        and skill.skill_id in [
-            "glacial_collapse",
-            "glacial_collapse_absolute_zero"
-        ]
+        and skill.skill_id in frozen_passive.get("trigger_skill_ids", [])
     ):
-        var current_scales: int = (
-            active_monster.get_combat_resource(
-                "frozen_scales"
-            )
+        var current_scales: int = active_monster.get_combat_resource(
+            "frozen_scales"
         )
-
-        if current_scales >= 3:
+        var required_scales: int = int(
+            frozen_passive.get("required_scales", 0)
+        )
+        if required_scales > 0 and current_scales >= required_scales:
             active_monster.consume_combat_resource(
-                "frozen_scales",
-                3
+                "frozen_scales", required_scales
             )
             block_frozen_scales_generation = true
-
-            var defense_up = (
-                StatusEffectFactoryScript.create_status_effect(
-                    "defense_up",
-                    2,
-                    active_monster
-                )
-            )
-
-            var immunity = (
-                StatusEffectFactoryScript.create_status_effect(
-                    "immunity",
-                    2,
-                    active_monster
-                )
-            )
-
-            active_monster.apply_status_effect(defense_up)
-            active_monster.apply_status_effect(immunity)
-
             caster_feedback.append("FROZEN SCALES CONSUMED")
-            caster_feedback.append("DEF UP!")
-            caster_feedback.append("IMMUNITY!")
+
+            for buff_config in frozen_passive.get("buffs", []):
+                var buff_id: String = str(buff_config["effect_id"])
+                var buff = StatusEffectFactoryScript.create_status_effect(
+                    buff_id, int(buff_config["turns"]), active_monster
+                )
+                active_monster.apply_status_effect(buff)
+                if buff_id == "defense_up":
+                    caster_feedback.append("DEF UP!")
+                elif buff_id == "immunity":
+                    caster_feedback.append("IMMUNITY!")
+
 
     var last_rites_low_hp_target := false
 
@@ -972,54 +961,36 @@ func execute_active_skill(
     )
 
     if (
-        active_monster.monster_id == "drake_abyssal"
+        not frozen_passive.is_empty()
         and not active_monster.has_oblivion()
-        and skill.skill_id in [
-            "glacial_collapse",
-            "glacial_collapse_absolute_zero"
-        ]
+        and skill.skill_id in frozen_passive.get("trigger_skill_ids", [])
         and not block_frozen_scales_generation
     ):
         var scales_gained := 0
-
-        for target_result in result.get(
-            "target_results",
-            []
-        ):
-            var froze_target := false
-
-            for effect in target_result.get(
-                "effects_applied",
-                []
-            ):
+        for target_result in result.get("target_results", []):
+            for effect in target_result.get("effects_applied", []):
                 if effect.effect_id == "freeze":
-                    froze_target = true
+                    scales_gained += 1
                     break
 
-            if froze_target:
-                scales_gained += 1
-
         if scales_gained > 0:
-            var new_total: int = (
-                active_monster.add_combat_resource(
-                    "frozen_scales",
-                    scales_gained,
-                    3
-                )
+            var max_scales: int = int(frozen_passive.get("max_scales", 0))
+            var new_total: int = active_monster.add_combat_resource(
+                "frozen_scales", scales_gained, max_scales
             )
-
             caster_feedback.append(
-                "FROZEN SCALES %d/3" % new_total
+                "FROZEN SCALES %d/%d" % [new_total, max_scales]
             )
 
             if (
-                active_monster.resonance >= 3
-                and new_total >= 3
-            ):
-                var glacial_skill = (
-                    active_monster.get_skill(3)
+                frozen_passive.has("reset_cooldown_skill_slot")
+                and new_total >= int(
+                    frozen_passive.get("required_scales", 0)
                 )
-
+            ):
+                var glacial_skill = active_monster.get_skill(
+                    int(frozen_passive["reset_cooldown_skill_slot"])
+                )
                 if glacial_skill != null:
                     glacial_skill.current_cooldown = 0
                     caster_feedback.append(

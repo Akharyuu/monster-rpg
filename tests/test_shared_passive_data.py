@@ -193,3 +193,26 @@ def test_shared_passive_combat_parameters_are_used_by_godot():
         "max_shield_ratio", "shield_turns"
     ):
         assert parameter in source
+
+
+def test_frozen_scales_reads_triggers_and_rewards_from_json():
+    from pathlib import Path
+    doc = passive_module.PASSIVE_DATA
+    for passive_id in ("frozen_scales", "frozen_scales_everfrost"):
+        passive = doc[passive_id]
+        assert passive["trigger_skill_ids"] == [
+            "glacial_collapse", "glacial_collapse_absolute_zero"
+        ]
+        assert passive["max_scales"] >= passive["required_scales"] > 0
+        assert {b["effect_id"] for b in passive["buffs"]} == {
+            "defense_up", "immunity"
+        }
+    assert doc["frozen_scales_everfrost"]["reset_cooldown_skill_slot"] == 3
+    source = (
+        Path(__file__).resolve().parents[1] / "godot" / "scripts"
+        / "battle" / "battle_controller.gd"
+    ).read_text(encoding="utf-8")
+    assert 'frozen_passive.get("trigger_skill_ids", [])' in source
+    assert 'frozen_passive.get("required_scales", 0)' in source
+    assert 'frozen_passive.get("max_scales", 0)' in source
+    assert 'frozen_passive.get("buffs", [])' in source
