@@ -62,13 +62,10 @@ func _ready() -> void:
     ]
 
     # Temporary resonance-test setup only.
-    # Enemies are damage sponges and Void Dullahan starts near death
-    # so Soul Recall can be tested without a long setup.
+    # Enemies are damage sponges so long resonance rotations are easy to test.
     for enemy in enemies:
         enemy.max_health = 100000
         enemy.health = enemy.max_health
-
-    allies[1].health = 1
 
     battle_controller = BattleControllerScript.new()
     battle_controller.setup(
