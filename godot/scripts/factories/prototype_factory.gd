@@ -30,6 +30,8 @@ static func create_level_one_monster(monster_id: String):
             monster = _create_igneous_dullahan()
         "dullahan_abyssal":
             monster = _create_abyssal_dullahan()
+        "dullahan_storm":
+            monster = _create_storm_dullahan()
         "slime_storm":
             monster = _create_storm_slime()
         "slime_abyssal":
@@ -181,6 +183,30 @@ static func _attach_skill_descriptions(monster) -> void:
                 {
                     "kind": "debuff",
                     "text": "[b]Hits 2-3:[/b] each has a [b]30% chance[/b] to apply [color=#ff7777]Defense Break[/color] for [b]2 turns[/b]."
+                }
+            ]
+        },
+
+        "gale_pursuit": {
+            "summary": "Sweeps through the enemy team in a burst of storm speed.",
+            "effects": [
+                {
+                    "kind": "control",
+                    "text": "Reduces each enemy's [b]Action Gauge by 20%[/b]."
+                }
+            ]
+        },
+
+        "headlong_charge": {
+            "summary": "Accelerates the Dullahan and pulls an ally into the fight.",
+            "effects": [
+                {
+                    "kind": "buff",
+                    "text": "Grants the caster [color=#70c8ff]Attack Up[/color] and [color=#70c8ff]Speed Up[/color] for [b]2 turns[/b]."
+                },
+                {
+                    "kind": "special",
+                    "text": "Increases the living ally with the lowest Action Gauge by [b]20%[/b]."
                 }
             ]
         },
@@ -365,6 +391,17 @@ static func _attach_passive_description(monster) -> void:
                 {
                     "kind": "special",
                     "text": "For each enemy buff removed, gains [b]8% Action Gauge[/b]."
+                }
+            ]
+        },
+
+        "dullahan_storm": {
+            "name": "The Hunt",
+            "summary": "Steals momentum from the enemy closest to taking a turn.",
+            "effects": [
+                {
+                    "kind": "special",
+                    "text": "After this monster's turn, steals up to [b]20% Action Gauge[/b] from the living enemy with the highest Action Gauge."
                 }
             ]
         },
@@ -609,6 +646,69 @@ static func _create_abyssal_drake():
     ] = 3
 
     return monster
+
+
+static func _create_storm_dullahan():
+    var severing_blade = DamageSkillScript.new(
+        "severing_blade",
+        "Severing Blade",
+        2.60,
+        1,
+        [],
+        "attack",
+        0,
+        [
+            {
+                "effect_id": "heal_block",
+                "chance": 0.30,
+                "turns": 2,
+                "trigger": "after_skill"
+            }
+        ]
+    )
+
+    var gale_pursuit = DamageSkillScript.new(
+        "gale_pursuit",
+        "Gale Pursuit",
+        2.25,
+        1,
+        [],
+        "attack",
+        4,
+        [],
+        {},
+        {},
+        "all_enemies",
+        0.20
+    )
+
+    var headlong_charge = SupportSkillScript.new(
+        "headlong_charge",
+        "Headlong Charge",
+        5,
+        [],
+        "self"
+    )
+
+    var skills: Array = [
+        severing_blade,
+        gale_pursuit,
+        headlong_charge
+    ]
+
+    return MonsterScript.new(
+        "dullahan_storm",
+        "Storm Dullahan",
+        "Dullahan",
+        "storm",
+        4,
+        _scaled(9800),
+        _scaled(700),
+        _scaled(650),
+        _scaled(236),
+        skills,
+        LEVEL_ONE_MULTIPLIER
+    )
 
 
 static func _create_abyssal_dullahan():
