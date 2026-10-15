@@ -876,6 +876,11 @@ func _update_passive_button() -> void:
 
         action_button.visible = true
         action_button.set_tooltip_passive(action_data)
+        action_button.mouse_default_cursor_shape = (
+            Control.CURSOR_POINTING_HAND
+            if unlocked and (selected or not blocked)
+            else Control.CURSOR_ARROW
+        )
 
         if selected:
             action_button.text = "Soul Recall\nCANCEL"
