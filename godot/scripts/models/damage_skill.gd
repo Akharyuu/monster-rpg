@@ -363,6 +363,14 @@ func effect_condition_met(
                 )
                 != null
             )
+        "target_lacks_debuff":
+            return (
+                defender.get_debuff(
+                    str(condition.get("effect_id", ""))
+                )
+                == null
+            )
+
         "target_gained_debuff":
             var required_id: String = str(
                 condition.get("effect_id", "")
