@@ -415,3 +415,18 @@ def test_godot_skills_resolve_combat_handlers_from_json():
             for item in (record.get("after_use_handlers", []) +
                          record.get("after_skill_handlers", []))
         )
+
+
+def test_godot_soul_recall_uses_canonical_active_action():
+    source = (
+        GODOT_FACTORY.parents[3]
+        / "godot" / "scripts" / "battle" / "battle_controller.gd"
+    ).read_text(encoding="utf-8")
+    assert "func _soul_recall_action(caster) -> Dictionary:" in source
+    assert 'skill.shared_definition.get(' in source
+    assert 'action.get("required_charges", 0)' in source
+    assert 'action.get("consume_charges", 0)' in source
+    assert '"revive_health_ratio", 0.0' in source
+    assert '"charges_per_damage_skill"' in source
+    assert '"charges_per_death"' in source
+    assert '"last_rites_threshold"' in source
