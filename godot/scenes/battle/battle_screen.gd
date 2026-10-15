@@ -40,10 +40,10 @@ var action_in_progress := true
 func _ready() -> void:
     allies = [
         PrototypeFactoryScript.create_level_one_monster(
-            "dullahan_void"
+            "dullahan_aether"
         ),
         PrototypeFactoryScript.create_level_one_monster(
-            "drake_void"
+            "dullahan_void"
         )
     ]
 
@@ -55,25 +55,6 @@ func _ready() -> void:
             "slime_igneous"
         )
     ]
-
-    # Temporary prototype setup so Void Drake's strip mechanics
-    # can be tested immediately.
-    for enemy in enemies:
-        enemy.apply_status_effect(
-            StatusEffectFactoryScript.create_status_effect(
-                "attack_up",
-                3,
-                enemy
-            )
-        )
-
-        enemy.apply_status_effect(
-            StatusEffectFactoryScript.create_status_effect(
-                "speed_up",
-                3,
-                enemy
-            )
-        )
 
     battle_controller = BattleControllerScript.new()
     battle_controller.setup(
