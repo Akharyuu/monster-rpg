@@ -20,6 +20,8 @@ static func create_level_one_monster(monster_id: String):
             return _create_storm_drake()
         "drake_void":
             return _create_void_drake()
+        "dullahan_void":
+            return _create_void_dullahan()
         "slime_storm":
             return _create_storm_slime()
         "slime_abyssal":
@@ -215,6 +217,80 @@ static func _create_abyssal_drake():
     ] = 3
 
     return monster
+
+
+static func _create_void_dullahan():
+    var severing_blade = DamageSkillScript.new(
+        "severing_blade",
+        "Severing Blade",
+        2.60,
+        1,
+        [],
+        "attack",
+        0,
+        [
+            {
+                "effect_id": "heal_block",
+                "chance": 0.30,
+                "turns": 2,
+                "trigger": "after_skill"
+            }
+        ]
+    )
+
+    var spinal_scourge = DamageSkillScript.new(
+        "spinal_scourge",
+        "Spinal Scourge",
+        1.40,
+        3,
+        [],
+        "attack",
+        4,
+        [],
+        {},
+        {},
+        "all_enemies"
+    )
+
+    spinal_scourge.damage_per_dead_monster = 0.05
+    spinal_scourge.max_dead_monsters = 5
+    spinal_scourge.max_dead_monster_bonus = 0.25
+
+    var deaths_gaze = DamageSkillScript.new(
+        "deaths_gaze",
+        "Death's Gaze",
+        4.70,
+        1,
+        [],
+        "attack",
+        6,
+        []
+    )
+
+    deaths_gaze.apply_named_before_hit = true
+    deaths_gaze.named_turns = 2
+    deaths_gaze.vulnerability_chance = 1.00
+    deaths_gaze.vulnerability_turns = 2
+
+    var skills: Array = [
+        severing_blade,
+        spinal_scourge,
+        deaths_gaze
+    ]
+
+    return MonsterScript.new(
+        "dullahan_void",
+        "Void Dullahan",
+        "Dullahan",
+        "void",
+        5,
+        _scaled(10500),
+        _scaled(1015),
+        _scaled(650),
+        _scaled(228),
+        skills,
+        LEVEL_ONE_MULTIPLIER
+    )
 
 
 static func _create_void_drake():
