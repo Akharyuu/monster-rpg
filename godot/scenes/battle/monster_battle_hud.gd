@@ -198,6 +198,8 @@ func _status_short_name(effect_id: String) -> String:
     match effect_id:
         "burn":
             return "BRN"
+        "poison":
+            return "PSN"
         "defense_break":
             return "DEF↓"
         "attack_break":
@@ -260,6 +262,8 @@ func _create_status_badge(effect) -> Label:
         style.bg_color = Color(0.20, 0.46, 0.78, 0.92)
     elif effect.effect_id == "burn":
         style.bg_color = Color(0.78, 0.25, 0.12, 0.92)
+    elif effect.effect_id == "poison":
+        style.bg_color = Color(0.42, 0.24, 0.62, 0.92)
     else:
         style.bg_color = Color(0.65, 0.22, 0.18, 0.92)
 
