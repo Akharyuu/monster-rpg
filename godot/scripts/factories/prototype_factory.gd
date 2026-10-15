@@ -32,6 +32,8 @@ static func create_level_one_monster(monster_id: String):
             monster = _create_abyssal_dullahan()
         "dullahan_storm":
             monster = _create_storm_dullahan()
+        "griffon_igneous":
+            monster = _create_igneous_griffon()
         "dryad_storm":
             monster = _create_storm_dryad()
         "slime_storm":
@@ -185,6 +187,31 @@ static func _attach_skill_descriptions(monster) -> void:
                 {
                     "kind": "debuff",
                     "text": "[b]Hits 2-3:[/b] each has a [b]30% chance[/b] to apply [color=#ff7777]Defense Break[/color] for [b]2 turns[/b]."
+                }
+            ]
+        },
+
+        "rending_talons": {
+            "summary": "Rends one enemy with a powerful talon strike.",
+            "effects": []
+        },
+
+        "searing_gale": {
+            "summary": "Sweeps across all enemies with two searing strikes.",
+            "effects": [
+                {
+                    "kind": "control",
+                    "text": "Each hit has a [b]50% chance[/b] to reduce the target's [b]Action Gauge by 20%[/b]."
+                }
+            ]
+        },
+
+        "meteor_dive": {
+            "summary": "Crashes down on one enemy with overwhelming speed.",
+            "effects": [
+                {
+                    "kind": "damage",
+                    "text": "Damage increases by [b]0.1%[/b] for every point of the caster's Speed."
                 }
             ]
         },
@@ -679,6 +706,67 @@ static func _create_abyssal_drake():
     ] = 3
 
     return monster
+
+
+static func _create_igneous_griffon():
+    var rending_talons = DamageSkillScript.new(
+        "rending_talons",
+        "Rending Talons",
+        1.80,
+        1,
+        [],
+        "attack",
+        0,
+        []
+    )
+
+    var searing_gale = DamageSkillScript.new(
+        "searing_gale",
+        "Searing Gale",
+        2.00,
+        2,
+        [],
+        "attack",
+        4,
+        [],
+        {},
+        {},
+        "all_enemies",
+        0.20
+    )
+    searing_gale.action_gauge_reduction_chance = 0.50
+
+    var meteor_dive = DamageSkillScript.new(
+        "meteor_dive",
+        "Meteor Dive",
+        4.20,
+        1,
+        [],
+        "attack",
+        5,
+        []
+    )
+    meteor_dive.speed_damage_scaling = 0.001
+
+    var skills: Array = [
+        rending_talons,
+        searing_gale,
+        meteor_dive
+    ]
+
+    return MonsterScript.new(
+        "griffon_igneous",
+        "Igneous Griffon",
+        "Griffon",
+        "igneous",
+        4,
+        _scaled(8900),
+        _scaled(890),
+        _scaled(595),
+        _scaled(232),
+        skills,
+        LEVEL_ONE_MULTIPLIER
+    )
 
 
 static func _create_storm_dryad():
