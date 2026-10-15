@@ -303,6 +303,62 @@ static func _attach_skill_descriptions(monster) -> void:
             ]
         },
 
+        "meteor_dive_violent_crash": {
+            "summary": "Crashes down on one enemy with overwhelming speed.",
+            "effects": [
+                {
+                    "kind": "damage",
+                    "text": "Damage increases according to the caster's Speed."
+                },
+                {
+                    "kind": "debuff",
+                    "text": "If the target has less than [b]50% Action Gauge[/b], has a [b]75% chance[/b] to apply [color=#ff7777]Stun[/color] for [b]1 turn[/b]."
+                }
+            ]
+        },
+
+        "meteor_dive_terminal_impact": {
+            "summary": "Crashes down on one enemy with overwhelming speed.",
+            "effects": [
+                {
+                    "kind": "damage",
+                    "text": "Damage increases according to the caster's Speed."
+                },
+                {
+                    "kind": "debuff",
+                    "text": "Applies [color=#ff7777]Stun[/color] for [b]1 turn[/b] if the target has less than [b]50% Action Gauge[/b]."
+                },
+                {
+                    "kind": "special",
+                    "text": "While the caster has [color=#70c8ff]Speed Up[/color], the Action Gauge threshold becomes [b]70%[/b]."
+                }
+            ]
+        },
+
+        "searing_gale_turbulence": {
+            "summary": "Unleashes a scorching gale that tears through all enemies in two waves.",
+            "effects": [
+                {
+                    "kind": "control",
+                    "text": "Each hit has a [b]75% chance[/b] to reduce the target's [b]Action Gauge by 20%[/b]."
+                }
+            ]
+        },
+
+        "searing_gale_heatstorm": {
+            "summary": "Unleashes an intensified scorching gale across the enemy team.",
+            "effects": [
+                {
+                    "kind": "control",
+                    "text": "Each hit has a [b]75% chance[/b] to reduce the target's [b]Action Gauge by 30%[/b]."
+                },
+                {
+                    "kind": "special",
+                    "text": "Cooldown reduced to [b]3 turns[/b]."
+                }
+            ]
+        },
+
         "vine_barrage": {
             "summary": "Strikes one enemy with three rapid vines.",
             "effects": [
@@ -343,6 +399,24 @@ static func _attach_skill_descriptions(monster) -> void:
                 {
                     "kind": "buff",
                     "text": "Grants [color=#70c8ff]Immunity[/color] for [b]1 turn[/b]."
+                }
+            ]
+        },
+
+        "breath_of_the_grove_evergreen": {
+            "summary": "Floods the allied team with lasting restorative energy.",
+            "effects": [
+                {
+                    "kind": "heal",
+                    "text": "Heals all living allies for [b]35% of the caster's Max HP[/b]."
+                },
+                {
+                    "kind": "buff",
+                    "text": "Grants [color=#70c8ff]Immunity[/color] for [b]1 turn[/b]."
+                },
+                {
+                    "kind": "buff",
+                    "text": "Grants [color=#70c8ff]Regrowth[/color] for [b]2 turns[/b]."
                 }
             ]
         },
@@ -626,12 +700,39 @@ static func _attach_passive_description(monster) -> void:
         and monster.resonance >= 1
     ):
         monster.passive_tooltip = {
-            "name": "Nature's Grace",
+            "name": (
+                "Nature's Grace: Overgrowth"
+                if monster.resonance >= 5
+                else "Nature's Grace"
+            ),
             "summary": "Strengthens direct healing on wounded allies.",
             "effects": [
                 {
                     "kind": "heal",
                     "text": "Direct healing is increased by [b]20%[/b] when the target is below [b]50% HP[/b]."
+                }
+            ]
+        }
+
+        if monster.resonance >= 5:
+            monster.passive_tooltip["effects"].append(
+                {
+                    "kind": "buff",
+                    "text": "Overhealing is partially converted into a [color=#70c8ff]Shield[/color], up to [b]10% of the target's Max HP[/b]."
+                }
+            )
+
+    if (
+        monster.monster_id == "griffon_igneous"
+        and monster.resonance >= 2
+    ):
+        monster.passive_tooltip = {
+            "name": "Hawk Instinct",
+            "summary": "Accelerates the Griffon whenever it successfully stuns an enemy.",
+            "effects": [
+                {
+                    "kind": "buff",
+                    "text": "When this monster applies [color=#ff7777]Stun[/color], gains [color=#70c8ff]Speed Up[/color] for [b]2 turns[/b]."
                 }
             ]
         }
@@ -642,37 +743,150 @@ static func _scaled(value: float) -> int:
 
 
 static func _apply_resonance(monster) -> void:
-    if monster.monster_id != "dryad_storm":
+    if monster.monster_id == "dryad_storm":
+        if monster.resonance >= 2:
+            var sanctuary = SupportSkillScript.new(
+                "breath_of_the_grove_sanctuary",
+                "Breath of the Grove: Sanctuary",
+                5,
+                [
+                    {
+                        "effect_id": "immunity",
+                        "turns": 1
+                    }
+                ],
+                "all_allies"
+            )
+            sanctuary.healing_hp_ratio = 0.35
+            monster.skills[1] = sanctuary
+
+        if monster.resonance >= 3:
+            var nourishment = DamageSkillScript.new(
+                "vine_barrage_nourishment",
+                "Vine Barrage: Nourishment",
+                0.70,
+                3,
+                [],
+                "attack",
+                0,
+                []
+            )
+            monster.skills[0] = nourishment
+
+        if monster.resonance >= 4:
+            var evergreen = SupportSkillScript.new(
+                "breath_of_the_grove_evergreen",
+                "Breath of the Grove: Evergreen",
+                4,
+                [
+                    {
+                        "effect_id": "immunity",
+                        "turns": 1
+                    },
+                    {
+                        "effect_id": "regrowth",
+                        "turns": 2
+                    }
+                ],
+                "all_allies"
+            )
+            evergreen.healing_hp_ratio = 0.35
+            monster.skills[1] = evergreen
+
         return
 
-    if monster.resonance >= 2:
-        var sanctuary = SupportSkillScript.new(
-            "breath_of_the_grove_sanctuary",
-            "Breath of the Grove: Sanctuary",
-            5,
-            [
-                {
-                    "effect_id": "immunity",
-                    "turns": 1
-                }
-            ],
-            "all_allies"
-        )
-        sanctuary.healing_hp_ratio = 0.35
-        monster.skills[1] = sanctuary
+    if monster.monster_id == "griffon_igneous":
+        if monster.resonance >= 1:
+            var violent_crash = DamageSkillScript.new(
+                "meteor_dive_violent_crash",
+                "Meteor Dive: Violent Crash",
+                4.20,
+                1,
+                [],
+                "attack",
+                5,
+                [
+                    {
+                        "effect_id": "stun",
+                        "chance": 0.75,
+                        "turns": 1,
+                        "trigger": "after_skill",
+                        "condition": {
+                            "type": "target_action_gauge_below",
+                            "threshold": 0.50
+                        }
+                    }
+                ]
+            )
+            violent_crash.speed_damage_scaling = 0.001
+            monster.skills[2] = violent_crash
 
-    if monster.resonance >= 3:
-        var nourishment = DamageSkillScript.new(
-            "vine_barrage_nourishment",
-            "Vine Barrage: Nourishment",
-            0.70,
-            3,
-            [],
-            "attack",
-            0,
-            []
-        )
-        monster.skills[0] = nourishment
+        if monster.resonance >= 3:
+            var turbulence = DamageSkillScript.new(
+                "searing_gale_turbulence",
+                "Searing Gale: Turbulence",
+                2.00,
+                2,
+                [],
+                "attack",
+                4,
+                [],
+                {},
+                {},
+                "all_enemies",
+                0.20
+            )
+            turbulence.action_gauge_reduction_chance = 0.75
+            monster.skills[1] = turbulence
+
+        if monster.resonance >= 4:
+            var terminal_impact = DamageSkillScript.new(
+                "meteor_dive_terminal_impact",
+                "Meteor Dive: Terminal Impact",
+                4.20,
+                1,
+                [],
+                "attack",
+                4,
+                [
+                    {
+                        "effect_id": "stun",
+                        "chance": 1.00,
+                        "turns": 1,
+                        "trigger": "after_skill",
+                        "condition": {
+                            "type": "target_action_gauge_below",
+                            "threshold": 0.50,
+                            "threshold_if_caster_has_buff": {
+                                "effect_id": "speed_up",
+                                "threshold": 0.70
+                            }
+                        }
+                    }
+                ]
+            )
+            terminal_impact.speed_damage_scaling = 0.001
+            monster.skills[2] = terminal_impact
+
+        if monster.resonance >= 5:
+            var heatstorm = DamageSkillScript.new(
+                "searing_gale_heatstorm",
+                "Searing Gale: Heatstorm",
+                2.00,
+                2,
+                [],
+                "attack",
+                3,
+                [],
+                {},
+                {},
+                "all_enemies",
+                0.30
+            )
+            heatstorm.action_gauge_reduction_chance = 0.75
+            monster.skills[1] = heatstorm
+
+        return
 
 
 static func _create_igneous_drake():
