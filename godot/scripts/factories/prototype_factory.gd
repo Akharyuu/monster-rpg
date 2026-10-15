@@ -297,8 +297,6 @@ static func _create_void_drake():
         LEVEL_ONE_MULTIPLIER
     )
 
-    monster.special_states["bottomless_hunger"] = true
-
     return monster
 
 
