@@ -42,6 +42,13 @@ var conditional_required_debuff_id: String = ""
 var conditional_requires_any_debuff: bool = false
 var conditional_damage_multiplier: float = 1.0
 var conditional_hit_damage_multipliers: Array = []
+var action_gauge_reduction_if_debuff_id: String = ""
+var action_gauge_reduction_if_debuff_amount: float = 0.0
+var add_burn_if_started_with_burn: bool = false
+var extra_burn_stacks: int = 1
+var extra_burn_turns: int = 3
+var reset_skill_slot_if_burn_stacks: int = 0
+var reset_skill_required_burn_stacks: int = 0
 
 
 func _init(
@@ -280,6 +287,21 @@ func damage_calc(
         bonus_damage *= 1.0 + dead_bonus
 
     var defense_ignore_ratio: float = 0.0
+    var ignore_defense: bool = false
+
+    var ignore_defense_at_stacks = (
+        damage_for_burn_stacks.get(
+            "ignore_defense_at_stacks",
+            null
+        )
+    )
+
+    if (
+        ignore_defense_at_stacks != null
+        and defender.get_debuff_stacks("burn")
+        >= int(ignore_defense_at_stacks)
+    ):
+        ignore_defense = true
 
     if (
         execute_health_threshold > 0.0
@@ -293,7 +315,7 @@ func damage_calc(
         defender,
         hit_multiplier,
         bonus_damage,
-        false,
+        ignore_defense,
         defense_ignore_ratio
     )
 
@@ -505,6 +527,34 @@ func apply_on_hit_passives(
         if applied_effect != null:
             applied_effects.append(applied_effect)
 
+            var action_gauge_gain: float = float(
+                effect_config.get(
+                    "action_gauge",
+                    0.0
+                )
+            )
+
+            var once_per_skill: bool = bool(
+                effect_config.get(
+                    "action_gauge_once_per_skill",
+                    false
+                )
+            )
+
+            if (
+                action_gauge_gain > 0.0
+                and (
+                    not once_per_skill
+                    or not attacker.on_hit_action_gauge_granted_this_skill
+                )
+            ):
+                attacker.increase_action_gauge(
+                    action_gauge_gain
+                )
+
+                if once_per_skill:
+                    attacker.on_hit_action_gauge_granted_this_skill = true
+
 
 func resolve_after_skill(
     attacker,
@@ -633,7 +683,8 @@ func execute_on_target(
         )
 
         var actual_damage: int = defender.receive_damage(
-            result["damage"]
+            result["damage"],
+            attacker
         )
 
         total_damage += actual_damage
@@ -643,6 +694,18 @@ func execute_on_target(
 
         if result["critical"]:
             critical_hits += 1
+
+        if (
+            not action_gauge_reduction_if_debuff_id.is_empty()
+            and defender.get_debuff(
+                action_gauge_reduction_if_debuff_id
+            ) != null
+        ):
+            defender.action_gauge = maxf(
+                0.0,
+                defender.action_gauge
+                - action_gauge_reduction_if_debuff_amount
+            )
 
         apply_on_hit_passives(
             attacker,
@@ -723,6 +786,33 @@ func execute_on_target(
         defender,
         starting_burn_stacks
     )
+
+    if (
+        add_burn_if_started_with_burn
+        and starting_burn_stacks > 0
+        and defender.is_alive()
+    ):
+        var extra_burn = (
+            StatusEffectFactoryScript.create_status_effect(
+                "burn",
+                extra_burn_turns,
+                attacker,
+                extra_burn_stacks
+            )
+        )
+        defender.apply_status_effect(extra_burn)
+
+    if (
+        reset_skill_slot_if_burn_stacks > 0
+        and starting_burn_stacks
+        >= reset_skill_required_burn_stacks
+    ):
+        var skill_to_reset = attacker.get_skill(
+            reset_skill_slot_if_burn_stacks
+        )
+
+        if skill_to_reset != null:
+            skill_to_reset.current_cooldown = 0
 
     return {
         "damage": total_damage,
@@ -820,7 +910,8 @@ func execute_round_based_targets(
             )
 
             var actual_damage: int = defender.receive_damage(
-                final_damage
+                final_damage,
+                attacker
             )
 
             var target_result: Dictionary = (
@@ -1043,7 +1134,8 @@ func execute_random_targets(
         )
 
         var actual_damage: int = target.receive_damage(
-            int(damage_result["damage"])
+            int(damage_result["damage"]),
+            attacker
         )
 
         var target_result: Dictionary = (
@@ -1126,6 +1218,8 @@ func execute_targets(
     attacker,
     defenders: Array
 ) -> Dictionary:
+    attacker.on_hit_action_gauge_granted_this_skill = false
+
     if not is_available():
         return {
             "success": false,
