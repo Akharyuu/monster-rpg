@@ -76,7 +76,7 @@ RESONANCE_DATA = {
         4: [
             {
                 "action": "replace_skill",
-                "slot": 2,
+                "slot": 3,
                 "new": "meteor_dive_terminal_impact"
             }
         ],
