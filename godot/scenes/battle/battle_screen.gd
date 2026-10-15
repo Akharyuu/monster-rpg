@@ -105,16 +105,43 @@ func _ready() -> void:
     start_next_turn()
 
 
+# The teams face each other diagonally across the battlefield.
+# Every size has its own arc: 1-3 units do NOT inherit the first N
+# positions of the four-unit formation.
+const ALLY_ARCS := {
+    1: [Vector2(270, 355)],
+    2: [Vector2(165, 350), Vector2(395, 385)],
+    3: [Vector2(70, 345), Vector2(260, 408), Vector2(455, 350)],
+    4: [
+        Vector2(20, 342), Vector2(185, 392),
+        Vector2(355, 388), Vector2(520, 332)
+    ]
+}
+
+const ENEMY_ARCS := {
+    1: [Vector2(955, 170)],
+    2: [Vector2(795, 180), Vector2(1035, 145)],
+    3: [Vector2(740, 215), Vector2(930, 120), Vector2(1100, 170)],
+    4: [
+        Vector2(630, 225), Vector2(800, 145),
+        Vector2(980, 120), Vector2(1140, 210)
+    ]
+}
+
+
 func _layout_team_huds(huds: Array, team_size: int) -> void:
     var count: int = mini(team_size, huds.size())
-    var width := 110.0
-    var step := 140.0
-    var first: float = (640.0 - count * width - maxi(count - 1, 0) * 30.0) / 2.0
+    var positions: Array = (
+        ALLY_ARCS.get(count, [])
+        if huds == ally_huds
+        else ENEMY_ARCS.get(count, [])
+    )
+
     for index in range(huds.size()):
         var combat_hud: Control = huds[index]
         combat_hud.visible = index < count
         if index < count:
-            combat_hud.position.x = roundf(first + index * step)
+            combat_hud.position = positions[index]
 
 
 func _on_options_button_pressed() -> void:

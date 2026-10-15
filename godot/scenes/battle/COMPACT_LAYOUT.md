@@ -1,21 +1,22 @@
-# Battle layout: 640x360 prototype
+# Diagonal arc battle layout
 
-The main Godot combat scene uses a **640x360 internal viewport**, displayed
-at 1280x720 (2x) by default. This is a layout pass, not final pixel art.
+- Godot's *real* design viewport is **1280 × 720** (no upscaling from
+  640 × 360). Text, combat UI and future sprites render at native resolution.
+- Allies occupy the **lower-left** in a four-slot upward-curving formation.
+- Enemies occupy the **upper-right** in a mirrored, curved formation.
+- Formations for 1, 2 and 3 units use their own coordinates to keep the team
+  balanced instead of cropping a four-unit row.
+- Both groups have a separate area for four 138×185 HUD footprints, with
+  up to 120×116 temporary sprite canvases. The entire screen is not covered
+  in panels. Slot overlays are transparent except target/current-turn feedback.
+- A small name and elemental diamond, resources/status icons, thin HP and
+  Action Gauge bars are attached to the monster. The level is preserved in
+  code but hidden visually.
+- Bottom-left: three action/skill buttons. Beside them: up to three
+  passive/special buttons with Soul Recall. Full descriptions remain
+  hover tooltips. Settings stays at bottom-right.
+- No big ENEMIES / ALLIES / SPRITE / SELECT A SKILL labels.
 
-- Enemies: row y=24. Allies: row y=141.
-- Up to four 110x105 combatant HUDs on either side, separated by 30px.
-- Occupied slots will center dynamically; the two-monster demo remains playable.
-- The turn/message strip spans y=246-263.
-- Bottom action HUD spans y=263-360. Three compact skill buttons use
-  S1/S2/S3 labels, while their full descriptions remain in tooltips.
-- Three passive/special-action slots support Soul Recall alongside passives;
-  tooltips retain full detail.
-- Options gear provides Continue and Restart Demo.
-- Each monster has an attribute-tinted **temporary sprite placeholder**,
-  HP, AG, name, level and status/resource badges. Replace the placeholder
-  when pixel art is ready.
-
-Verification after pulling: open Godot, play the main battle scene, inspect
-skill/passive tooltips, attack an enemy, try area attacks, and check targeting,
-Soul Recall and the options menu. Run `python -m pytest -q` too.
+Manual verification in Godot is still necessary: launch the game, test
+single-target and AoE attacks, turn transitions, damage/status overlays,
+Soul Recall and the options menu. Python tests can be run separately.
