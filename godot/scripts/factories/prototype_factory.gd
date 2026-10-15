@@ -56,7 +56,7 @@ static func _attach_skill_descriptions(monster) -> void:
             "effects": [
                 {
                     "kind": "damage",
-                    "text": "Damage increases with the target's [color=#ff8a42]Burn[/color] stacks."
+                    "text": "Damage increases with the target's [color=#ff7777]Burn[/color] stacks."
                 }
             ]
         },
@@ -66,7 +66,7 @@ static func _attach_skill_descriptions(monster) -> void:
             "effects": [
                 {
                     "kind": "damage",
-                    "text": "Deals increased damage based on [color=#ff8a42]Burn[/color] stacks."
+                    "text": "Deals increased damage based on [color=#ff7777]Burn[/color] stacks."
                 },
                 {
                     "kind": "heal",
@@ -80,7 +80,7 @@ static func _attach_skill_descriptions(monster) -> void:
             "effects": [
                 {
                     "kind": "debuff",
-                    "text": "Each hit has a [b]50% chance[/b] to apply [color=#78aaff]Speed Break[/color] for [b]2 turns[/b]."
+                    "text": "Each hit has a [b]50% chance[/b] to apply [color=#ff7777]Speed Break[/color] for [b]2 turns[/b]."
                 }
             ]
         },
@@ -94,7 +94,7 @@ static func _attach_skill_descriptions(monster) -> void:
                 },
                 {
                     "kind": "control",
-                    "text": "Targets with [color=#78aaff]Speed Break[/color] can be [color=#9ed7ff]Frozen[/color] for [b]1 turn[/b]."
+                    "text": "Targets with [color=#ff7777]Speed Break[/color] can be [color=#ff7777]Frozen[/color] for [b]1 turn[/b]."
                 }
             ]
         },
@@ -118,7 +118,7 @@ static func _attach_skill_descriptions(monster) -> void:
                 },
                 {
                     "kind": "control",
-                    "text": "A target hit [b]3+ times[/b] has a [b]50% chance[/b] to be [color=#9ed7ff]Stunned[/color]."
+                    "text": "A target hit [b]3+ times[/b] has a [b]50% chance[/b] to be [color=#ff7777]Stunned[/color]."
                 },
                 {
                     "kind": "damage",
@@ -132,7 +132,7 @@ static func _attach_skill_descriptions(monster) -> void:
             "effects": [
                 {
                     "kind": "debuff",
-                    "text": "Attempts to apply [color=#d08cff]Silence[/color] for [b]1 turn[/b]."
+                    "text": "Attempts to apply [color=#ff7777]Silence[/color] for [b]1 turn[/b]."
                 },
                 {
                     "kind": "special",
@@ -156,7 +156,7 @@ static func _attach_skill_descriptions(monster) -> void:
             "effects": [
                 {
                     "kind": "debuff",
-                    "text": "The second hit has a [b]60% chance[/b] to apply [color=#d08cff]Oblivion[/color] for [b]2 turns[/b]."
+                    "text": "The second hit has a [b]60% chance[/b] to apply [color=#ff7777]Oblivion[/color] for [b]2 turns[/b]."
                 }
             ]
         },
@@ -208,7 +208,7 @@ static func _attach_skill_descriptions(monster) -> void:
                 },
                 {
                     "kind": "debuff",
-                    "text": "[b]100% chance[/b] to apply [color=#ff7777]Vulnerability[/color] for [b]2 turns[/b]."
+                    "text": "Applies [color=#ff7777]Vulnerability[/color] for [b]2 turns[/b]."
                 },
                 {
                     "kind": "special",
@@ -248,7 +248,7 @@ static func _attach_passive_description(monster) -> void:
             "effects": [
                 {
                     "kind": "debuff",
-                    "text": "Each hit has a [b]35% chance[/b] to apply [color=#ff8a42]Burn[/color] for [b]2 turns[/b]."
+                    "text": "Each hit has a [b]35% chance[/b] to apply [color=#ff7777]Burn[/color] for [b]2 turns[/b]."
                 }
             ]
         },
@@ -315,7 +315,7 @@ static func _attach_passive_description(monster) -> void:
                 },
                 {
                     "kind": "special",
-                    "text": "While Headless, cannot be Silenced unless affected by [color=#d08cff]Oblivion[/color]."
+                    "text": "While Headless, cannot be Silenced unless affected by [color=#ff7777]Oblivion[/color]."
                 }
             ]
         }
