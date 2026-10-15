@@ -862,22 +862,10 @@ def soul_vessel(owner, context, passive):
 
 def deathless_rider(owner, context, passive):
 
-    if context.get(
-        "trigger"
-    ) != "after_turn":
-        return
-
-    if owner.get_internal_cooldown(
-        "deathless_rider"
-    ) > 0:
-        return
-
-    owner.increase_action_gauge(
-        passive.handler_data.get(
-            "action_gauge_after_turn",
-            0.15
-        )
-    )
+    # Deathless Rider is a passive trait. Lethal protection is handled
+    # by Monster.receive_damage and finalized after the incoming skill.
+    # It does not grant Action Gauge at the end of a turn.
+    return
 
 
 
