@@ -1413,6 +1413,7 @@ func can_use_soul_recall(caster) -> bool:
         or caster.monster_id != "dullahan_aether"
         or caster.resonance < 2
         or caster.has_oblivion()
+        or caster.is_silenced()
         or caster.get_combat_resource("soul_charges") < 5
     ):
         return false
