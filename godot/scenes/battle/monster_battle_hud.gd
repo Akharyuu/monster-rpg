@@ -15,6 +15,18 @@ signal target_pressed
 @onready var status_container: HBoxContainer = $"Status"
 @onready var target_button: Button = $"Target Button"
 @onready var sprite_placeholder = $"Sprite Placeholder"
+@onready var monster_sprite: TextureRect = $"Monster Sprite"
+
+# Artwork is optional while building the roster. PNGs can exist locally
+# without having been committed to Git.
+const ALLY_SPRITES := {
+    "drake_igneous": "res://assets/monster_sprites/drake_igneous.png"
+}
+
+# Local layout coordinates of the compact 138 x 185 monster HUD.
+const SPRITE_PREVIEW_SIZE := Vector2(120.0, 116.0)
+const SPRITE_PREVIEW_POSITION := Vector2(9.0, 19.0)
+
 
 var bound_monster
 var is_enemy := false
@@ -33,6 +45,8 @@ func bind_monster(monster, enemy_side: bool) -> void:
     sprite_placeholder.call(
         "configure", monster.family, monster.attribute, enemy_side
     )
+    _configure_monster_sprite()
+
 
     name_label.text = monster.monster_name
     level_label.text = "Lv. %d" % monster.level
@@ -48,6 +62,36 @@ func bind_monster(monster, enemy_side: bool) -> void:
     _update_target_style()
     _style_bars()
     refresh(false)
+
+
+func _configure_monster_sprite() -> void:
+    monster_sprite.visible = false
+    monster_sprite.texture = null
+    sprite_placeholder.visible = true
+
+    if bound_monster == null or is_enemy:
+        return
+
+    var sprite_path: String = str(
+        ALLY_SPRITES.get(str(bound_monster.monster_id), "")
+    )
+    if sprite_path.is_empty():
+        return
+
+    if not ResourceLoader.exists(sprite_path, "Texture2D"):
+        push_warning("Ally artwork not found: %s" % sprite_path)
+        return
+
+    var texture: Texture2D = load(sprite_path) as Texture2D
+    if texture == null:
+        push_warning("Cannot load ally artwork: %s" % sprite_path)
+        return
+
+    monster_sprite.texture = texture
+    monster_sprite.position = SPRITE_PREVIEW_POSITION
+    monster_sprite.size = SPRITE_PREVIEW_SIZE
+    monster_sprite.visible = true
+    sprite_placeholder.visible = false
 
 
 func refresh(is_active: bool) -> void:
