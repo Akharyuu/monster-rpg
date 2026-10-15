@@ -368,6 +368,16 @@ func execute_active_skill(
         targets
     )
 
+    if (
+        active_monster.monster_id == "drake_storm"
+        and skill.skill_id == "stormbreak_requiem"
+    ):
+        _resolve_stormbreak_requiem_follow_up(
+            skill,
+            result,
+            caster_feedback
+        )
+
     if skill.skill_id in [
         "vine_barrage",
         "vine_barrage_nourishment",
@@ -523,7 +533,10 @@ func execute_active_skill(
 
     if (
         active_monster.monster_id == "drake_storm"
-        and skill.skill_id == "lightning_rush"
+        and skill.skill_id in [
+            "lightning_rush",
+            "lightning_rush_blitz"
+        ]
     ):
         var speed_up = (
             StatusEffectFactoryScript.create_status_effect(
@@ -536,13 +549,31 @@ func execute_active_skill(
         if active_monster.apply_status_effect(speed_up) != null:
             caster_feedback.append("SPD UP!")
 
+        if skill.skill_id == "lightning_rush_blitz":
+            active_monster.increase_action_gauge(0.15)
+            caster_feedback.append("BLITZ +15% AG")
+
     if (
         active_monster.monster_id == "drake_aether"
-        and skill.skill_id == "sovereign_breath"
+        and skill.skill_id in [
+            "sovereign_breath",
+            "sovereign_breath_subjugation"
+        ]
     ):
+        var base_silence_chance: float = (
+            0.50
+            if skill.skill_id == "sovereign_breath_subjugation"
+            else 0.30
+        )
+        var max_silence_chance: float = (
+            1.00
+            if skill.skill_id == "sovereign_breath_subjugation"
+            else 0.80
+        )
         var silence_chance: float = minf(
-            0.80,
-            0.30 + active_monster.buffs.size() * 0.10
+            max_silence_chance,
+            base_silence_chance
+            + active_monster.buffs.size() * 0.10
         )
 
         for target_result in result.get(
@@ -584,6 +615,61 @@ func execute_active_skill(
                 result["resisted_effects"].append(
                     "silence"
                 )
+
+    if (
+        active_monster.monster_id == "drake_aether"
+        and active_monster.resonance >= 1
+        and not active_monster.has_oblivion()
+    ):
+        var divine_grace_total := 0
+
+        for target_result in result.get(
+            "target_results",
+            []
+        ):
+            var target = target_result["target"]
+            var applied_buffs := 0
+
+            for effect in target_result.get(
+                "effects_applied",
+                []
+            ):
+                if effect.effect_type == "buff":
+                    applied_buffs += 1
+
+            if applied_buffs <= 0:
+                continue
+
+            var heal_amount: int = int(
+                target.max_health
+                * 0.05
+                * applied_buffs
+            )
+            var actual_heal: int = target.heal(
+                heal_amount
+            )
+
+            divine_grace_total += actual_heal
+
+            if actual_heal > 0:
+                caster_feedback.append(
+                    "DIVINE GRACE - %s +%d HP"
+                    % [
+                        target.monster_name,
+                        actual_heal
+                    ]
+                )
+
+        result["healing"] = int(
+            result.get("healing", 0)
+        ) + divine_grace_total
+
+    if (
+        active_monster.monster_id == "drake_aether"
+        and skill.skill_id == "heavens_decree_apotheosis"
+    ):
+        active_monster.action_gauge = 1.0
+        caster_feedback.append("APOTHEOSIS - EXTRA TURN!")
 
     if (
         active_monster.monster_id == "dryad_storm"
@@ -725,6 +811,69 @@ func execute_active_skill(
     return result
 
 
+func _resolve_stormbreak_requiem_follow_up(
+    skill,
+    result: Dictionary,
+    caster_feedback: Array[String]
+) -> void:
+    var opponents: Array = (
+        enemies
+        if active_monster in allies
+        else allies
+    )
+
+    var follow_up_damage := 0
+
+    for target in opponents:
+        if not target.is_alive():
+            continue
+
+        var damage_result: Dictionary = skill.damage_calc(
+            active_monster,
+            target,
+            0.75
+        )
+
+        var actual_damage: int = target.receive_damage(
+            int(damage_result["damage"]),
+            active_monster
+        )
+
+        follow_up_damage += actual_damage
+
+        for target_result in result.get(
+            "target_results",
+            []
+        ):
+            if target_result["target"] != target:
+                continue
+
+            target_result["damage"] = int(
+                target_result.get("damage", 0)
+            ) + actual_damage
+            target_result["hits_landed"] = int(
+                target_result.get("hits_landed", 0)
+            ) + 1
+
+            if bool(damage_result.get("critical", false)):
+                target_result["critical_hits"] = int(
+                    target_result.get("critical_hits", 0)
+                ) + 1
+                result["critical_hits"] = int(
+                    result.get("critical_hits", 0)
+                ) + 1
+
+            break
+
+    result["damage"] = int(
+        result.get("damage", 0)
+    ) + follow_up_damage
+
+    caster_feedback.append(
+        "STORMBREAK: REQUIEM - FOLLOW-UP!"
+    )
+
+
 func _apply_overgrowth_shield(
     caster,
     target,
@@ -835,8 +984,14 @@ func _resolve_receive_hit_passives(
         ):
             continue
 
+        var authority_chance: float = (
+            0.50
+            if defender.resonance >= 2
+            else 0.30
+        )
+
         for _hit_index in range(hit_count):
-            if randf() > 0.30:
+            if randf() > authority_chance:
                 continue
 
             var accuracy: float = defender.get_effective_stat(
@@ -874,6 +1029,27 @@ func _resolve_receive_hit_passives(
                     caster_feedback.append(
                         "CELESTIAL AUTHORITY - ATK DOWN!"
                     )
+
+                if defender.resonance >= 2:
+                    var defender_team: Array = (
+                        allies
+                        if defender in allies
+                        else enemies
+                    )
+                    var living_team: Array = get_living(
+                        defender_team
+                    )
+
+                    if not living_team.is_empty():
+                        var gauge_target = living_team[0]
+
+                        for ally in living_team:
+                            if ally.buffs.size() > gauge_target.buffs.size():
+                                gauge_target = ally
+
+                        gauge_target.increase_action_gauge(
+                            0.20
+                        )
 
 
 func choose_enemy_target():
