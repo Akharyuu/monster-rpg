@@ -61,11 +61,14 @@ func _ready() -> void:
         )
     ]
 
-    # Temporary training dummies for resonance testing.
-    # This only affects this battle scene, not canonical monster data.
+    # Temporary resonance-test setup only.
+    # Enemies are damage sponges and Void Dullahan starts near death
+    # so Soul Recall can be tested without a long setup.
     for enemy in enemies:
         enemy.max_health = 100000
         enemy.health = enemy.max_health
+
+    allies[1].health = 1
 
     battle_controller = BattleControllerScript.new()
     battle_controller.setup(
