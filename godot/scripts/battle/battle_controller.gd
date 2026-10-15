@@ -437,10 +437,13 @@ func execute_active_skill(
             caster_feedback
         )
 
-    if (
-        active_monster.monster_id == "dullahan_abyssal"
-        and skill.skill_id == "spectral_shackles_lockdown"
+    if skill.has_handler(
+        "reduce_action_gauge_if_both_debuffs_applied"
     ):
+        var lockdown_data: Dictionary = skill.get_handler_data(
+            "reduce_action_gauge_if_both_debuffs_applied"
+        )
+        var required_effects: Array = lockdown_data.get("effect_ids", [])
         for target_result in result.get(
             "target_results",
             []
@@ -454,24 +457,24 @@ func execute_active_skill(
                 applied_ids.append(effect.effect_id)
 
             if (
-                "speed_break" in applied_ids
-                and "attack_break" in applied_ids
+                required_effects.size() == 2
+                and str(required_effects[0]) in applied_ids
+                and str(required_effects[1]) in applied_ids
             ):
                 target_result["target"].action_gauge = maxf(
                     0.0,
-                    target_result["target"].action_gauge - 0.20
+                    target_result["target"].action_gauge
+                    - float(lockdown_data.get("amount", 0.0))
                 )
                 caster_feedback.append(
                     "LOCKDOWN -20% AG"
                 )
 
-    if (
-        active_monster.monster_id == "dullahan_abyssal"
-        and skill.skill_id in [
-            "inescapable_fate",
-            "inescapable_fate_ironbound"
-        ]
-    ):
+    if skill.has_handler("extend_target_debuffs"):
+        var extension_data: Dictionary = skill.get_handler_data(
+            "extend_target_debuffs"
+        )
+        var extension_turns: int = int(extension_data.get("turns", 0))
         for target_result in result.get(
             "target_results",
             []
@@ -483,14 +486,16 @@ func execute_active_skill(
 
             for debuff in target.debuffs:
                 if debuff.extendable:
-                    debuff.remaining_turns += 1
-                    debuff.duration += 1
+                    debuff.remaining_turns += extension_turns
+                    debuff.duration += extension_turns
 
-            if target.debuffs.size() >= 3:
+            if target.debuffs.size() >= int(
+                extension_data.get("silence_required_debuffs", 3)
+            ):
                 var silence = (
                     StatusEffectFactoryScript.create_status_effect(
                         "silence",
-                        1,
+                        int(extension_data.get("silence_turns", 1)),
                         active_monster
                     )
                 )
@@ -504,10 +509,10 @@ func execute_active_skill(
                     )
                     caster_feedback.append("SILENCE!")
 
-    if (
-        active_monster.monster_id == "dullahan_storm"
-        and skill.skill_id == "gale_pursuit_tempest"
-    ):
+    if skill.has_handler("apply_team_buff"):
+        var team_buff_data: Dictionary = skill.get_handler_data(
+            "apply_team_buff"
+        )
         var storm_team: Array = (
             allies
             if active_monster in allies
@@ -520,8 +525,8 @@ func execute_active_skill(
 
             var team_speed_up = (
                 StatusEffectFactoryScript.create_status_effect(
-                    "speed_up",
-                    2,
+                    str(team_buff_data.get("effect_id", "")),
+                    int(team_buff_data.get("turns", 0)),
                     active_monster
                 )
             )
@@ -769,17 +774,14 @@ func execute_active_skill(
                 "BOTTOMLESS HUNGER x%d" % removed_buffs
             )
 
-    if (
-        active_monster.monster_id == "drake_storm"
-        and skill.skill_id in [
-            "lightning_rush",
-            "lightning_rush_blitz"
-        ]
-    ):
+    if skill.has_handler("apply_self_buff"):
+        var self_buff_data: Dictionary = skill.get_handler_data(
+            "apply_self_buff"
+        )
         var speed_up = (
             StatusEffectFactoryScript.create_status_effect(
-                "speed_up",
-                2,
+                str(self_buff_data.get("effect_id", "")),
+                int(self_buff_data.get("turns", 0)),
                 active_monster
             )
         )
@@ -787,31 +789,23 @@ func execute_active_skill(
         if active_monster.apply_status_effect(speed_up) != null:
             caster_feedback.append("SPD UP!")
 
-        if skill.skill_id == "lightning_rush_blitz":
-            active_monster.increase_action_gauge(0.15)
-            caster_feedback.append("BLITZ +15% AG")
+        if skill.has_handler("increase_action_gauge"):
+            var gauge_data: Dictionary = skill.get_handler_data(
+                "increase_action_gauge"
+            )
+            var amount: float = float(gauge_data.get("amount", 0.0))
+            active_monster.increase_action_gauge(amount)
+            caster_feedback.append("BLITZ +%d%% AG" % int(amount * 100.0))
 
-    if (
-        active_monster.monster_id == "drake_aether"
-        and skill.skill_id in [
-            "sovereign_breath",
-            "sovereign_breath_subjugation"
-        ]
-    ):
-        var base_silence_chance: float = (
-            0.50
-            if skill.skill_id == "sovereign_breath_subjugation"
-            else 0.30
-        )
-        var max_silence_chance: float = (
-            1.00
-            if skill.skill_id == "sovereign_breath_subjugation"
-            else 0.80
+    if skill.has_handler("apply_scaling_silence"):
+        var silence_data: Dictionary = skill.get_handler_data(
+            "apply_scaling_silence"
         )
         var silence_chance: float = minf(
-            max_silence_chance,
-            base_silence_chance
-            + active_monster.buffs.size() * 0.10
+            float(silence_data.get("max_chance", 1.0)),
+            float(silence_data.get("base_chance", 0.0))
+            + active_monster.buffs.size()
+            * float(silence_data.get("chance_per_buff", 0.0))
         )
 
         for target_result in result.get(
@@ -828,7 +822,7 @@ func execute_active_skill(
                     {
                         "effect_id": "silence",
                         "chance": silence_chance,
-                        "turns": 1
+                        "turns": int(silence_data.get("turns", 1))
                     },
                     active_monster,
                     target
@@ -902,10 +896,7 @@ func execute_active_skill(
             result.get("healing", 0)
         ) + divine_grace_total
 
-    if (
-        active_monster.monster_id == "drake_aether"
-        and skill.skill_id == "heavens_decree_apotheosis"
-    ):
+    if skill.has_handler("grant_extra_turn"):
         active_monster.action_gauge = 1.0
         caster_feedback.append("APOTHEOSIS - EXTRA TURN!")
 

@@ -9,6 +9,29 @@ var target_type: String = "single_enemy"
 var description: String = ""
 var tooltip_summary: String = ""
 var tooltip_effects: Array = []
+var shared_definition: Dictionary = {}
+
+
+func has_handler(handler_id: String) -> bool:
+    for phase in [
+        "before_hit_handlers", "on_hit_handlers",
+        "after_skill_handlers", "after_use_handlers"
+    ]:
+        for config in shared_definition.get(phase, []):
+            if str(config.get("handler", "")) == handler_id:
+                return true
+    return false
+
+
+func get_handler_data(handler_id: String) -> Dictionary:
+    for phase in [
+        "before_hit_handlers", "on_hit_handlers",
+        "after_skill_handlers", "after_use_handlers"
+    ]:
+        for config in shared_definition.get(phase, []):
+            if str(config.get("handler", "")) == handler_id:
+                return config.get("data", {})
+    return {}
 
 
 func _init(

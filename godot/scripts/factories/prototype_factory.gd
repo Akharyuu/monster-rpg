@@ -233,6 +233,7 @@ static func _sync_skill_from_shared_data(skill) -> bool:
         push_error("Unknown skill type: %s" % skill_id)
         return false
 
+    skill.shared_definition = entry
     skill.skill_name = str(entry["name"])
     skill.cooldown = int(entry["cooldown"])
     skill.target_type = str(entry["target_type"])

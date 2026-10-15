@@ -388,3 +388,30 @@ def test_resonance_action_totals_remain_stable():
     assert len(actions) == 60
     assert sum(a["action"] == "replace_skill" for a in actions) == 34
     assert sum(a["action"] == "add_skill" for a in actions) == 1
+
+
+def test_godot_skills_resolve_combat_handlers_from_json():
+    root = GODOT_FACTORY.parents[3]
+    base = (root / "godot" / "scripts" / "models" / "skill.gd"
+            ).read_text(encoding="utf-8")
+    battle = (root / "godot" / "scripts" / "battle" /
+              "battle_controller.gd").read_text(encoding="utf-8")
+    assert "var shared_definition: Dictionary = {}" in base
+    assert "func get_handler_data(" in base
+    assert "func has_handler(" in base
+    assert "skill.shared_definition = entry" in GODOT_FACTORY.read_text(
+        encoding="utf-8"
+    )
+    for handler_id in (
+        "reduce_action_gauge_if_both_debuffs_applied",
+        "extend_target_debuffs", "apply_team_buff",
+        "apply_self_buff", "increase_action_gauge",
+        "apply_scaling_silence", "grant_extra_turn",
+    ):
+        assert handler_id in battle
+        assert any(
+            item["handler"] == handler_id
+            for record in skill_module.SKILL_DATA.values()
+            for item in (record.get("after_use_handlers", []) +
+                         record.get("after_skill_handlers", []))
+        )
