@@ -291,15 +291,11 @@ static func _attach_skill_descriptions(monster) -> void:
         },
 
         "sovereign_breath_subjugation": {
-            "summary": "Blasts all enemies with overwhelming sovereign aether.",
+            "summary": "Overwhelms the enemy team with sovereign aether, suppressing their ability to act.",
             "effects": [
                 {
                     "kind": "debuff",
-                    "text": "Attempts to apply [color=#ff7777]Silence[/color] for [b]1 turn[/b]."
-                },
-                {
-                    "kind": "special",
-                    "text": "Silence chance starts at [b]50%[/b] and gains [b]+10% per caster buff[/b], up to [b]100%[/b]."
+                    "text": "[b]50% chance[/b] to apply [color=#ff7777]Silence[/color] for [b]1 turn[/b] ([b]+10% chance[/b] for each buff on the caster)."
                 }
             ]
         },
@@ -740,7 +736,7 @@ static func _attach_passive_description(monster) -> void:
 
         "drake_aether": {
             "name": "Celestial Authority",
-            "summary": "Punishes enemies that strike the Aether Drake.",
+            "summary": "Turns enemy aggression into control over the flow of battle.",
             "effects": [
                 {
                     "kind": "debuff",
@@ -940,7 +936,7 @@ static func _attach_passive_description(monster) -> void:
                 divine_grace_data["effects"].append(
                     {
                         "kind": "special",
-                        "text": "Also grants the caster [b]+25 Accuracy[/b]."
+                        "text": "Also grants the caster [b]+25% Accuracy[/b]."
                     }
                 )
 
