@@ -19,20 +19,17 @@ const StatusEffectFactoryScript = preload(
 @onready var skill_2_button = $"Skill 2 Button"
 @onready var skill_3_button = $"Skill 3 Button"
 @onready var turn_label = $"Turn Label"
+@onready var options_overlay: ColorRect = $"Options Overlay"
 
 @onready var ally_huds: Array = [
-    $"Ally HUD 1",
-    $"Ally HUD 2"
+    $"Ally HUD 1", $"Ally HUD 2",
+    $"Ally HUD 3", $"Ally HUD 4"
 ]
 
 @onready var enemy_huds: Array = [
-    $"Enemy HUD 1",
-    $"Enemy HUD 2"
+    $"Enemy HUD 1", $"Enemy HUD 2",
+    $"Enemy HUD 3", $"Enemy HUD 4"
 ]
-
-# Optional preview roster; the original Dullahan resonance-test roster
-# remains unchanged when this is false.
-@export var preview_igneous_drake: bool = false
 
 var allies: Array = []
 var enemies: Array = []
@@ -45,21 +42,20 @@ var action_in_progress := true
 
 
 func _ready() -> void:
-    var first_ally_id: String = (
-        "drake_igneous" if preview_igneous_drake else "dullahan_aether"
-    )
-    var first_ally_resonance: int = (
-        0 if preview_igneous_drake else 5
-    )
-
+    # Temporary 4v4 battle to inspect both curved formations, targeting,
+    # AoE effects, healing and passives. Change these lists for future demos.
     allies = [
         PrototypeFactoryScript.create_level_one_monster(
-            first_ally_id,
-            first_ally_resonance
+            "drake_igneous"
         ),
         PrototypeFactoryScript.create_level_one_monster(
-            "dullahan_void",
-            5
+            "drake_igneous"
+        ),
+        PrototypeFactoryScript.create_level_one_monster(
+            "drake_igneous"
+        ),
+        PrototypeFactoryScript.create_level_one_monster(
+            "drake_igneous"
         )
     ]
 
@@ -69,14 +65,24 @@ func _ready() -> void:
         ),
         PrototypeFactoryScript.create_level_one_monster(
             "slime_igneous"
+        ),
+        PrototypeFactoryScript.create_level_one_monster(
+            "thornet_abyssal"
+        ),
+        PrototypeFactoryScript.create_level_one_monster(
+            "sprout_abyssal"
         )
     ]
 
-    # Temporary resonance-test setup only.
-    # Enemies are damage sponges so long resonance rotations are easy to test.
+    # The old 100,000-HP dummy enemies made a full 4v4 unnecessarily long.
+    # A modest HP boost allows repeated attacks without making the test
+    # battle unreasonably slow. This does NOT modify canonical monster data.
     for enemy in enemies:
-        enemy.max_health = 100000
+        enemy.max_health = int(round(enemy.max_health * 2.0))
         enemy.health = enemy.max_health
+
+    _layout_team_huds(ally_huds, allies.size())
+    _layout_team_huds(enemy_huds, enemies.size())
 
     battle_controller = BattleControllerScript.new()
     battle_controller.setup(
@@ -84,7 +90,7 @@ func _ready() -> void:
         enemies
     )
 
-    for index in range(ally_huds.size()):
+    for index in range(mini(ally_huds.size(), allies.size())):
         ally_huds[index].bind_monster(
             allies[index],
             false
@@ -95,7 +101,7 @@ func _ready() -> void:
                 _on_ally_target_pressed(index_copy)
         )
 
-    for index in range(enemy_huds.size()):
+    for index in range(mini(enemy_huds.size(), enemies.size())):
         enemy_huds[index].bind_monster(
             enemies[index],
             true
@@ -110,6 +116,75 @@ func _ready() -> void:
 
     await get_tree().process_frame
     start_next_turn()
+
+
+# The teams face each other diagonally across the battlefield.
+# Every size has its own arc: 1-3 units do NOT inherit the first N
+# positions of the four-unit formation.
+const ALLY_ARCS := {
+    1: [Vector2(285, 350)],
+    2: [
+        Vector2(115, 320),
+        Vector2(380, 390)
+    ],
+    3: [
+        Vector2(60, 300),
+        Vector2(240, 360),
+        Vector2(445, 390)
+    ],
+    4: [
+        Vector2(35, 340),
+        Vector2(180, 390),
+        Vector2(330, 390),
+        Vector2(495, 375)
+    ]
+}
+
+const ENEMY_ARCS := {
+    1: [Vector2(890, 120)],
+    2: [
+        Vector2(735, 120),
+        Vector2(985, 145)
+    ],
+    3: [
+        Vector2(665, 95),
+        Vector2(840, 60),
+        Vector2(1025, 120)
+    ],
+    4: [
+        Vector2(640, 78),
+        Vector2(790, 60),
+        Vector2(945, 60),
+        Vector2(1095, 110)
+    ]
+}
+
+
+func _layout_team_huds(huds: Array, team_size: int) -> void:
+    var count: int = mini(team_size, huds.size())
+    var positions: Array = (
+        ALLY_ARCS.get(count, [])
+        if huds == ally_huds
+        else ENEMY_ARCS.get(count, [])
+    )
+
+    for index in range(huds.size()):
+        var combat_hud: Control = huds[index]
+        combat_hud.visible = index < count
+        if index < count:
+            combat_hud.position = positions[index]
+
+
+func _on_options_button_pressed() -> void:
+    options_overlay.visible = not options_overlay.visible
+
+
+func _on_resume_button_pressed() -> void:
+    options_overlay.visible = false
+
+
+func _on_restart_button_pressed() -> void:
+    get_tree().reload_current_scene()
 
 
 func start_next_turn() -> void:
@@ -653,12 +728,12 @@ func get_status_feedback_text(effect_id: String) -> String:
 
 
 func update_battle_ui() -> void:
-    for index in range(ally_huds.size()):
+    for index in range(mini(ally_huds.size(), allies.size())):
         ally_huds[index].refresh(
             battle_controller.active_monster == allies[index]
         )
 
-    for index in range(enemy_huds.size()):
+    for index in range(mini(enemy_huds.size(), enemies.size())):
         enemy_huds[index].refresh(
             battle_controller.active_monster == enemies[index]
         )
@@ -711,7 +786,7 @@ func update_skill_buttons() -> void:
             _set_action_button_state(button, true)
             continue
 
-        button.text = skill.skill_name
+        button.text = "S%d" % (index + 1)
         button.set_tooltip_skill(skill)
 
         if skill.current_cooldown > 0:
@@ -735,33 +810,9 @@ func update_skill_buttons() -> void:
         )
 
 
-func _layout_passive_buttons(visible_count: int) -> void:
-    var buttons := [
-        passive_button,
-        passive_button_2,
-        passive_button_3
-    ]
-
-    # Give each tooltip button room for an optional CD line.
-    # Three simultaneous buttons retain the compact layout.
-    var top_positions: Array[int] = [
-        515, 562, 577
-    ]
-    var bottom_positions: Array[int] = [
-        558, 605, 605
-    ]
-
-    if visible_count >= 3:
-        top_positions = [515, 546, 577]
-        bottom_positions = [543, 574, 605]
-
-    for index in range(visible_count):
-        buttons[index].offset_top = top_positions[index]
-        buttons[index].offset_bottom = bottom_positions[index]
-        buttons[index].add_theme_font_size_override(
-            "font_size",
-            12
-        )
+func _layout_passive_buttons(_visible_count: int) -> void:
+    # Fixed compact scene coordinates keep tooltips/actions in place.
+    pass
 
 
 func _update_passive_button() -> void:
@@ -813,9 +864,7 @@ func _update_passive_button() -> void:
             )
 
         button.visible = true
-        button.text = str(
-            passive_data.get("name", "PASSIVE")
-        )
+        button.text = "P%d" % (index + 1)
 
         if remaining_cd > 0:
             button.text += "\nCD %d" % remaining_cd
@@ -895,7 +944,7 @@ func _update_passive_button() -> void:
 
         # Soul Charges are already displayed in the monster HUD.
         # Availability is conveyed by the button's visual state.
-        action_button.text = "Soul Recall"
+        action_button.text = "RECALL"
 
         if selected:
             action_button.set_visual_state("active_selected")

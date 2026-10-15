@@ -14,20 +14,19 @@ signal target_pressed
 @onready var battle_state_container: HBoxContainer = $"Battle States"
 @onready var status_container: HBoxContainer = $"Status"
 @onready var target_button: Button = $"Target Button"
+@onready var sprite_placeholder = $"Sprite Placeholder"
 @onready var monster_sprite: TextureRect = $"Monster Sprite"
 
-# Sprites currently exist only for selected monsters. Use the exact
-# res:// path so a locally added PNG works without being duplicated.
-# Adjust position/size here when evaluating art in battle.
-const ALLY_SPRITE_CONFIG := {
-    "drake_igneous": {
-        "path": "res://assets/monster_sprites/drake_igneous.png",
-        "position": Vector2(-75.0, -305.0),
-        "size": Vector2(472.0, 400.0),
-        "scale": 1.0,
-        "flip_h": false
-    }
+# Artwork is optional while building the roster. PNGs can exist locally
+# without having been committed to Git.
+const ALLY_SPRITES := {
+    "drake_igneous": "res://assets/monster_sprites/drake_igneous.png"
 }
+
+# Local layout coordinates of the compact 138 x 185 monster HUD.
+const SPRITE_PREVIEW_SIZE := Vector2(240.0, 232.0)
+const SPRITE_PREVIEW_POSITION := Vector2(-51.0, -39.0)
+
 
 var bound_monster
 var is_enemy := false
@@ -43,6 +42,11 @@ func _ready() -> void:
 func bind_monster(monster, enemy_side: bool) -> void:
     bound_monster = monster
     is_enemy = enemy_side
+    sprite_placeholder.call(
+        "configure", monster.family, monster.attribute, enemy_side
+    )
+    _configure_monster_sprite()
+
 
     name_label.text = monster.monster_name
     level_label.text = "Lv. %d" % monster.level
@@ -50,58 +54,44 @@ func bind_monster(monster, enemy_side: bool) -> void:
     _update_attribute(
         monster.attribute
     )
-    _update_monster_sprite()
 
     hp_bar.max_value = monster.max_health
     action_gauge.max_value = 100.0
 
     _update_turn_style()
     _update_target_style()
+    _style_bars()
     refresh(false)
 
 
-func _update_monster_sprite() -> void:
-    # Only an ally uses this art; enemies and other monsters retain
-    # the original HUD until their sprites are implemented.
+func _configure_monster_sprite() -> void:
     monster_sprite.visible = false
     monster_sprite.texture = null
+    sprite_placeholder.visible = true
 
     if bound_monster == null or is_enemy:
         return
 
-    var config: Dictionary = ALLY_SPRITE_CONFIG.get(
-        str(bound_monster.monster_id),
-        {}
+    var sprite_path: String = str(
+        ALLY_SPRITES.get(str(bound_monster.monster_id), "")
     )
-    if config.is_empty():
+    if sprite_path.is_empty():
         return
 
-    var sprite_path: String = str(config.get("path", ""))
     if not ResourceLoader.exists(sprite_path, "Texture2D"):
-        push_warning(
-            "Ally sprite missing: %s (put the PNG in "
-            % sprite_path
-            + "godot/assets/monster_sprites/)"
-        )
+        push_warning("Ally artwork not found: %s" % sprite_path)
         return
 
-    var texture := load(sprite_path) as Texture2D
+    var texture: Texture2D = load(sprite_path) as Texture2D
     if texture == null:
-        push_warning("Ally sprite is not a Texture2D: %s" % sprite_path)
+        push_warning("Cannot load ally artwork: %s" % sprite_path)
         return
 
     monster_sprite.texture = texture
-    monster_sprite.position = config.get("position", Vector2.ZERO)
-    monster_sprite.size = config.get("size", Vector2(236.0, 200.0))
-    var sprite_scale: float = float(config.get("scale", 1.0))
-    var flip_h: bool = bool(config.get("flip_h", false))
-    monster_sprite.scale = Vector2(
-        -sprite_scale if flip_h else sprite_scale,
-        sprite_scale
-    )
-    if flip_h:
-        monster_sprite.position.x += monster_sprite.size.x
+    monster_sprite.position = SPRITE_PREVIEW_POSITION
+    monster_sprite.size = SPRITE_PREVIEW_SIZE
     monster_sprite.visible = true
+    sprite_placeholder.visible = false
 
 
 func refresh(is_active: bool) -> void:
@@ -112,7 +102,13 @@ func refresh(is_active: bool) -> void:
     level_label.text = "Lv. %d" % bound_monster.level
 
     hp_bar.value = bound_monster.health
+    hp_bar.tooltip_text = "%d / %d HP" % [
+        bound_monster.health, bound_monster.max_health
+    ]
     action_gauge.value = (
+        bound_monster.action_gauge * 100.0
+    )
+    action_gauge.tooltip_text = "Action Gauge %.0f%%" % (
         bound_monster.action_gauge * 100.0
     )
 
@@ -201,31 +197,59 @@ func _update_target_style() -> void:
 
 
 func _update_attribute(attribute: String) -> void:
-    var display_name: String = attribute.to_upper()
     var attribute_color := Color.WHITE
 
     match attribute:
         "igneous":
-            display_name = "IGN"
             attribute_color = Color(1.0, 0.42, 0.22)
         "abyssal":
-            display_name = "ABY"
             attribute_color = Color(0.30, 0.56, 1.0)
         "storm":
-            display_name = "STM"
             attribute_color = Color(0.90, 0.82, 0.24)
         "aether":
-            display_name = "AET"
             attribute_color = Color(1.0, 0.93, 0.68)
         "void":
-            display_name = "VOI"
             attribute_color = Color(0.72, 0.40, 0.90)
 
-    attribute_label.text = "◆ %s" % display_name
+    attribute_label.text = "◆"
+    attribute_label.tooltip_text = attribute.capitalize()
     attribute_label.add_theme_color_override(
-        "font_color",
-        attribute_color
+        "font_color", attribute_color
     )
+
+
+func _style_bars() -> void:
+    var background := StyleBoxFlat.new()
+    background.bg_color = Color(0.06, 0.09, 0.12, 0.90)
+    background.corner_radius_top_left = 3
+    background.corner_radius_top_right = 3
+    background.corner_radius_bottom_left = 3
+    background.corner_radius_bottom_right = 3
+
+    var health_fill := StyleBoxFlat.new()
+    health_fill.bg_color = (
+        Color(0.93, 0.36, 0.39, 1.0)
+        if is_enemy
+        else Color(0.28, 0.84, 0.57, 1.0)
+    )
+    health_fill.corner_radius_top_left = 3
+    health_fill.corner_radius_top_right = 3
+    health_fill.corner_radius_bottom_left = 3
+    health_fill.corner_radius_bottom_right = 3
+
+    var gauge_fill := StyleBoxFlat.new()
+    gauge_fill.bg_color = Color(0.91, 0.75, 0.39, 1.0)
+    gauge_fill.corner_radius_top_left = 2
+    gauge_fill.corner_radius_top_right = 2
+    gauge_fill.corner_radius_bottom_left = 2
+    gauge_fill.corner_radius_bottom_right = 2
+
+    hp_bar.add_theme_stylebox_override("background", background)
+    hp_bar.add_theme_stylebox_override("fill", health_fill)
+    action_gauge.add_theme_stylebox_override(
+        "background", background
+    )
+    action_gauge.add_theme_stylebox_override("fill", gauge_fill)
 
 
 func _update_turn_style() -> void:
@@ -299,7 +323,8 @@ func _status_short_name(effect_id: String) -> String:
 func _create_status_badge(effect) -> Label:
     var badge := Label.new()
 
-    badge.custom_minimum_size = Vector2(58.0, 25.0)
+    badge.custom_minimum_size = Vector2(25.0, 12.0)
+    badge.add_theme_font_size_override("font_size", 7)
     badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
@@ -310,10 +335,7 @@ func _create_status_badge(effect) -> Label:
     if effect.max_stacks > 1:
         text += " x%d" % effect.stacks
 
-    badge.text = "%s · %d" % [
-        text,
-        effect.remaining_turns
-    ]
+    badge.text = "%s%d" % [text.left(3), effect.remaining_turns]
 
     badge.tooltip_text = "%s — %d turn(s)" % [
         effect.effect_name,
@@ -371,17 +393,19 @@ func _create_battle_state_badge(
 ) -> Label:
     var badge := Label.new()
 
-    badge.custom_minimum_size = Vector2(94.0, 23.0)
+    badge.custom_minimum_size = Vector2(46.0, 12.0)
     badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
     badge.add_theme_font_size_override(
         "font_size",
-        13
+        7
     )
 
     var display_name: String = (
         _battle_state_display_name(state_id)
     )
+
+    display_name = "SOUL" if state_id == "soul_charges" else display_name.left(4).to_upper()
 
     if maximum != null:
         badge.text = "%s %d/%d" % [
@@ -487,10 +511,9 @@ func play_attack_feedback() -> void:
         return
 
     var start_position: Vector2 = position
-    var direction: float = -1.0 if is_enemy else 1.0
+    var direction: float = 1.0 if is_enemy else -1.0
     var attack_position := start_position + Vector2(
-        22.0 * direction,
-        0.0
+        0.0, 12.0 * direction
     )
 
     var tween := create_tween()
@@ -583,14 +606,8 @@ func play_damage_feedback(
 
     add_child(damage_label)
 
-    damage_label.position = Vector2(
-        80.0,
-        35.0
-    )
-    damage_label.size = Vector2(
-        160.0,
-        36.0
-    )
+    damage_label.position = Vector2(-11.0, 66.0)
+    damage_label.size = Vector2(160.0, 26.0)
 
     var label_start: Vector2 = damage_label.position
     var label_end := label_start + Vector2(
@@ -660,14 +677,8 @@ func play_status_feedback(
 
     add_child(status_label)
 
-    status_label.position = Vector2(
-        80.0,
-        66.0
-    )
-    status_label.size = Vector2(
-        160.0,
-        32.0
-    )
+    status_label.position = Vector2(-11.0, 90.0)
+    status_label.size = Vector2(160.0, 24.0)
 
     var start_position: Vector2 = status_label.position
     var end_position := start_position + Vector2(
