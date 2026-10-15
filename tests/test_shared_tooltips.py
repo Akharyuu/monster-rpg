@@ -101,7 +101,7 @@ def test_void_drake_tooltip_uses_shared_base_passive():
     # The local passive_data map was removed when base tooltips
     # migrated to JSON; no dynamic tooltip may reference it.
     assert "passive_data.get(" not in passive_block
-    assert 'if monster.monster_id == "drake_void":' in passive_block
+    assert "if monster.monster_id ==" not in passive_block
     assert "for passive_id in monster.passive_ids:" in passive_block
     assert 'monster.passive_tooltips.append(' in passive_block
 
