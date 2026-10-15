@@ -6319,6 +6319,8 @@ def test_aether_soul_recall_requires_resonance_two_and_no_oblivion():
     assert not aether.use_soul_recall(dead_ally)
     assert aether.get_combat_resource("soul_charges") == 5
 
+
+
 def test_deaths_gaze_named_ignores_immunity_but_vulnerability_does_not(
     monkeypatch
 ):
