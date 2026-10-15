@@ -133,6 +133,35 @@ static func _sync_skill_from_shared_data(skill) -> bool:
                 skill.action_gauge_reduction_if_debuff_amount = float(
                     gauge_data.get("amount", 0.0)
                 )
+            elif handler_id == "reduce_action_gauge_with_threshold_bonus":
+                skill.action_gauge_reduction_per_hit = float(
+                    gauge_data.get("amount", 0.0)
+                )
+                skill.action_gauge_threshold = float(
+                    gauge_data.get("threshold", -1.0)
+                )
+                skill.action_gauge_bonus_reduction = float(
+                    gauge_data.get("bonus_amount", 0.0)
+                )
+            elif handler_id == "gain_action_gauge_if_target_low_hp":
+                skill.action_gauge_gain_if_target_low_hp_threshold = float(
+                    gauge_data.get("health_threshold", 0.0)
+                )
+                skill.action_gauge_gain_if_target_low_hp_amount = float(
+                    gauge_data.get("amount", 0.0)
+                )
+
+        for handler_config in entry.get("before_hit_handlers", []):
+            if str(handler_config.get("handler", "")) == "apply_named_and_vulnerability":
+                var named_data: Dictionary = handler_config.get("data", {})
+                skill.apply_named_before_hit = true
+                skill.named_turns = int(named_data.get("named_turns", 0))
+                skill.vulnerability_chance = float(
+                    named_data.get("vulnerability_chance", 0.0)
+                )
+                skill.vulnerability_turns = int(
+                    named_data.get("vulnerability_turns", 0)
+                )
 
         for handler_config in entry.get("after_use_handlers", []):
             if str(handler_config.get("handler", "")) == "heal_lowest_hp_ally":
@@ -141,33 +170,78 @@ static func _sync_skill_from_shared_data(skill) -> bool:
                     healing_data.get("healing_hp_ratio", 0.0)
                 )
 
-        if str(entry.get("damage_handler", "")) == "damage_if_condition":
-            var damage_data: Dictionary = entry.get(
-                "damage_handler_data", {}
-            )
-            var condition: Dictionary = damage_data.get("condition", {})
-            match str(condition.get("type", "")):
-                "target_has_debuff":
-                    skill.conditional_required_debuff_id = str(
-                        condition.get("effect_id", "")
-                    )
-                "target_has_any_debuff":
-                    skill.conditional_requires_any_debuff = true
+        var damage_data: Dictionary = entry.get(
+            "damage_handler_data", {}
+        )
+        match str(entry.get("damage_handler", "")):
+            "damage_if_condition":
+                var condition: Dictionary = damage_data.get(
+                    "condition", {}
+                )
+                match str(condition.get("type", "")):
+                    "target_has_debuff":
+                        skill.conditional_required_debuff_id = str(
+                            condition.get("effect_id", "")
+                        )
+                    "target_has_any_debuff":
+                        skill.conditional_requires_any_debuff = true
 
-            skill.conditional_damage_multiplier = float(
-                damage_data.get("damage_multiplier", 1.0)
-            )
-            var per_hit: Dictionary = damage_data.get(
-                "multipliers_by_hit", {}
-            )
-            if not per_hit.is_empty():
-                var multipliers: Array = []
-                for hit_number in range(1, skill.hits + 1):
-                    multipliers.append(float(
-                        per_hit.get(str(hit_number), 1.0)
-                    ))
-                skill.conditional_hit_damage_multipliers = multipliers
+                skill.conditional_damage_multiplier = float(
+                    damage_data.get("damage_multiplier", 1.0)
+                )
+                var per_hit: Dictionary = damage_data.get(
+                    "multipliers_by_hit", {}
+                )
+                if not per_hit.is_empty():
+                    var multipliers: Array = []
+                    for hit_number in range(1, skill.hits + 1):
+                        multipliers.append(float(
+                            per_hit.get(str(hit_number), 1.0)
+                        ))
+                    skill.conditional_hit_damage_multipliers = multipliers
 
+            "damage_by_missing_health":
+                skill.max_missing_health_bonus = float(
+                    damage_data.get("max_bonus_damage", 0.0)
+                )
+            "execute_below_health_threshold":
+                skill.execute_health_threshold = float(
+                    damage_data.get("health_threshold", 0.0)
+                )
+                skill.execute_defense_ignore_ratio = float(
+                    damage_data.get("defense_ignore_ratio", 0.0)
+                )
+            "damage_for_soul_charges":
+                skill.damage_per_soul_charge = float(
+                    damage_data.get("damage_per_charge", 0.0)
+                )
+                skill.max_soul_charges = int(
+                    damage_data.get("max_charges", 0)
+                )
+                skill.use_consumed_soul_charges = bool(
+                    damage_data.get("use_consumed_charges", false)
+                )
+            "damage_for_dead_monsters":
+                skill.damage_per_dead_monster = float(
+                    damage_data.get("damage_per_dead_monster", 0.0)
+                )
+                skill.max_dead_monsters = int(
+                    damage_data.get("max_dead_monsters", 0)
+                )
+                skill.max_dead_monster_bonus = float(
+                    damage_data.get("max_bonus_damage", 0.0)
+                )
+            "damage_with_bonus_stat":
+                skill.bonus_stat = str(
+                    damage_data.get("bonus_stat", "")
+                )
+                skill.bonus_stat_scaling = float(
+                    damage_data.get("bonus_scaling", 0.0)
+                )
+            "damage_with_speed_scaling":
+                skill.speed_damage_scaling = float(
+                    damage_data.get("speed_scaling", 0.0)
+                )
     elif skill_type == "healing" or skill_type == "support":
         var buffs: Array = []
         for handler_config in entry.get("after_use_handlers", []):
@@ -350,6 +424,32 @@ static func _create_shared_skill(skill_id: String):
     return null
 
 
+# The non-Drake advanced prototypes now use their JSON skill IDs.
+# Soul Charges are stored on the monster, not on skill definitions.
+static func _create_shared_advanced_monster(monster_id: String):
+    var records: Dictionary = _get_shared_monsters()
+    if not records.has(monster_id):
+        push_error("Unknown shared advanced monster: %s" % monster_id)
+        return null
+
+    var skills: Array = []
+    for skill_id in records[monster_id].get("skills", []):
+        var skill = _create_shared_skill(str(skill_id))
+        if skill == null:
+            return null
+        skills.append(skill)
+
+    var monster = _make_monster_from_data(monster_id, skills)
+    if monster == null:
+        return null
+
+    if monster_id == "dullahan_aether":
+        monster.combat_resources["soul_charges"] = 0
+        monster.combat_resource_maximums["soul_charges"] = 5
+
+    return monster
+
+
 static func _create_shared_drake(monster_id: String):
     var monsters: Dictionary = _get_shared_monsters()
     if not monsters.has(monster_id):
@@ -469,15 +569,15 @@ static func create_level_one_monster(
         "drake_void":
             monster = _create_shared_drake(monster_id)
         "dullahan_void":
-            monster = _create_void_dullahan()
+            monster = _create_shared_advanced_monster(monster_id)
         "dullahan_aether":
-            monster = _create_aether_dullahan()
+            monster = _create_shared_advanced_monster(monster_id)
         "dullahan_igneous":
-            monster = _create_igneous_dullahan()
+            monster = _create_shared_advanced_monster(monster_id)
         "dullahan_abyssal":
-            monster = _create_abyssal_dullahan()
+            monster = _create_shared_advanced_monster(monster_id)
         "dullahan_storm":
-            monster = _create_storm_dullahan()
+            monster = _create_shared_advanced_monster(monster_id)
         "thornet_igneous":
             monster = _create_shared_damage_monster(monster_id)
         "thornet_abyssal":
@@ -497,9 +597,9 @@ static func create_level_one_monster(
         "sprout_storm":
             monster = _create_shared_damage_monster(monster_id)
         "griffon_igneous":
-            monster = _create_igneous_griffon()
+            monster = _create_shared_advanced_monster(monster_id)
         "dryad_storm":
-            monster = _create_storm_dryad()
+            monster = _create_shared_advanced_monster(monster_id)
         "slime_storm":
             monster = _create_shared_damage_monster(monster_id)
         "slime_abyssal":
@@ -1997,209 +2097,61 @@ static func _scaled(value: float) -> int:
 static func _apply_resonance(monster) -> void:
     if monster.monster_id == "dullahan_aether":
         if monster.resonance >= 2:
-            var soul_recall = DamageSkillScript.new(
-                (
-                    "beyond_the_veil_convergence"
-                    if monster.resonance >= 5
-                    else "beyond_the_veil_soul_recall"
-                ),
-                (
-                    "Beyond the Veil: Convergence"
-                    if monster.resonance >= 5
-                    else "Beyond the Veil: Soul Recall"
-                ),
-                1.25,
-                4,
-                [],
-                "attack",
-                6,
-                [],
-                {},
-                {},
-                "all_enemies"
+            var skill_id: String = (
+                "beyond_the_veil_convergence"
+                if monster.resonance >= 5
+                else "beyond_the_veil_soul_recall"
             )
-            soul_recall.damage_per_soul_charge = 0.10
-            soul_recall.max_soul_charges = 5
-            soul_recall.use_consumed_soul_charges = true
-            monster.skills[2] = soul_recall
-
+            monster.skills[2] = _create_shared_skill(skill_id)
         if monster.resonance >= 3:
-            var ascension = DamageSkillScript.new(
-                "soulpiercer_ascension",
-                "Soulpiercer: Ascension",
-                4.10,
-                1,
-                [],
-                "attack",
-                3,
-                []
+            monster.skills[1] = _create_shared_skill(
+                "soulpiercer_ascension"
             )
-            ascension.damage_per_soul_charge = 0.08
-            ascension.max_soul_charges = 5
-            monster.skills[1] = ascension
-
         return
 
     if monster.monster_id == "dullahan_void":
         if monster.resonance >= 2:
-            var ossuary = DamageSkillScript.new(
-                "spinal_scourge_ossuary",
-                "Spinal Scourge: Ossuary",
-                1.40,
-                3,
-                [],
-                "attack",
-                4,
-                [],
-                {},
-                {},
-                "all_enemies"
+            monster.skills[1] = _create_shared_skill(
+                "spinal_scourge_ossuary"
             )
-            ossuary.damage_per_dead_monster = 0.08
-            ossuary.max_dead_monsters = 5
-            ossuary.max_dead_monster_bonus = 0.40
-            monster.skills[1] = ossuary
-
         if monster.resonance >= 3:
-            var last_name = DamageSkillScript.new(
-                "deaths_gaze_last_name",
-                "Death's Gaze: Last Name",
-                4.70,
-                1,
-                [],
-                "attack",
-                5,
-                []
+            monster.skills[2] = _create_shared_skill(
+                "deaths_gaze_last_name"
             )
-            last_name.apply_named_before_hit = true
-            last_name.named_turns = 2
-            last_name.vulnerability_chance = 1.00
-            last_name.vulnerability_turns = 3
-            monster.skills[2] = last_name
-
         return
 
     if monster.monster_id == "dullahan_abyssal":
         if monster.resonance >= 1:
-            var shackles = DamageSkillScript.new(
-                (
-                    "spectral_shackles_lockdown"
-                    if monster.resonance >= 4
-                    else "spectral_shackles_binding"
-                ),
-                (
-                    "Spectral Shackles: Lockdown"
-                    if monster.resonance >= 4
-                    else "Spectral Shackles: Binding"
-                ),
-                1.95,
-                2,
-                [],
-                "attack",
-                4,
-                [
-                    {
-                        "effect_id": "speed_break",
-                        "chance": (
-                            0.90
-                            if monster.resonance >= 4
-                            else 0.70
-                        ),
-                        "turns": 2,
-                        "hit_indices": [0]
-                    },
-                    {
-                        "effect_id": "attack_break",
-                        "chance": (
-                            0.90
-                            if monster.resonance >= 4
-                            else 0.70
-                        ),
-                        "turns": 2,
-                        "hit_indices": [1]
-                    }
-                ]
+            var skill_id: String = (
+                "spectral_shackles_lockdown"
+                if monster.resonance >= 4
+                else "spectral_shackles_binding"
             )
-            monster.skills[1] = shackles
-
+            monster.skills[1] = _create_shared_skill(skill_id)
         if monster.resonance >= 2:
-            var fate = DamageSkillScript.new(
-                (
-                    "inescapable_fate_ironbound"
-                    if monster.resonance >= 5
-                    else "inescapable_fate"
-                ),
-                (
-                    "Inescapable Fate: Ironbound"
-                    if monster.resonance >= 5
-                    else "Inescapable Fate"
-                ),
-                3.00,
-                1,
-                [],
-                "attack",
-                (
-                    4
-                    if monster.resonance >= 5
-                    else 5
-                ),
-                []
+            var fate_id: String = (
+                "inescapable_fate_ironbound"
+                if monster.resonance >= 5
+                else "inescapable_fate"
             )
-
-            if monster.resonance >= 5:
-                fate.bonus_stat = "defense"
-                fate.bonus_stat_scaling = 1.20
-
-            monster.skills.append(fate)
-
+            monster.skills.append(_create_shared_skill(fate_id))
         return
 
     if monster.monster_id == "dullahan_storm":
         if monster.resonance >= 1:
-            var pursuit = DamageSkillScript.new(
-                (
-                    "gale_pursuit_tempest"
-                    if monster.resonance >= 4
-                    else "gale_pursuit_crosswind"
-                ),
-                (
-                    "Gale Pursuit: Tempest"
-                    if monster.resonance >= 4
-                    else "Gale Pursuit: Crosswind"
-                ),
-                2.25,
-                1,
-                [],
-                "attack",
-                4,
-                [],
-                {},
-                {},
-                "all_enemies",
-                0.25
+            var skill_id: String = (
+                "gale_pursuit_tempest"
+                if monster.resonance >= 4
+                else "gale_pursuit_crosswind"
             )
-            pursuit.action_gauge_threshold = 0.50
-            pursuit.action_gauge_bonus_reduction = 0.10
-            monster.skills[1] = pursuit
-
+            monster.skills[1] = _create_shared_skill(skill_id)
         if monster.resonance >= 3:
-            var charge = SupportSkillScript.new(
-                (
-                    "headlong_charge_stampede"
-                    if monster.resonance >= 5
-                    else "headlong_charge_rally"
-                ),
-                (
-                    "Headlong Charge: Stampede"
-                    if monster.resonance >= 5
-                    else "Headlong Charge: Rally"
-                ),
-                5,
-                [],
-                "self"
+            var charge_id: String = (
+                "headlong_charge_stampede"
+                if monster.resonance >= 5
+                else "headlong_charge_rally"
             )
-            monster.skills[2] = charge
-
+            monster.skills[2] = _create_shared_skill(charge_id)
         return
 
     if monster.monster_id == "drake_void":
@@ -2223,44 +2175,16 @@ static func _apply_resonance(monster) -> void:
 
     if monster.monster_id == "dullahan_igneous":
         if monster.resonance >= 1:
-            var blood_trail = DamageSkillScript.new(
-                "relentless_pursuit_blood_trail",
-                "Relentless Pursuit: Blood Trail",
-                1.85,
-                2,
-                [],
-                "attack",
-                4,
-                []
+            monster.skills[1] = _create_shared_skill(
+                "relentless_pursuit_blood_trail"
             )
-            blood_trail.max_missing_health_bonus = 0.45
-            blood_trail.action_gauge_gain_if_target_low_hp_threshold = 0.50
-            blood_trail.action_gauge_gain_if_target_low_hp_amount = 0.20
-            monster.skills[1] = blood_trail
-
         if monster.resonance >= 3:
-            var execution = DamageSkillScript.new(
-                (
-                    "death_sentence_massacre"
-                    if monster.resonance >= 5
-                    else "death_sentence_execution"
-                ),
-                (
-                    "Death Sentence: Massacre"
-                    if monster.resonance >= 5
-                    else "Death Sentence: Execution"
-                ),
-                4.60,
-                1,
-                [],
-                "attack",
-                4,
-                []
+            var skill_id: String = (
+                "death_sentence_massacre"
+                if monster.resonance >= 5
+                else "death_sentence_execution"
             )
-            execution.execute_health_threshold = 0.33
-            execution.execute_defense_ignore_ratio = 0.50
-            monster.skills[2] = execution
-
+            monster.skills[2] = _create_shared_skill(skill_id)
         return
 
     if monster.monster_id == "drake_storm":
@@ -2335,524 +2259,34 @@ static func _apply_resonance(monster) -> void:
 
     if monster.monster_id == "dryad_storm":
         if monster.resonance >= 2:
-            var sanctuary = SupportSkillScript.new(
-                "breath_of_the_grove_sanctuary",
-                "Breath of the Grove: Sanctuary",
-                5,
-                [
-                    {
-                        "effect_id": "immunity",
-                        "turns": 1
-                    }
-                ],
-                "all_allies"
+            monster.skills[1] = _create_shared_skill(
+                "breath_of_the_grove_sanctuary"
             )
-            sanctuary.healing_hp_ratio = 0.35
-            monster.skills[1] = sanctuary
-
         if monster.resonance >= 3:
-            var nourishment = DamageSkillScript.new(
-                "vine_barrage_nourishment",
-                "Vine Barrage: Nourishment",
-                0.70,
-                3,
-                [],
-                "attack",
-                0,
-                []
+            monster.skills[0] = _create_shared_skill(
+                "vine_barrage_nourishment"
             )
-            monster.skills[0] = nourishment
-
         if monster.resonance >= 4:
-            var evergreen = SupportSkillScript.new(
-                "breath_of_the_grove_evergreen",
-                "Breath of the Grove: Evergreen",
-                4,
-                [
-                    {
-                        "effect_id": "immunity",
-                        "turns": 1
-                    },
-                    {
-                        "effect_id": "regrowth",
-                        "turns": 2
-                    }
-                ],
-                "all_allies"
+            monster.skills[1] = _create_shared_skill(
+                "breath_of_the_grove_evergreen"
             )
-            evergreen.healing_hp_ratio = 0.35
-            monster.skills[1] = evergreen
-
         return
 
     if monster.monster_id == "griffon_igneous":
         if monster.resonance >= 1:
-            var violent_crash = DamageSkillScript.new(
-                "meteor_dive_violent_crash",
-                "Meteor Dive: Violent Crash",
-                4.20,
-                1,
-                [],
-                "attack",
-                5,
-                [
-                    {
-                        "effect_id": "stun",
-                        "chance": 0.75,
-                        "turns": 1,
-                        "trigger": "after_skill",
-                        "condition": {
-                            "type": "target_action_gauge_below",
-                            "threshold": 0.50
-                        }
-                    }
-                ]
+            monster.skills[2] = _create_shared_skill(
+                "meteor_dive_violent_crash"
             )
-            violent_crash.speed_damage_scaling = 0.001
-            monster.skills[2] = violent_crash
-
         if monster.resonance >= 3:
-            var turbulence = DamageSkillScript.new(
-                "searing_gale_turbulence",
-                "Searing Gale: Turbulence",
-                2.00,
-                2,
-                [],
-                "attack",
-                4,
-                [],
-                {},
-                {},
-                "all_enemies",
-                0.20
+            monster.skills[1] = _create_shared_skill(
+                "searing_gale_turbulence"
             )
-            turbulence.action_gauge_reduction_chance = 0.75
-            monster.skills[1] = turbulence
-
         if monster.resonance >= 4:
-            var terminal_impact = DamageSkillScript.new(
-                "meteor_dive_terminal_impact",
-                "Meteor Dive: Terminal Impact",
-                4.20,
-                1,
-                [],
-                "attack",
-                4,
-                [
-                    {
-                        "effect_id": "stun",
-                        "chance": 1.00,
-                        "turns": 1,
-                        "trigger": "after_skill",
-                        "condition": {
-                            "type": "target_action_gauge_below",
-                            "threshold": 0.50,
-                            "threshold_if_caster_has_buff": {
-                                "effect_id": "speed_up",
-                                "threshold": 0.70
-                            }
-                        }
-                    }
-                ]
+            monster.skills[2] = _create_shared_skill(
+                "meteor_dive_terminal_impact"
             )
-            terminal_impact.speed_damage_scaling = 0.001
-            monster.skills[2] = terminal_impact
-
         if monster.resonance >= 5:
-            var heatstorm = DamageSkillScript.new(
-                "searing_gale_heatstorm",
-                "Searing Gale: Heatstorm",
-                2.00,
-                2,
-                [],
-                "attack",
-                3,
-                [],
-                {},
-                {},
-                "all_enemies",
-                0.30
+            monster.skills[1] = _create_shared_skill(
+                "searing_gale_heatstorm"
             )
-            heatstorm.action_gauge_reduction_chance = 0.75
-            monster.skills[1] = heatstorm
-
         return
-
-
-static func _create_igneous_griffon():
-    var rending_talons = DamageSkillScript.new(
-        "rending_talons",
-        "Rending Talons",
-        1.80,
-        1,
-        [],
-        "attack",
-        0,
-        []
-    )
-
-    var searing_gale = DamageSkillScript.new(
-        "searing_gale",
-        "Searing Gale",
-        2.00,
-        2,
-        [],
-        "attack",
-        4,
-        [],
-        {},
-        {},
-        "all_enemies",
-        0.20
-    )
-    searing_gale.action_gauge_reduction_chance = 0.50
-
-    var meteor_dive = DamageSkillScript.new(
-        "meteor_dive",
-        "Meteor Dive",
-        4.20,
-        1,
-        [],
-        "attack",
-        5,
-        []
-    )
-    meteor_dive.speed_damage_scaling = 0.001
-
-    var skills: Array = [
-        rending_talons,
-        searing_gale,
-        meteor_dive
-    ]
-
-    return _make_monster_from_data(
-        "griffon_igneous",
-        skills
-    )
-
-
-static func _create_storm_dryad():
-    var vine_barrage = DamageSkillScript.new(
-        "vine_barrage",
-        "Vine Barrage",
-        0.70,
-        3,
-        [],
-        "attack",
-        0,
-        []
-    )
-
-    var breath_of_the_grove = SupportSkillScript.new(
-        "breath_of_the_grove",
-        "Breath of the Grove",
-        5,
-        [],
-        "all_allies"
-    )
-    breath_of_the_grove.healing_hp_ratio = 0.25
-
-    var skills: Array = [
-        vine_barrage,
-        breath_of_the_grove
-    ]
-
-    return _make_monster_from_data(
-        "dryad_storm",
-        skills
-    )
-
-
-static func _create_storm_dullahan():
-    var severing_blade = DamageSkillScript.new(
-        "severing_blade",
-        "Severing Blade",
-        2.60,
-        1,
-        [],
-        "attack",
-        0,
-        [
-            {
-                "effect_id": "heal_block",
-                "chance": 0.30,
-                "turns": 2,
-                "trigger": "after_skill"
-            }
-        ]
-    )
-
-    var gale_pursuit = DamageSkillScript.new(
-        "gale_pursuit",
-        "Gale Pursuit",
-        2.25,
-        1,
-        [],
-        "attack",
-        4,
-        [],
-        {},
-        {},
-        "all_enemies",
-        0.20
-    )
-
-    var headlong_charge = SupportSkillScript.new(
-        "headlong_charge",
-        "Headlong Charge",
-        5,
-        [],
-        "self"
-    )
-
-    var skills: Array = [
-        severing_blade,
-        gale_pursuit,
-        headlong_charge
-    ]
-
-    return _make_monster_from_data(
-        "dullahan_storm",
-        skills
-    )
-
-
-static func _create_abyssal_dullahan():
-    var severing_blade = DamageSkillScript.new(
-        "severing_blade",
-        "Severing Blade",
-        2.60,
-        1,
-        [],
-        "attack",
-        0,
-        [
-            {
-                "effect_id": "heal_block",
-                "chance": 0.30,
-                "turns": 2,
-                "trigger": "after_skill"
-            }
-        ]
-    )
-
-    var spectral_shackles = DamageSkillScript.new(
-        "spectral_shackles",
-        "Spectral Shackles",
-        1.95,
-        2,
-        [],
-        "attack",
-        4,
-        [
-            {
-                "effect_id": "speed_break",
-                "chance": 0.50,
-                "turns": 2,
-                "hit_indices": [0]
-            },
-            {
-                "effect_id": "attack_break",
-                "chance": 0.50,
-                "turns": 2,
-                "hit_indices": [1]
-            }
-        ]
-    )
-
-    var skills: Array = [
-        severing_blade,
-        spectral_shackles
-    ]
-
-    return _make_monster_from_data(
-        "dullahan_abyssal",
-        skills
-    )
-
-
-static func _create_igneous_dullahan():
-    var severing_blade = DamageSkillScript.new(
-        "severing_blade",
-        "Severing Blade",
-        2.60,
-        1,
-        [],
-        "attack",
-        0,
-        [
-            {
-                "effect_id": "heal_block",
-                "chance": 0.30,
-                "turns": 2,
-                "trigger": "after_skill"
-            }
-        ]
-    )
-
-    var relentless_pursuit = DamageSkillScript.new(
-        "relentless_pursuit",
-        "Relentless Pursuit",
-        1.85,
-        2,
-        [],
-        "attack",
-        4,
-        []
-    )
-    relentless_pursuit.max_missing_health_bonus = 0.30
-
-    var death_sentence = DamageSkillScript.new(
-        "death_sentence",
-        "Death Sentence",
-        4.60,
-        1,
-        [],
-        "attack",
-        5,
-        []
-    )
-    death_sentence.execute_health_threshold = 0.25
-    death_sentence.execute_defense_ignore_ratio = 0.50
-
-    var skills: Array = [
-        severing_blade,
-        relentless_pursuit,
-        death_sentence
-    ]
-
-    return _make_monster_from_data(
-        "dullahan_igneous",
-        skills
-    )
-
-
-static func _create_aether_dullahan():
-    var severing_blade = DamageSkillScript.new(
-        "severing_blade",
-        "Severing Blade",
-        2.60,
-        1,
-        [],
-        "attack",
-        0,
-        [
-            {
-                "effect_id": "heal_block",
-                "chance": 0.30,
-                "turns": 2,
-                "trigger": "after_skill"
-            }
-        ]
-    )
-
-    var soulpiercer = DamageSkillScript.new(
-        "soulpiercer",
-        "Soulpiercer",
-        4.10,
-        1,
-        [],
-        "attack",
-        3,
-        []
-    )
-    soulpiercer.damage_per_soul_charge = 0.06
-    soulpiercer.max_soul_charges = 5
-
-    var beyond_the_veil = DamageSkillScript.new(
-        "beyond_the_veil",
-        "Beyond the Veil",
-        1.25,
-        4,
-        [],
-        "attack",
-        7,
-        [],
-        {},
-        {},
-        "all_enemies"
-    )
-    beyond_the_veil.damage_per_soul_charge = 0.10
-    beyond_the_veil.max_soul_charges = 5
-    beyond_the_veil.use_consumed_soul_charges = true
-
-    var skills: Array = [
-        severing_blade,
-        soulpiercer,
-        beyond_the_veil
-    ]
-
-    var monster = _make_monster_from_data(
-        "dullahan_aether",
-        skills
-    )
-
-    monster.combat_resources["soul_charges"] = 0
-    monster.combat_resource_maximums["soul_charges"] = 5
-
-    return monster
-
-
-static func _create_void_dullahan():
-    var severing_blade = DamageSkillScript.new(
-        "severing_blade",
-        "Severing Blade",
-        2.60,
-        1,
-        [],
-        "attack",
-        0,
-        [
-            {
-                "effect_id": "heal_block",
-                "chance": 0.30,
-                "turns": 2,
-                "trigger": "after_skill"
-            }
-        ]
-    )
-
-    var spinal_scourge = DamageSkillScript.new(
-        "spinal_scourge",
-        "Spinal Scourge",
-        1.40,
-        3,
-        [],
-        "attack",
-        4,
-        [],
-        {},
-        {},
-        "all_enemies"
-    )
-
-    spinal_scourge.damage_per_dead_monster = 0.05
-    spinal_scourge.max_dead_monsters = 5
-    spinal_scourge.max_dead_monster_bonus = 0.25
-
-    var deaths_gaze = DamageSkillScript.new(
-        "deaths_gaze",
-        "Death's Gaze",
-        4.70,
-        1,
-        [],
-        "attack",
-        6,
-        []
-    )
-
-    deaths_gaze.apply_named_before_hit = true
-    deaths_gaze.named_turns = 2
-    deaths_gaze.vulnerability_chance = 1.00
-    deaths_gaze.vulnerability_turns = 2
-
-    var skills: Array = [
-        severing_blade,
-        spinal_scourge,
-        deaths_gaze
-    ]
-
-    return _make_monster_from_data(
-        "dullahan_void",
-        skills
-    )

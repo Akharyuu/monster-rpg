@@ -231,3 +231,82 @@ def test_drake_resonance_skill_variants_share_base_core_schema():
         if record["type"] is SkillType.DAMAGE:
             assert record["hits"] >= 1
             assert record["multiplier"] > 0
+
+
+ADVANCED_MONSTERS = (
+    "dullahan_igneous", "dullahan_abyssal", "dullahan_storm",
+    "dullahan_aether", "dullahan_void",
+    "griffon_igneous", "dryad_storm",
+)
+
+ADVANCED_RESONANCE_SKILLS = (
+    "beyond_the_veil_convergence",
+    "beyond_the_veil_soul_recall",
+    "soulpiercer_ascension",
+    "spinal_scourge_ossuary",
+    "deaths_gaze_last_name",
+    "spectral_shackles_lockdown",
+    "spectral_shackles_binding",
+    "inescapable_fate_ironbound",
+    "inescapable_fate",
+    "gale_pursuit_tempest",
+    "gale_pursuit_crosswind",
+    "headlong_charge_stampede",
+    "headlong_charge_rally",
+    "relentless_pursuit_blood_trail",
+    "death_sentence_massacre",
+    "death_sentence_execution",
+    "breath_of_the_grove_sanctuary",
+    "vine_barrage_nourishment",
+    "breath_of_the_grove_evergreen",
+    "meteor_dive_violent_crash",
+    "searing_gale_turbulence",
+    "meteor_dive_terminal_impact",
+    "searing_gale_heatstorm"
+)
+
+
+def test_advanced_monsters_use_canonical_skill_constructors():
+    source = GODOT_FACTORY.read_text(encoding="utf-8")
+    assert source.count(
+        "monster = _create_shared_advanced_monster(monster_id)"
+    ) == 7
+    assert "static func _create_shared_advanced_monster(" in source
+    for monster_id in ADVANCED_MONSTERS:
+        for skill_id in MONSTER_DATA[monster_id]["skills"]:
+            assert skill_id in skill_module.SKILL_DATA
+    for skill_id in ADVANCED_RESONANCE_SKILLS:
+        assert skill_id in skill_module.SKILL_DATA
+        assert ('"' + skill_id + '"') in source
+    assert source.count("DamageSkillScript.new(") == 1
+    assert source.count("SupportSkillScript.new(") == 1
+    assert source.count("MonsterScript.new(") == 1
+
+
+def test_advanced_damage_handler_adapters_are_present():
+    source = GODOT_FACTORY.read_text(encoding="utf-8")
+    for handler in (
+        "damage_by_missing_health", "execute_below_health_threshold",
+        "damage_for_soul_charges", "damage_for_dead_monsters",
+        "damage_with_bonus_stat", "damage_with_speed_scaling",
+        "reduce_action_gauge_with_threshold_bonus",
+        "gain_action_gauge_if_target_low_hp",
+        "apply_named_and_vulnerability",
+    ):
+        assert handler in source
+    assert "skill.apply_named_before_hit = true" in source
+    assert "skill.use_consumed_soul_charges = bool(" in source
+    assert 'monster.combat_resources["soul_charges"] = 0' in source
+
+
+def test_special_revival_and_turn_rules_remain_canonical():
+    skills = skill_module.SKILL_DATA
+    assert skills["beyond_the_veil_soul_recall"]["active_action"][
+        "id"
+    ] == "soul_recall"
+    assert skills["beyond_the_veil_convergence"]["active_action"][
+        "id"
+    ] == "soul_recall_convergence"
+    assert skills["headlong_charge_stampede"][
+        "after_use_handlers"
+    ][0]["data"]["force_next_turn"] is True

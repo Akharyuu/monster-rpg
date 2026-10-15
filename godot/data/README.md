@@ -54,14 +54,27 @@ the Godot front end. Do not create separate per-engine copies.
 - Remaining Dullahan/Griffon/Dryad constructors still use compatibility
   code and are next in the migration.
 
+## Complete playable skill construction
+
+- All 24 supported battle prototypes now construct their base skills
+  from shared IDs in `monster_data.json` and `skill_data.json`.
+- Every Dullahan, Griffon and Dryad Resonance skill replacement now
+  creates its skill using shared JSON definitions.
+- Godot keeps one DamageSkill and one SupportSkill constructor inside
+  the shared adapters. Soul Charges, execution/missing-health scaling,
+  Named/Vulnerability, dead-monster damage, defense/speed scaling and
+  Action Gauge conditions are now read from JSON.
+- Engine-specific combat handlers and monster-specific resources still
+  execute in GDScript; migrating those handlers and passives is separate.
+
 ## Migration status
 
 **Migrated:** monster identity, rarity, attributes, base stats, base skill
 and passive references, and canonical skill definitions. Godot consumes shared
 core skill parameters and selected handler data.
 
-**Still to migrate:** remaining Godot (non-Drake) skill constructors and handlers, passive
-definitions, Resonance upgrade rules, localized names and tooltip descriptions.
+**Still to migrate:** engine-specific skill handlers, passive definitions,
+Resonance upgrade rules, localized names and tooltip descriptions.
 Combat handler implementations remain independent in Python and GDScript.
 
 Run `python -m pytest -q` after editing JSON. Open the battle scene in Godot
