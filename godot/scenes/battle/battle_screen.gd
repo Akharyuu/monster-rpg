@@ -30,6 +30,10 @@ const StatusEffectFactoryScript = preload(
     $"Enemy HUD 2"
 ]
 
+# Optional preview roster; the original Dullahan resonance-test roster
+# remains unchanged when this is false.
+@export var preview_igneous_drake: bool = false
+
 var allies: Array = []
 var enemies: Array = []
 
@@ -41,10 +45,17 @@ var action_in_progress := true
 
 
 func _ready() -> void:
+    var first_ally_id: String = (
+        "drake_igneous" if preview_igneous_drake else "dullahan_aether"
+    )
+    var first_ally_resonance: int = (
+        0 if preview_igneous_drake else 5
+    )
+
     allies = [
         PrototypeFactoryScript.create_level_one_monster(
-            "dullahan_aether",
-            5
+            first_ally_id,
+            first_ally_resonance
         ),
         PrototypeFactoryScript.create_level_one_monster(
             "dullahan_void",

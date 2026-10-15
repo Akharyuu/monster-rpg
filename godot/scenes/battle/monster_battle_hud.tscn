@@ -30,6 +30,18 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
+[node name="Monster Sprite" type="TextureRect" parent="."]
+visible = false
+layout_mode = 0
+offset_left = 43.0
+offset_top = -205.0
+offset_right = 279.0
+offset_bottom = -5.0
+mouse_filter = 2
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+
 [node name="Attribute" type="Label" parent="."]
 layout_mode = 0
 offset_left = 15.0

@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Monster RPG"
-run/main_scene="uid://3i4tp7fvp1d0"
+run/main_scene="res://scenes/battle/igneous_drake_preview.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 

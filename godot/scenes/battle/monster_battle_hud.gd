@@ -14,6 +14,20 @@ signal target_pressed
 @onready var battle_state_container: HBoxContainer = $"Battle States"
 @onready var status_container: HBoxContainer = $"Status"
 @onready var target_button: Button = $"Target Button"
+@onready var monster_sprite: TextureRect = $"Monster Sprite"
+
+# Sprites currently exist only for selected monsters. Use the exact
+# res:// path so a locally added PNG works without being duplicated.
+# Adjust position/size here when evaluating art in battle.
+const ALLY_SPRITE_CONFIG := {
+    "drake_igneous": {
+        "path": "res://assets/monster_sprites/drake_igneous.png",
+        "position": Vector2(43.0, -205.0),
+        "size": Vector2(236.0, 200.0),
+        "scale": 1.0,
+        "flip_h": false
+    }
+}
 
 var bound_monster
 var is_enemy := false
@@ -36,6 +50,7 @@ func bind_monster(monster, enemy_side: bool) -> void:
     _update_attribute(
         monster.attribute
     )
+    _update_monster_sprite()
 
     hp_bar.max_value = monster.max_health
     action_gauge.max_value = 100.0
@@ -43,6 +58,45 @@ func bind_monster(monster, enemy_side: bool) -> void:
     _update_turn_style()
     _update_target_style()
     refresh(false)
+
+
+func _update_monster_sprite() -> void:
+    # Only an ally uses this art; enemies and other monsters retain
+    # the original HUD until their sprites are implemented.
+    monster_sprite.visible = false
+    monster_sprite.texture = null
+
+    if bound_monster == null or is_enemy:
+        return
+
+    var config: Dictionary = ALLY_SPRITE_CONFIG.get(
+        str(bound_monster.monster_id),
+        {}
+    )
+    if config.is_empty():
+        return
+
+    var sprite_path: String = str(config.get("path", ""))
+    if not ResourceLoader.exists(sprite_path, "Texture2D"):
+        push_warning(
+            "Ally sprite missing: %s (put the PNG in "
+            % sprite_path
+            + "godot/assets/monster_sprites/)"
+        )
+        return
+
+    var texture := load(sprite_path) as Texture2D
+    if texture == null:
+        push_warning("Ally sprite is not a Texture2D: %s" % sprite_path)
+        return
+
+    monster_sprite.texture = texture
+    monster_sprite.position = config.get("position", Vector2.ZERO)
+    monster_sprite.size = config.get("size", Vector2(236.0, 200.0))
+    var sprite_scale: float = float(config.get("scale", 1.0))
+    monster_sprite.scale = Vector2.ONE * sprite_scale
+    monster_sprite.flip_h = bool(config.get("flip_h", false))
+    monster_sprite.visible = true
 
 
 func refresh(is_active: bool) -> void:
