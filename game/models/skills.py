@@ -2,6 +2,7 @@ import random
 
 from .enums import SkillType, EffectType, TargetType
 from ..data.status_effect_data import STATUS_EFFECT_DATA
+from ..data.monster_data import MONSTER_DATA
 from ..factories.status_effect_factory import create_status_effect
 
 from ..combat.passive_handlers import PASSIVE_HANDLERS
