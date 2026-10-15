@@ -6263,8 +6263,8 @@ def test_aether_soul_recall_is_a_separate_selected_revive(resonance):
 
     assert older_dead.is_alive
     assert not recent_dead.is_alive
-    assert older_dead.health == int(older_dead.max_health * 0.70)
-    assert older_dead.action_gauge == pytest.approx(0.30)
+    assert older_dead.health == int(older_dead.max_health * 0.50)
+    assert older_dead.action_gauge == pytest.approx(1.00)
     assert older_dead.death_order is None
     assert older_dead._death_recorded is False
     assert aether.get_combat_resource("soul_charges") == 0
