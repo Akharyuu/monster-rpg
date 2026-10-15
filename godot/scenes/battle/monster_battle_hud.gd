@@ -156,7 +156,7 @@ func _update_attribute(attribute: String) -> void:
             attribute_color = Color(0.90, 0.82, 0.24)
         "aether":
             display_name = "AET"
-            attribute_color = Color(0.72, 0.58, 1.0)
+            attribute_color = Color(1.0, 0.93, 0.68)
         "void":
             display_name = "VOI"
             attribute_color = Color(0.72, 0.40, 0.90)
@@ -276,6 +276,8 @@ func _battle_state_display_name(state_id: String) -> String:
     match state_id:
         "frozen_scales":
             return "Frozen Scales"
+        "bottomless_hunger":
+            return "Bottomless Hunger"
         _:
             return state_id.replace("_", " ").capitalize()
 
