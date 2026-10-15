@@ -6255,7 +6255,26 @@ def test_aether_soul_recall_is_a_separate_selected_revive(resonance):
     assert not older_dead.is_alive
     assert not recent_dead.is_alive
 
-    # At five charges the player may choose WHICH ally to revive.
+    # Even at full charges, S3 remains an offensive option:
+    # it consumes charges for damage and never auto-revives.
+    skill.current_cooldown = 0
+    aether.add_combat_resource("soul_charges", 5, 5)
+    assert aether.can_use_soul_recall()
+
+    aether.use_skill(
+        opponents,
+        skill,
+        combat_context={
+            "team": team,
+            "opponents": opponents
+        }
+    )
+
+    assert not older_dead.is_alive
+    assert not recent_dead.is_alive
+    assert aether.get_combat_resource("soul_charges") < 5
+
+    # The player can instead spend 5 charges to revive either ally.
     aether.add_combat_resource("soul_charges", 5, 5)
     assert aether.can_use_soul_recall()
     assert aether.can_use_soul_recall(older_dead)
