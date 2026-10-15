@@ -41,11 +41,11 @@ var action_in_progress := true
 func _ready() -> void:
     allies = [
         PrototypeFactoryScript.create_level_one_monster(
-            "drake_igneous",
+            "drake_storm",
             5
         ),
         PrototypeFactoryScript.create_level_one_monster(
-            "drake_abyssal",
+            "drake_aether",
             5
         )
     ]
