@@ -254,6 +254,19 @@ func _resolve_after_turn_passives() -> void:
         return
 
     if (
+        active_monster.monster_id == "dullahan_void"
+        and active_monster.resonance >= 2
+        and active_monster.get_internal_cooldown(
+            "deathless_rider"
+        ) <= 0
+    ):
+        active_monster.increase_action_gauge(0.15)
+        active_monster.set_internal_cooldown(
+            "deathless_rider",
+            6
+        )
+
+    if (
         active_monster.monster_id == "dullahan_storm"
         and active_monster.resonance >= 2
     ):
@@ -331,7 +344,11 @@ func execute_active_skill(
 
         if (
             not active_monster.has_oblivion()
-            and skill.skill_id == "beyond_the_veil"
+            and skill.skill_id in [
+                "beyond_the_veil",
+                "beyond_the_veil_soul_recall",
+                "beyond_the_veil_convergence"
+            ]
         ):
             var soul_charges: int = (
                 active_monster.get_combat_resource(
@@ -396,6 +413,22 @@ func execute_active_skill(
             caster_feedback.append("FROZEN SCALES CONSUMED")
             caster_feedback.append("DEF UP!")
             caster_feedback.append("IMMUNITY!")
+
+    var last_rites_low_hp_target := false
+
+    if (
+        active_monster.monster_id == "dullahan_aether"
+        and active_monster.resonance >= 1
+        and skill.skill_id == "severing_blade"
+        and not targets.is_empty()
+        and targets[0] != null
+        and targets[0].max_health > 0
+    ):
+        last_rites_low_hp_target = (
+            float(targets[0].health)
+            / float(targets[0].max_health)
+            < 0.50
+        )
 
     var result: Dictionary = skill.execute_targets(
         active_monster,
@@ -1018,6 +1051,20 @@ func execute_active_skill(
             5
         )
 
+        if (
+            active_monster.resonance >= 1
+            and skill.skill_id == "severing_blade"
+            and last_rites_low_hp_target
+        ):
+            new_total = active_monster.add_combat_resource(
+                "soul_charges",
+                1,
+                5
+            )
+            caster_feedback.append(
+                "LAST RITES +1 SOUL CHARGE"
+            )
+
         caster_feedback.append(
             "SOUL CHARGE %d/5" % new_total
         )
@@ -1265,9 +1312,14 @@ func _resolve_new_deaths(
             ):
                 continue
 
+            var charges_from_death: int = (
+                2
+                if owner.resonance >= 4
+                else 1
+            )
             var new_total: int = owner.add_combat_resource(
                 "soul_charges",
-                1,
+                charges_from_death,
                 5
             )
 
@@ -1275,6 +1327,173 @@ func _resolve_new_deaths(
                 caster_feedback.append(
                     "SOUL VESSEL - DEATH %d/5" % new_total
                 )
+
+        var death_march_owner = monster.death_named_by
+
+        if (
+            death_march_owner != null
+            and death_march_owner.is_alive()
+            and death_march_owner.monster_id == "dullahan_void"
+            and death_march_owner.resonance >= 5
+            and not death_march_owner.has_oblivion()
+        ):
+            var opponents: Array = (
+                enemies
+                if death_march_owner in allies
+                else allies
+            )
+            var candidates: Array = []
+
+            for opponent in opponents:
+                if opponent.is_alive():
+                    candidates.append(opponent)
+
+            if not candidates.is_empty():
+                var next_target = candidates[0]
+
+                for opponent in candidates:
+                    var opponent_ratio: float = (
+                        float(opponent.health)
+                        / float(opponent.max_health)
+                    )
+                    var current_ratio: float = (
+                        float(next_target.health)
+                        / float(next_target.max_health)
+                    )
+
+                    if opponent_ratio < current_ratio:
+                        next_target = opponent
+
+                death_march_owner.apply_named(
+                    next_target,
+                    2
+                )
+
+                var vulnerability = (
+                    StatusEffectFactoryScript.create_status_effect(
+                        "vulnerability",
+                        3,
+                        death_march_owner
+                    )
+                )
+
+                var accuracy: float = (
+                    death_march_owner.get_effective_stat(
+                        "accuracy"
+                    )
+                )
+                var resistance: float = (
+                    next_target.get_effective_stat(
+                        "resistance"
+                    )
+                )
+                var resist_chance: float = clampf(
+                    resistance - accuracy,
+                    15.0,
+                    100.0
+                )
+
+                if (
+                    randf_range(0.0, 100.0)
+                    >= resist_chance
+                ):
+                    next_target.apply_status_effect(
+                        vulnerability
+                    )
+
+                if death_march_owner == active_monster:
+                    caster_feedback.append(
+                        "DEATH MARCH - NEW TARGET NAMED!"
+                    )
+
+        monster.death_named_by = null
+
+
+func can_use_soul_recall(caster) -> bool:
+    if (
+        caster == null
+        or not caster.is_alive()
+        or caster.monster_id != "dullahan_aether"
+        or caster.resonance < 2
+        or caster.has_oblivion()
+        or caster.get_combat_resource("soul_charges") < 5
+    ):
+        return false
+
+    var team: Array = (
+        allies
+        if caster in allies
+        else enemies
+    )
+
+    for ally in team:
+        if (
+            not ally.is_alive()
+            and not ally.banished
+        ):
+            return true
+
+    return false
+
+
+func execute_soul_recall(target) -> Dictionary:
+    var caster = active_monster
+
+    if (
+        not can_use_soul_recall(caster)
+        or target == null
+        or target.is_alive()
+        or target.banished
+    ):
+        return {
+            "success": false
+        }
+
+    var team: Array = (
+        allies
+        if caster in allies
+        else enemies
+    )
+
+    if target not in team:
+        return {
+            "success": false
+        }
+
+    caster.consume_combat_resource(
+        "soul_charges",
+        5
+    )
+
+    target.health = maxi(
+        1,
+        int(target.max_health * 0.70)
+    )
+    target.action_gauge = 0.30
+    target.buffs.clear()
+    target.debuffs.clear()
+    target.special_states.clear()
+    target.named_target = null
+    target.named_by = null
+    target.death_named_by = null
+
+    for resource_id in target.combat_resource_maximums:
+        target.combat_resources[resource_id] = 0
+
+    recorded_dead_monsters.erase(target)
+
+    return {
+        "success": true,
+        "damage": 0,
+        "critical_hits": 0,
+        "healing": target.health,
+        "effects_applied": [],
+        "resisted_effects": [],
+        "target_results": [],
+        "caster_feedback": [
+            "SOUL RECALL - %s REVIVED!" % target.monster_name
+        ]
+    }
 
 
 func _resolve_receive_hit_passives(
