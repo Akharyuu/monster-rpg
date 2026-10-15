@@ -608,6 +608,30 @@ static func _attach_skill_descriptions(monster) -> void:
             ]
         },
 
+        "gale_pursuit_crosswind": {
+            "summary": "Sweeps through the enemy team with a disruptive crosswind.",
+            "effects": [
+                {
+                    "kind": "control",
+                    "text": "Reduces each enemy's [b]Action Gauge by 25%[/b] ([b]35%[/b] if they have more than [b]50% Action Gauge[/b])."
+                }
+            ]
+        },
+
+        "gale_pursuit_tempest": {
+            "summary": "Sweeps through the enemy team and drives the allied team forward.",
+            "effects": [
+                {
+                    "kind": "control",
+                    "text": "Reduces each enemy's [b]Action Gauge by 25%[/b] ([b]35%[/b] if they have more than [b]50% Action Gauge[/b])."
+                },
+                {
+                    "kind": "buff",
+                    "text": "Grants all allies [color=#70c8ff]Speed Up[/color] for [b]2 turns[/b]."
+                }
+            ]
+        },
+
         "headlong_charge": {
             "summary": "Accelerates the Dullahan and pulls an ally into the fight.",
             "effects": [
@@ -622,6 +646,34 @@ static func _attach_skill_descriptions(monster) -> void:
             ]
         },
 
+        "headlong_charge_rally": {
+            "summary": "Rallies the Dullahan and the ally furthest from taking a turn.",
+            "effects": [
+                {
+                    "kind": "buff",
+                    "text": "Grants the caster and the selected ally [color=#70c8ff]Attack Up[/color] and [color=#70c8ff]Speed Up[/color] for [b]2 turns[/b]."
+                },
+                {
+                    "kind": "special",
+                    "text": "Increases that ally's [b]Action Gauge by 30%[/b]."
+                }
+            ]
+        },
+
+        "headlong_charge_stampede": {
+            "summary": "Launches a coordinated charge that immediately brings an ally into action.",
+            "effects": [
+                {
+                    "kind": "buff",
+                    "text": "Grants the caster and the selected ally [color=#70c8ff]Attack Up[/color] and [color=#70c8ff]Speed Up[/color] for [b]2 turns[/b]."
+                },
+                {
+                    "kind": "special",
+                    "text": "Increases that ally's [b]Action Gauge by 30%[/b] and makes them take the next turn."
+                }
+            ]
+        },
+
         "spectral_shackles": {
             "summary": "Binds one enemy with two spectral strikes.",
             "effects": [
@@ -632,6 +684,70 @@ static func _attach_skill_descriptions(monster) -> void:
                 {
                     "kind": "debuff",
                     "text": "[b]Hit 2:[/b] 50% chance to apply [color=#ff7777]Attack Break[/color] for [b]2 turns[/b]."
+                }
+            ]
+        },
+
+        "spectral_shackles_binding": {
+            "summary": "Binds one enemy more tightly with two spectral strikes.",
+            "effects": [
+                {
+                    "kind": "debuff",
+                    "text": "[b]Hit 1:[/b] 70% chance to apply [color=#ff7777]Speed Break[/color] for [b]2 turns[/b]."
+                },
+                {
+                    "kind": "debuff",
+                    "text": "[b]Hit 2:[/b] 70% chance to apply [color=#ff7777]Attack Break[/color] for [b]2 turns[/b]."
+                }
+            ]
+        },
+
+        "spectral_shackles_lockdown": {
+            "summary": "Locks one enemy down with two spectral strikes.",
+            "effects": [
+                {
+                    "kind": "debuff",
+                    "text": "[b]Hit 1:[/b] 90% chance to apply [color=#ff7777]Speed Break[/color] for [b]2 turns[/b]."
+                },
+                {
+                    "kind": "debuff",
+                    "text": "[b]Hit 2:[/b] 90% chance to apply [color=#ff7777]Attack Break[/color] for [b]2 turns[/b]."
+                },
+                {
+                    "kind": "control",
+                    "text": "If both debuffs are applied, reduces the target's [b]Action Gauge by 20%[/b]."
+                }
+            ]
+        },
+
+        "inescapable_fate": {
+            "summary": "Condemns one enemy to an inescapable fate.",
+            "effects": [
+                {
+                    "kind": "debuff",
+                    "text": "Extends all extendable debuffs on the target by [b]1 turn[/b]."
+                },
+                {
+                    "kind": "debuff",
+                    "text": "If the target has at least [b]3 debuffs[/b], applies [color=#ff7777]Silence[/color] for [b]1 turn[/b]."
+                }
+            ]
+        },
+
+        "inescapable_fate_ironbound": {
+            "summary": "Condemns one enemy with a strike strengthened by the Dullahan's Defense.",
+            "effects": [
+                {
+                    "kind": "damage",
+                    "text": "Damage also scales with the caster's Defense."
+                },
+                {
+                    "kind": "debuff",
+                    "text": "Extends all extendable debuffs on the target by [b]1 turn[/b]."
+                },
+                {
+                    "kind": "debuff",
+                    "text": "If the target has at least [b]3 debuffs[/b], applies [color=#ff7777]Silence[/color] for [b]1 turn[/b]."
                 }
             ]
         },
@@ -1238,6 +1354,129 @@ static func _scaled(value: float) -> int:
 
 
 static func _apply_resonance(monster) -> void:
+    if monster.monster_id == "dullahan_abyssal":
+        if monster.resonance >= 1:
+            var shackles = DamageSkillScript.new(
+                (
+                    "spectral_shackles_lockdown"
+                    if monster.resonance >= 4
+                    else "spectral_shackles_binding"
+                ),
+                (
+                    "Spectral Shackles: Lockdown"
+                    if monster.resonance >= 4
+                    else "Spectral Shackles: Binding"
+                ),
+                1.95,
+                2,
+                [],
+                "attack",
+                4,
+                [
+                    {
+                        "effect_id": "speed_break",
+                        "chance": (
+                            0.90
+                            if monster.resonance >= 4
+                            else 0.70
+                        ),
+                        "turns": 2,
+                        "hit_indices": [0]
+                    },
+                    {
+                        "effect_id": "attack_break",
+                        "chance": (
+                            0.90
+                            if monster.resonance >= 4
+                            else 0.70
+                        ),
+                        "turns": 2,
+                        "hit_indices": [1]
+                    }
+                ]
+            )
+            monster.skills[1] = shackles
+
+        if monster.resonance >= 2:
+            var fate = DamageSkillScript.new(
+                (
+                    "inescapable_fate_ironbound"
+                    if monster.resonance >= 5
+                    else "inescapable_fate"
+                ),
+                (
+                    "Inescapable Fate: Ironbound"
+                    if monster.resonance >= 5
+                    else "Inescapable Fate"
+                ),
+                3.00,
+                1,
+                [],
+                "attack",
+                (
+                    4
+                    if monster.resonance >= 5
+                    else 5
+                ),
+                []
+            )
+
+            if monster.resonance >= 5:
+                fate.bonus_stat = "defense"
+                fate.bonus_stat_scaling = 1.20
+
+            monster.skills.append(fate)
+
+        return
+
+    if monster.monster_id == "dullahan_storm":
+        if monster.resonance >= 1:
+            var pursuit = DamageSkillScript.new(
+                (
+                    "gale_pursuit_tempest"
+                    if monster.resonance >= 4
+                    else "gale_pursuit_crosswind"
+                ),
+                (
+                    "Gale Pursuit: Tempest"
+                    if monster.resonance >= 4
+                    else "Gale Pursuit: Crosswind"
+                ),
+                2.25,
+                1,
+                [],
+                "attack",
+                4,
+                [],
+                {},
+                {},
+                "all_enemies",
+                0.25
+            )
+            pursuit.action_gauge_threshold = 0.50
+            pursuit.action_gauge_bonus_reduction = 0.10
+            monster.skills[1] = pursuit
+
+        if monster.resonance >= 3:
+            var charge = SupportSkillScript.new(
+                (
+                    "headlong_charge_stampede"
+                    if monster.resonance >= 5
+                    else "headlong_charge_rally"
+                ),
+                (
+                    "Headlong Charge: Stampede"
+                    if monster.resonance >= 5
+                    else "Headlong Charge: Rally"
+                ),
+                5,
+                [],
+                "self"
+            )
+            monster.skills[2] = charge
+
+        return
+
     if monster.monster_id == "drake_void":
         if monster.resonance >= 1:
             var obliterate = DamageSkillScript.new(
