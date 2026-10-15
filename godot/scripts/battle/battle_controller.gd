@@ -141,6 +141,10 @@ func begin_next_turn() -> Dictionary:
 
     active_monster.reduce_skill_cooldowns()
 
+    var hot_result: Dictionary = (
+        active_monster.apply_healing_over_time()
+    )
+
     var dot_result: Dictionary = (
         active_monster.apply_damage_over_time()
     )
@@ -152,6 +156,7 @@ func begin_next_turn() -> Dictionary:
     return {
         "battle_over": false,
         "monster": active_monster,
+        "hot_result": hot_result,
         "dot_result": dot_result
     }
 
@@ -411,6 +416,14 @@ func execute_active_skill(
                 intended_heal
             )
 
+            _apply_overgrowth_shield(
+                active_monster,
+                heal_target,
+                intended_heal,
+                actual_heal,
+                caster_feedback
+            )
+
             result["healing"] = int(
                 result.get("healing", 0)
             ) + actual_heal
@@ -569,6 +582,65 @@ func execute_active_skill(
                     "silence"
                 )
 
+    if (
+        active_monster.monster_id == "dryad_storm"
+        and active_monster.resonance >= 5
+        and not active_monster.has_oblivion()
+    ):
+        for target_result in result.get(
+            "target_results",
+            []
+        ):
+            _apply_overgrowth_shield(
+                active_monster,
+                target_result["target"],
+                int(target_result.get(
+                    "intended_healing",
+                    0
+                )),
+                int(target_result.get(
+                    "healing",
+                    0
+                )),
+                caster_feedback
+            )
+
+    if (
+        active_monster.monster_id == "griffon_igneous"
+        and active_monster.resonance >= 2
+        and not active_monster.has_oblivion()
+    ):
+        var applied_stun := false
+
+        for target_result in result.get(
+            "target_results",
+            []
+        ):
+            for effect in target_result.get(
+                "effects_applied",
+                []
+            ):
+                if effect.effect_id == "stun":
+                    applied_stun = true
+                    break
+
+            if applied_stun:
+                break
+
+        if applied_stun:
+            var speed_up = (
+                StatusEffectFactoryScript.create_status_effect(
+                    "speed_up",
+                    2,
+                    active_monster
+                )
+            )
+
+            if active_monster.apply_status_effect(speed_up) != null:
+                caster_feedback.append(
+                    "HAWK INSTINCT - SPD UP!"
+                )
+
     _resolve_receive_hit_passives(
         active_monster,
         result,
@@ -631,6 +703,61 @@ func execute_active_skill(
 
     result["caster_feedback"] = caster_feedback
     return result
+
+
+func _apply_overgrowth_shield(
+    caster,
+    target,
+    intended_heal: int,
+    actual_heal: int,
+    caster_feedback: Array[String]
+) -> void:
+    if (
+        caster == null
+        or target == null
+        or caster.monster_id != "dryad_storm"
+        or caster.resonance < 5
+        or caster.has_oblivion()
+    ):
+        return
+
+    var overheal: int = maxi(
+        0,
+        intended_heal - actual_heal
+    )
+
+    if overheal <= 0:
+        return
+
+    var shield_value: int = mini(
+        int(overheal * 0.50),
+        int(target.max_health * 0.10)
+    )
+
+    if shield_value <= 0:
+        return
+
+    var shield = (
+        StatusEffectFactoryScript.create_status_effect(
+            "shield",
+            2,
+            caster
+        )
+    )
+    shield.value = shield_value
+
+    var applied = target.apply_status_effect(
+        shield
+    )
+
+    if applied != null:
+        caster_feedback.append(
+            "OVERGROWTH - %s SHIELD %d"
+            % [
+                target.monster_name,
+                applied.value
+            ]
+        )
 
 
 func _resolve_new_deaths(
