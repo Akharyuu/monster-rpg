@@ -35,6 +35,7 @@ static func create_level_one_monster(monster_id: String):
             return null
 
     _attach_skill_descriptions(monster)
+    _attach_passive_description(monster)
     return monster
 
 
@@ -207,7 +208,7 @@ static func _attach_skill_descriptions(monster) -> void:
                 },
                 {
                     "kind": "debuff",
-                    "text": "Attempts to apply [color=#ff7777]Vulnerability[/color] for [b]2 turns[/b], increasing direct damage taken by [b]15%[/b]."
+                    "text": "[b]100% chance[/b] to apply [color=#ff7777]Vulnerability[/color] for [b]2 turns[/b]."
                 },
                 {
                     "kind": "special",
@@ -238,6 +239,93 @@ static func _attach_skill_descriptions(monster) -> void:
         )
 
         skill.description = skill.tooltip_summary
+
+static func _attach_passive_description(monster) -> void:
+    var passive_data := {
+        "drake_igneous": {
+            "name": "Cinderblood",
+            "summary": "Each landed hit can ignite the target.",
+            "effects": [
+                {
+                    "kind": "debuff",
+                    "text": "Each hit has a [b]35% chance[/b] to apply [color=#ff8a42]Burn[/color] for [b]2 turns[/b]."
+                }
+            ]
+        },
+
+        "drake_abyssal": {
+            "name": "Frozen Scales",
+            "summary": "Builds Frozen Scales through successful Freezes, then consumes them to fortify the caster.",
+            "effects": [
+                {
+                    "kind": "special",
+                    "text": "Each enemy Frozen by [b]Glacial Collapse[/b] grants [b]1 Frozen Scale[/b], up to [b]3[/b]."
+                },
+                {
+                    "kind": "buff",
+                    "text": "Before casting Glacial Collapse at [b]3/3[/b], consumes all scales and grants [color=#70c8ff]Defense Up[/color] and [color=#70c8ff]Immunity[/color] for [b]2 turns[/b]."
+                }
+            ]
+        },
+
+        "drake_storm": {
+            "name": "Thunderheart",
+            "summary": "Converts bonus Speed into offensive power.",
+            "effects": [
+                {
+                    "kind": "damage",
+                    "text": "Damage increases by [b]0.3%[/b] for every point of Speed above the base value."
+                }
+            ]
+        },
+
+        "drake_aether": {
+            "name": "Celestial Authority",
+            "summary": "Punishes enemies that strike the Aether Drake.",
+            "effects": [
+                {
+                    "kind": "debuff",
+                    "text": "When hit, has a [b]30% chance[/b] to apply [color=#ff7777]Attack Break[/color] to the attacker for [b]2 turns[/b]."
+                }
+            ]
+        },
+
+        "drake_void": {
+            "name": "Bottomless Hunger",
+            "summary": "Feeds on buffs removed from enemies.",
+            "effects": [
+                {
+                    "kind": "heal",
+                    "text": "For each enemy buff removed, heals [b]10% Max HP[/b]."
+                },
+                {
+                    "kind": "special",
+                    "text": "For each enemy buff removed, gains [b]8% Action Gauge[/b]."
+                }
+            ]
+        },
+
+        "dullahan_void": {
+            "name": "Headless Rider",
+            "summary": "Empowers the Dullahan while it has a Named target.",
+            "effects": [
+                {
+                    "kind": "special",
+                    "text": "While [color=#d9a6ff]Headless[/color], gains [b]+20% Speed[/b]."
+                },
+                {
+                    "kind": "special",
+                    "text": "While Headless, cannot be Silenced unless affected by [color=#d08cff]Oblivion[/color]."
+                }
+            ]
+        }
+    }
+
+    monster.passive_tooltip = passive_data.get(
+        monster.monster_id,
+        {}
+    )
+
 
 static func _scaled(value: float) -> int:
     return int(round(value * LEVEL_ONE_MULTIPLIER))
