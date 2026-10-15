@@ -28,6 +28,11 @@ var apply_named_before_hit: bool = false
 var named_turns: int = 0
 var vulnerability_chance: float = 0.0
 var vulnerability_turns: int = 0
+var damage_per_soul_charge: float = 0.0
+var max_soul_charges: int = 0
+var use_consumed_soul_charges: bool = false
+var disable_soul_bonus_if_ally_dead: bool = false
+var soul_charges_consumed: int = 0
 
 
 func _init(
@@ -196,6 +201,36 @@ func damage_calc(
     var bonus_damage: float = get_burn_damage_multiplier(
         defender
     )
+
+    if damage_per_soul_charge > 0.0:
+        var soul_charges: int = (
+            soul_charges_consumed
+            if use_consumed_soul_charges
+            else attacker.get_combat_resource(
+                "soul_charges"
+            )
+        )
+
+        soul_charges = mini(
+            soul_charges,
+            max_soul_charges
+        )
+
+        if disable_soul_bonus_if_ally_dead:
+            var ally_dead: bool = bool(
+                attacker.special_states.get(
+                    "ally_dead",
+                    false
+                )
+            )
+
+            if ally_dead:
+                soul_charges = 0
+
+        bonus_damage *= (
+            1.0
+            + soul_charges * damage_per_soul_charge
+        )
 
     if damage_per_dead_monster > 0.0:
         var counted_dead: int = mini(
