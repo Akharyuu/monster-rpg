@@ -655,6 +655,21 @@ func update_battle_ui() -> void:
     update_skill_buttons()
 
 
+func _set_action_button_state(
+    button: Button,
+    unavailable: bool,
+    interactive: bool = true
+) -> void:
+    # Informational passives keep mouse hover for their tooltips.
+    # Actionable skills/actions are also disabled when unavailable.
+    button.disabled = unavailable if interactive else false
+    button.modulate = (
+        Color(0.52, 0.55, 0.62, 1.0)
+        if unavailable
+        else Color.WHITE
+    )
+
+
 func update_skill_buttons() -> void:
     _update_passive_button()
 
@@ -673,15 +688,16 @@ func update_skill_buttons() -> void:
         ):
             button.text = "-"
             button.set_tooltip_skill(null)
-            button.disabled = true
+            _set_action_button_state(button, true)
             continue
 
-        var skill = battle_controller.active_monster.get_skill(index + 1)
+        var active = battle_controller.active_monster
+        var skill = active.get_skill(index + 1)
 
         if skill == null:
             button.text = "-"
             button.set_tooltip_skill(null)
-            button.disabled = true
+            _set_action_button_state(button, true)
             continue
 
         button.text = skill.skill_name
@@ -692,15 +708,48 @@ func update_skill_buttons() -> void:
                 skill.current_cooldown
             )
 
+        # Silence prevents active skills S2/S3, but S1 remains usable.
+        # Oblivion suppresses passives, not ordinary active skills.
         var blocked_by_silence: bool = (
-            battle_controller.active_monster.is_silenced()
+            active.is_silenced()
             and index > 0
         )
 
-        button.disabled = (
+        _set_action_button_state(
+            button,
             battle_finished
+            or action_in_progress
             or blocked_by_silence
             or not skill.is_available()
+        )
+
+
+func _layout_passive_buttons(visible_count: int) -> void:
+    var buttons := [
+        passive_button,
+        passive_button_2,
+        passive_button_3
+    ]
+
+    # Give each tooltip button room for an optional CD line.
+    # Three simultaneous buttons retain the compact layout.
+    var top_positions: Array[int] = [
+        515, 562, 577
+    ]
+    var bottom_positions: Array[int] = [
+        558, 605, 605
+    ]
+
+    if visible_count >= 3:
+        top_positions = [515, 546, 577]
+        bottom_positions = [543, 574, 605]
+
+    for index in range(visible_count):
+        buttons[index].offset_top = top_positions[index]
+        buttons[index].offset_bottom = bottom_positions[index]
+        buttons[index].add_theme_font_size_override(
+            "font_size",
+            12
         )
 
 
@@ -715,7 +764,7 @@ func _update_passive_button() -> void:
         button.text = "PASSIVE"
         button.set_tooltip_passive({})
         button.visible = false
-        button.disabled = false
+        _set_action_button_state(button, false, false)
 
     if (
         battle_controller.active_monster == null
@@ -732,22 +781,52 @@ func _update_passive_button() -> void:
         if not legacy.is_empty():
             passive_list = [legacy]
 
-    for index in range(
-        mini(buttons.size(), passive_list.size())
-    ):
+    var visible_count: int = mini(
+        buttons.size(),
+        passive_list.size()
+    )
+
+    for index in range(visible_count):
         var button = buttons[index]
         var passive_data: Dictionary = passive_list[index]
+        var cooldown_id: String = str(
+            passive_data.get("internal_cooldown_id", "")
+        )
+        var remaining_cd: int = 0
+
+        if not cooldown_id.is_empty():
+            remaining_cd = active.get_internal_cooldown(
+                cooldown_id
+            )
 
         button.visible = true
         button.text = str(
             passive_data.get("name", "PASSIVE")
         )
-        button.set_tooltip_passive(passive_data)
+
+        if remaining_cd > 0:
+            button.text += "\nCD %d" % remaining_cd
+
+        var tooltip_data: Dictionary = (
+            passive_data.duplicate(true)
+        )
+        tooltip_data["cooldown_remaining"] = remaining_cd
+        button.set_tooltip_passive(tooltip_data)
+
+        # Silence does not deactivate ordinary passives;
+        # Oblivion does. Passive cooldowns only block their
+        # cooldown-based effect, not their other effects.
+        _set_action_button_state(
+            button,
+            active.has_oblivion() or remaining_cd > 0,
+            false
+        )
 
     if (
         active.monster_id == "dullahan_aether"
         and active.resonance >= 2
         and active.get_combat_resource("soul_charges") >= 5
+        and visible_count < buttons.size()
     ):
         var has_revivable_ally := false
 
@@ -759,8 +838,8 @@ func _update_passive_button() -> void:
                 has_revivable_ally = true
                 break
 
-        if has_revivable_ally and passive_list.size() < buttons.size():
-            var action_button = buttons[passive_list.size()]
+        if has_revivable_ally:
+            var action_button = buttons[visible_count]
             var action_name: String = (
                 "Soul Recall: Convergence"
                 if active.resonance >= 5
@@ -780,10 +859,17 @@ func _update_passive_button() -> void:
 
             action_button.visible = true
             action_button.text = action_name
-            action_button.set_tooltip_passive(
-                action_data
+            action_button.set_tooltip_passive(action_data)
+            _set_action_button_state(
+                action_button,
+                battle_finished
+                or action_in_progress
+                or active.has_oblivion()
+                or active.is_silenced()
             )
+            visible_count += 1
 
+    _layout_passive_buttons(visible_count)
 
 func _on_passive_button_2_pressed() -> void:
     if (
