@@ -313,12 +313,36 @@ static func _attach_skill_descriptions(monster) -> void:
             ]
         },
 
+        "vine_barrage_nourishment": {
+            "summary": "Strikes one enemy with three rapid vines, then channels stronger restorative energy.",
+            "effects": [
+                {
+                    "kind": "heal",
+                    "text": "After attacking, heals the living ally with the lowest HP ratio for [b]15% of the caster's Max HP[/b]."
+                }
+            ]
+        },
+
         "breath_of_the_grove": {
             "summary": "Channels restorative energy through the entire allied team.",
             "effects": [
                 {
                     "kind": "heal",
                     "text": "Heals all living allies for [b]25% of the caster's Max HP[/b]."
+                }
+            ]
+        },
+
+        "breath_of_the_grove_sanctuary": {
+            "summary": "Bathes the allied team in restorative energy and protective grace.",
+            "effects": [
+                {
+                    "kind": "heal",
+                    "text": "Heals all living allies for [b]35% of the caster's Max HP[/b]."
+                },
+                {
+                    "kind": "buff",
+                    "text": "Grants [color=#70c8ff]Immunity[/color] for [b]1 turn[/b]."
                 }
             ]
         },
@@ -618,13 +642,37 @@ static func _scaled(value: float) -> int:
 
 
 static func _apply_resonance(monster) -> void:
-    # First resonance slice: Storm Dryad R1.
-    # Later ranks will reuse this hook for skill/passive replacements.
-    if (
-        monster.monster_id == "dryad_storm"
-        and monster.resonance >= 1
-    ):
+    if monster.monster_id != "dryad_storm":
         return
+
+    if monster.resonance >= 2:
+        var sanctuary = SupportSkillScript.new(
+            "breath_of_the_grove_sanctuary",
+            "Breath of the Grove: Sanctuary",
+            5,
+            [
+                {
+                    "effect_id": "immunity",
+                    "turns": 1
+                }
+            ],
+            "all_allies"
+        )
+        sanctuary.healing_hp_ratio = 0.35
+        monster.skills[1] = sanctuary
+
+    if monster.resonance >= 3:
+        var nourishment = DamageSkillScript.new(
+            "vine_barrage_nourishment",
+            "Vine Barrage: Nourishment",
+            0.70,
+            3,
+            [],
+            "attack",
+            0,
+            []
+        )
+        monster.skills[0] = nourishment
 
 
 static func _create_igneous_drake():
