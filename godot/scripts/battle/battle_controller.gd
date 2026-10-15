@@ -254,19 +254,6 @@ func _resolve_after_turn_passives() -> void:
         return
 
     if (
-        active_monster.monster_id == "dullahan_void"
-        and active_monster.resonance >= 2
-        and active_monster.get_internal_cooldown(
-            "deathless_rider"
-        ) <= 0
-    ):
-        active_monster.increase_action_gauge(0.15)
-        active_monster.set_internal_cooldown(
-            "deathless_rider",
-            6
-        )
-
-    if (
         active_monster.monster_id == "dullahan_storm"
         and active_monster.resonance >= 2
     ):
@@ -1068,6 +1055,15 @@ func execute_active_skill(
         caster_feedback.append(
             "SOUL CHARGE %d/5" % new_total
         )
+
+    # Finalize Deathless Rider only after the entire skill (including
+    # follow-up hits) has resolved, so later hits cannot kill the target.
+    for combatant in allies + enemies:
+        if combatant.finalize_deathless_rider():
+            caster_feedback.append(
+                "DEATHLESS RIDER - %s SURVIVES!"
+                % combatant.monster_name
+            )
 
     _resolve_new_deaths(caster_feedback)
 
