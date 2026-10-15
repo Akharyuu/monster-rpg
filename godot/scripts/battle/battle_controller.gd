@@ -635,98 +635,54 @@ func execute_active_skill(
                 ]
             )
 
-    if (
-        active_monster.monster_id == "dullahan_storm"
-        and skill.skill_id in [
-            "headlong_charge",
-            "headlong_charge_rally",
-            "headlong_charge_stampede"
-        ]
-    ):
-        var attack_up = (
-            StatusEffectFactoryScript.create_status_effect(
-                "attack_up",
-                2,
+    if skill.has_handler("support_lowest_gauge_ally"):
+        var support_data: Dictionary = skill.get_handler_data(
+            "support_lowest_gauge_ally"
+        )
+        for self_buff in support_data.get("self_buffs", []):
+            var status = StatusEffectFactoryScript.create_status_effect(
+                str(self_buff["effect_id"]),
+                int(self_buff["turns"]),
                 active_monster
             )
-        )
-        var speed_up = (
-            StatusEffectFactoryScript.create_status_effect(
-                "speed_up",
-                2,
-                active_monster
-            )
-        )
+            active_monster.apply_status_effect(status)
+            if str(self_buff["effect_id"]) == "attack_up":
+                caster_feedback.append("ATK UP!")
+            elif str(self_buff["effect_id"]) == "speed_up":
+                caster_feedback.append("SPD UP!")
 
-        active_monster.apply_status_effect(attack_up)
-        active_monster.apply_status_effect(speed_up)
-
-        var team: Array = (
-            allies
-            if active_monster in allies
-            else enemies
-        )
+        var team: Array = allies if active_monster in allies else enemies
+        var gauge_target = active_monster
         var living_allies: Array = []
-
         for ally in team:
             if ally.is_alive() and ally != active_monster:
                 living_allies.append(ally)
 
-        var gauge_target = active_monster
-
         if not living_allies.is_empty():
             gauge_target = living_allies[0]
-
             for ally in living_allies:
                 if ally.action_gauge < gauge_target.action_gauge:
                     gauge_target = ally
 
-        var gauge_gain: float = (
-            0.30
-            if skill.skill_id in [
-                "headlong_charge_rally",
-                "headlong_charge_stampede"
-            ]
-            else 0.20
-        )
+        for ally_buff in support_data.get("ally_buffs", []):
+            var status = StatusEffectFactoryScript.create_status_effect(
+                str(ally_buff["effect_id"]),
+                int(ally_buff["turns"]),
+                active_monster
+            )
+            gauge_target.apply_status_effect(status)
 
-        if skill.skill_id in [
-            "headlong_charge_rally",
-            "headlong_charge_stampede"
-        ]:
-            var ally_attack_up = (
-                StatusEffectFactoryScript.create_status_effect(
-                    "attack_up",
-                    2,
-                    active_monster
-                )
-            )
-            var ally_speed_up = (
-                StatusEffectFactoryScript.create_status_effect(
-                    "speed_up",
-                    2,
-                    active_monster
-                )
-            )
-            gauge_target.apply_status_effect(
-                ally_attack_up
-            )
-            gauge_target.apply_status_effect(
-                ally_speed_up
-            )
-
-        gauge_target.increase_action_gauge(
-            gauge_gain
+        var gauge_gain: float = float(
+            support_data.get("ally_action_gauge", 0.0)
         )
+        gauge_target.increase_action_gauge(gauge_gain)
 
         if (
-            skill.skill_id == "headlong_charge_stampede"
+            bool(support_data.get("force_next_turn", false))
             and gauge_target != active_monster
         ):
             forced_next_monster = gauge_target
 
-        caster_feedback.append("ATK UP!")
-        caster_feedback.append("SPD UP!")
         caster_feedback.append(
             "%s - %s +%d%% AG"
             % [

@@ -430,3 +430,28 @@ def test_godot_soul_recall_uses_canonical_active_action():
     assert '"charges_per_damage_skill"' in source
     assert '"charges_per_death"' in source
     assert '"last_rites_threshold"' in source
+
+
+def test_headlong_charge_support_parameters_stay_in_json():
+    records = skill_module.SKILL_DATA
+    for skill_id, expected_gauge in (
+        ("headlong_charge", 0.20),
+        ("headlong_charge_rally", 0.30),
+        ("headlong_charge_stampede", 0.30),
+    ):
+        skill = records[skill_id]
+        handler = next(
+            x["data"] for x in skill["after_use_handlers"]
+            if x["handler"] == "support_lowest_gauge_ally"
+        )
+        assert handler["ally_action_gauge"] == expected_gauge
+        assert len(handler["self_buffs"]) == 2
+
+    controller = (
+        GODOT_FACTORY.parents[3] / "godot" / "scripts"
+        / "battle" / "battle_controller.gd"
+    ).read_text(encoding="utf-8")
+    assert 'skill.has_handler("support_lowest_gauge_ally")' in controller
+    assert 'support_data.get("self_buffs", [])' in controller
+    assert 'support_data.get("ally_buffs", [])' in controller
+    assert 'support_data.get("force_next_turn", false)' in controller
