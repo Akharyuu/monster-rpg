@@ -48,6 +48,21 @@ var internal_cooldowns: Dictionary = {}
 var deathless_triggered_this_skill: bool = false
 var passive_tooltip: Dictionary = {}
 var passive_tooltips: Array = []
+var passive_definitions: Dictionary = {}
+
+
+func get_passive_by_handler(handler_id: String) -> Dictionary:
+    for record in passive_definitions.values():
+        if str(record.get("handler", "")) == handler_id:
+            return record
+    return {}
+
+
+func has_passive_trait(trait_id: String) -> bool:
+    for record in passive_definitions.values():
+        if trait_id in record.get("traits", []):
+            return true
+    return false
 
 # Lightweight prototype representation of passive effects that trigger
 # whenever this monster lands a hit. This will later become the full
@@ -216,40 +231,31 @@ func get_effective_stat(stat: String) -> float:
         + additive_modifier
     )
 
-    if (
-        stat == "speed"
-        and monster_id == "dullahan_void"
-        and is_headless()
-        and not has_oblivion()
-    ):
-        value += speed * (
-            0.30
-            if resonance >= 1
-            else 0.20
-        )
+    if not has_oblivion():
+        var rider: Dictionary = get_passive_by_handler("headless_rider")
+        if rider.is_empty():
+            rider = get_passive_by_handler("deathless_rider")
+        if stat == "speed" and is_headless() and not rider.is_empty():
+            var rider_data: Dictionary = rider.get("handler_data", {})
+            value += speed * float(rider_data.get("speed_bonus", 0.0))
 
-    if (
-        stat == "crit_rate"
-        and monster_id == "drake_storm"
-        and resonance >= 3
-        and not has_oblivion()
-    ):
-        var bonus_speed: float = maxf(
-            0.0,
-            get_effective_stat("speed") - speed
-        )
-        value += minf(
-            floorf(bonus_speed / 5.0),
-            30.0
-        )
+        var thunder: Dictionary = get_passive_by_handler("thunderheart")
+        var thunder_data: Dictionary = thunder.get("handler_data", {})
+        if stat == "crit_rate" and thunder_data.has("speed_per_crit"):
+            var bonus_speed: float = maxf(
+                0.0, get_effective_stat("speed") - speed
+            )
+            value += minf(
+                floorf(bonus_speed / float(
+                    thunder_data["speed_per_crit"]
+                )),
+                float(thunder_data.get("max_crit_rate_bonus", 0.0))
+            )
 
-    if (
-        stat == "accuracy"
-        and monster_id == "drake_aether"
-        and resonance >= 4
-        and not has_oblivion()
-    ):
-        value += 25.0
+        var grace: Dictionary = get_passive_by_handler("divine_grace")
+        var grace_data: Dictionary = grace.get("handler_data", {})
+        if stat == "accuracy":
+            value += float(grace_data.get("accuracy_bonus", 0.0))
 
     return value
 
@@ -258,15 +264,18 @@ func get_passive_damage_multiplier() -> float:
     if has_oblivion():
         return 1.0
 
-    if monster_id != "drake_storm":
+    var thunder: Dictionary = get_passive_by_handler("thunderheart")
+    if thunder.is_empty():
         return 1.0
 
+    var data: Dictionary = thunder.get("handler_data", {})
     var bonus_speed: float = maxf(
         0.0,
         get_effective_stat("speed") - speed
     )
-
-    return 1.0 + bonus_speed * 0.003
+    return 1.0 + bonus_speed * float(
+        data.get("damage_per_bonus_speed", 0.0)
+    )
 
 
 func get_healing_hp() -> float:
@@ -279,22 +288,16 @@ func get_direct_heal_multiplier(target) -> float:
     if has_oblivion():
         return 1.0
 
-    if (
-        monster_id != "dryad_storm"
-        or resonance < 1
-    ):
+    var passive: Dictionary = get_passive_by_handler("natures_grace")
+    if passive.is_empty() or target.max_health <= 0:
         return 1.0
 
-    if target.max_health <= 0:
-        return 1.0
-
+    var data: Dictionary = passive.get("handler_data", {})
     var target_hp_ratio: float = (
         float(target.health) / float(target.max_health)
     )
-
-    if target_hp_ratio < 0.50:
-        return 1.20
-
+    if target_hp_ratio < float(data.get("hp_threshold", 0.0)):
+        return float(data.get("healing_multiplier", 1.0))
     return 1.0
 
 
@@ -318,17 +321,15 @@ func get_attribute_modifier(defender) -> float:
 
 func preserves_freeze_on_hit() -> bool:
     return (
-        monster_id == "drake_abyssal"
-        and resonance >= 2
-        and not has_oblivion()
+        not has_oblivion()
+        and has_passive_trait("preserve_freeze_on_hit")
     )
 
 
 func preserves_applied_freeze_on_damage() -> bool:
     return (
-        monster_id == "drake_abyssal"
-        and resonance >= 4
-        and not has_oblivion()
+        not has_oblivion()
+        and has_passive_trait("preserve_applied_freeze_on_damage")
     )
 
 
@@ -364,8 +365,7 @@ func receive_damage(
     # skill, including every hit of a multi-hit attack.
     var can_trigger_deathless: bool = (
         source != null
-        and monster_id == "dullahan_void"
-        and resonance >= 4
+        and not get_passive_by_handler("deathless_rider").is_empty()
         and is_headless()
         and not has_oblivion()
         and get_internal_cooldown("deathless_rider") == 0
@@ -432,7 +432,11 @@ func finalize_deathless_rider() -> bool:
     deathless_triggered_this_skill = false
     clear_named_target()
     debuffs.clear()
-    set_internal_cooldown("deathless_rider", 6)
+    var deathless: Dictionary = get_passive_by_handler("deathless_rider")
+    var data: Dictionary = deathless.get("handler_data", {})
+    set_internal_cooldown(
+        "deathless_rider", int(data.get("internal_cooldown", 6))
+    )
     return true
 
 
@@ -486,23 +490,32 @@ func heal(amount: int) -> int:
             opponent == null
             or not opponent.is_alive()
             or opponent.has_oblivion()
-            or opponent.monster_id != "dullahan_igneous"
-            or opponent.resonance < 2
-            or hp_ratio_before >= 0.50
+        ):
+            continue
+
+        var omen: Dictionary = opponent.get_passive_by_handler(
+            "final_omen"
+        )
+        if omen.is_empty():
+            continue
+
+        var omen_data: Dictionary = omen.get("handler_data", {})
+        if hp_ratio_before >= float(
+            omen_data.get("hp_threshold", 0.0)
         ):
             continue
 
         var attack_up = (
             StatusEffectFactoryScript.create_status_effect(
                 "attack_up",
-                1,
+                int(omen_data.get("attack_up_turns", 1)),
                 opponent
             )
         )
         opponent.apply_status_effect(attack_up)
-
-        if opponent.resonance >= 4:
-            healing_multiplier *= 0.70
+        healing_multiplier *= float(
+            omen_data.get("healing_received_multiplier", 1.0)
+        )
 
     var adjusted_amount: int = int(
         amount * healing_multiplier

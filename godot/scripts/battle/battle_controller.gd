@@ -223,11 +223,15 @@ func _resolve_after_turn_passives() -> void:
         else allies
     )
 
-    if active_monster.monster_id == "dullahan_abyssal":
-        var extend_count: int = (
-            2
-            if active_monster.resonance >= 3
-            else 1
+    var chilling: Dictionary = active_monster.get_passive_by_handler(
+        "chilling_presence"
+    )
+    if not chilling.is_empty():
+        var chilling_data: Dictionary = chilling.get(
+            "handler_data", {}
+        )
+        var extend_count: int = int(
+            chilling_data.get("debuffs_per_enemy", 0)
         )
 
         for enemy in opponents:
@@ -253,10 +257,11 @@ func _resolve_after_turn_passives() -> void:
 
         return
 
-    if (
-        active_monster.monster_id == "dullahan_storm"
-        and active_monster.resonance >= 2
-    ):
+    var hunt: Dictionary = active_monster.get_passive_by_handler(
+        "the_hunt"
+    )
+    if not hunt.is_empty():
+        var hunt_data: Dictionary = hunt.get("handler_data", {})
         var living_opponents: Array = []
 
         for enemy in opponents:
@@ -273,7 +278,7 @@ func _resolve_after_turn_passives() -> void:
                 target = enemy
 
         var stolen: float = minf(
-            0.20,
+            float(hunt_data.get("action_gauge_steal", 0.0)),
             target.action_gauge
         )
 

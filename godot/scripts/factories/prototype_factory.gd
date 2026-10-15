@@ -8,9 +8,13 @@ const SupportSkillScript = preload("res://scripts/models/support_skill.gd")
 const LEVEL_ONE_MULTIPLIER := 0.35
 const SHARED_MONSTER_DATA_PATH := "res://data/monster_data.json"
 const SHARED_SKILL_DATA_PATH := "res://data/skill_data.json"
+const SHARED_PASSIVE_DATA_PATH := "res://data/passive_data.json"
+const SHARED_RESONANCE_DATA_PATH := "res://data/resonance_data.json"
 
 static var _shared_monsters: Dictionary = {}
 static var _shared_skills: Dictionary = {}
+static var _shared_passives: Dictionary = {}
+static var _shared_resonances: Dictionary = {}
 
 
 static func _get_shared_monsters() -> Dictionary:
@@ -65,6 +69,132 @@ static func _get_shared_skills() -> Dictionary:
 
     _shared_skills = records
     return _shared_skills
+
+
+static func _get_shared_passives() -> Dictionary:
+    if not _shared_passives.is_empty():
+        return _shared_passives
+
+    var parsed: Variant = JSON.parse_string(
+        FileAccess.get_file_as_string(SHARED_PASSIVE_DATA_PATH)
+    )
+    if not (parsed is Dictionary):
+        push_error("Invalid shared passive JSON")
+        return {}
+    if int(parsed.get("schema_version", -1)) != 1:
+        push_error("Unsupported passive data schema version")
+        return {}
+    var records: Variant = parsed.get("passives", null)
+    if not (records is Dictionary):
+        push_error("Missing passives in shared JSON")
+        return {}
+
+    _shared_passives = records
+    return _shared_passives
+
+
+static func _get_shared_resonances() -> Dictionary:
+    if not _shared_resonances.is_empty():
+        return _shared_resonances
+
+    var parsed: Variant = JSON.parse_string(
+        FileAccess.get_file_as_string(SHARED_RESONANCE_DATA_PATH)
+    )
+    if not (parsed is Dictionary):
+        push_error("Invalid shared resonance JSON")
+        return {}
+    if int(parsed.get("schema_version", -1)) != 1:
+        push_error("Unsupported resonance data schema version")
+        return {}
+    var records: Variant = parsed.get("resonances", null)
+    if not (records is Dictionary):
+        push_error("Missing resonances in shared JSON")
+        return {}
+
+    _shared_resonances = records
+    return _shared_resonances
+
+
+# Compute the active passive kit from shared base IDs and ordered
+# Resonance actions, exactly as Python's Resonance system does.
+static func _assign_shared_passives(monster) -> bool:
+    var roster: Dictionary = _get_shared_monsters()
+    var definitions: Dictionary = _get_shared_passives()
+    var resonances: Dictionary = _get_shared_resonances()
+    var record: Dictionary = roster.get(monster.monster_id, {})
+    var active: Dictionary = {}
+
+    for passive_id in record.get("passives", []):
+        var id: String = str(passive_id)
+        if not definitions.has(id):
+            push_error("Missing base passive: %s" % id)
+            return false
+        active[id] = definitions[id]
+
+    var levels: Dictionary = resonances.get(monster.monster_id, {})
+    for level in range(1, monster.resonance + 1):
+        for action in levels.get(str(level), []):
+            var operation: String = str(action.get("action", ""))
+            if operation == "add_passive":
+                var added_id: String = str(action["passive"])
+                if not definitions.has(added_id) or active.has(added_id):
+                    push_error("Invalid added passive: %s" % added_id)
+                    return false
+                active[added_id] = definitions[added_id]
+            elif operation == "replace_passive":
+                var old_id: String = str(action["old"])
+                var new_id: String = str(action["new"])
+                if not active.has(old_id) or not definitions.has(new_id):
+                    push_error("Invalid passive replacement: %s" % new_id)
+                    return false
+                active.erase(old_id)
+                active[new_id] = definitions[new_id]
+
+    monster.passive_definitions = active
+
+    # The on-hit passive execution stays in the existing combat engine.
+    monster.on_hit_effects = []
+    var burn: Dictionary = monster.get_passive_by_handler("apply_burn")
+    if not burn.is_empty():
+        monster.on_hit_effects.append({
+            "effect_id": "burn",
+            "chance": float(burn.get("chance", 0.0)),
+            "turns": int(burn.get("turns", 2)),
+            "stacks": int(burn.get("stacks", 1)),
+            "action_gauge": float(burn.get("action_gauge", 0.0)),
+            "action_gauge_once_per_skill": bool(
+                burn.get("action_gauge_once_per_skill", false)
+            )
+        })
+
+    var resource_handlers := {
+        "frozen_scales": "frozen_scales",
+        "soul_vessel": "soul_charges",
+        "voidborn": "voidborn"
+    }
+    for handler_id in resource_handlers:
+        var passive: Dictionary = monster.get_passive_by_handler(
+            str(handler_id)
+        )
+        if passive.is_empty():
+            continue
+        var maximum_key: String = "max_stacks"
+        if handler_id == "soul_vessel":
+            maximum_key = "max_charges"
+        elif handler_id == "frozen_scales":
+            maximum_key = "max_scales"
+
+        var data: Dictionary = passive.get("handler_data", {})
+        var maximum: int = int(data.get(maximum_key, 0))
+        if maximum <= 0:
+            push_error("Invalid passive resource cap: %s" % handler_id)
+            return false
+
+        var key: String = str(resource_handlers[handler_id])
+        monster.combat_resources[key] = 0
+        monster.combat_resource_maximums[key] = maximum
+
+    return true
 
 
 static func _sync_skill_from_shared_data(skill) -> bool:
@@ -443,10 +573,6 @@ static func _create_shared_advanced_monster(monster_id: String):
     if monster == null:
         return null
 
-    if monster_id == "dullahan_aether":
-        monster.combat_resources["soul_charges"] = 0
-        monster.combat_resource_maximums["soul_charges"] = 5
-
     return monster
 
 
@@ -466,20 +592,6 @@ static func _create_shared_drake(monster_id: String):
     var monster = _make_monster_from_data(monster_id, skills)
     if monster == null:
         return null
-
-    # Monster-specific passive resources are not skill definitions.
-    if monster_id == "drake_igneous":
-        monster.on_hit_effects = [
-            {
-                "effect_id": "burn",
-                "chance": 0.35,
-                "turns": 2,
-                "stacks": 1
-            }
-        ]
-    elif monster_id == "drake_abyssal":
-        monster.combat_resources["frozen_scales"] = 0
-        monster.combat_resource_maximums["frozen_scales"] = 3
 
     return monster
 
@@ -613,6 +725,8 @@ static func create_level_one_monster(
     monster.resonance = clampi(resonance, 0, 5)
     _apply_resonance(monster)
     if not _sync_monster_skills(monster):
+        return null
+    if not _assign_shared_passives(monster):
         return null
     _attach_skill_descriptions(monster)
     _attach_passive_description(monster)
@@ -2163,10 +2277,6 @@ static func _apply_resonance(monster) -> void:
             )
             monster.skills[1] = _create_shared_skill(rend_id)
 
-        if monster.resonance >= 2:
-            monster.combat_resources["voidborn"] = 0
-            monster.combat_resource_maximums["voidborn"] = 5
-
         if monster.resonance >= 4:
             monster.skills[2] = _create_shared_skill(
                 "dismantle_decimation"
@@ -2210,28 +2320,6 @@ static func _apply_resonance(monster) -> void:
         return
 
     if monster.monster_id == "drake_igneous":
-        if monster.resonance >= 1:
-            monster.on_hit_effects = [
-                {
-                    "effect_id": "burn",
-                    "chance": (
-                        0.65
-                        if monster.resonance >= 4
-                        else 0.50
-                    ),
-                    "turns": 2,
-                    "stacks": 1,
-                    "action_gauge": (
-                        0.10
-                        if monster.resonance >= 4
-                        else 0.0
-                    ),
-                    "action_gauge_once_per_skill": (
-                        monster.resonance >= 4
-                    )
-                }
-            ]
-
         if monster.resonance >= 2:
             monster.skills[1] = _create_shared_skill(
                 "scorching_breath_afterburn"

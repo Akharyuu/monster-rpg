@@ -67,14 +67,28 @@ the Godot front end. Do not create separate per-engine copies.
 - Engine-specific combat handlers and monster-specific resources still
   execute in GDScript; migrating those handlers and passives is separate.
 
+## Shared passives and Resonance rules
+
+- `passive_data.json` holds all 34 passive definitions, and
+  `resonance_data.json` holds the R1-R5 upgrade rules for 12 monsters.
+- Python imports both JSON documents through compatibility modules,
+  restoring integer Resonance level keys.
+- Godot resolves each monster's active passive IDs using the canonical
+  base monster references and Resonance add/replace actions.
+- Cinderblood, Frozen Scales, Soul Charges and Voidborn resource caps,
+  Thunderheart, Nature's Grace, Frostborne, Final Omen, Headless Rider,
+  Chilling Presence and The Hunt now consume shared passive parameters.
+- The existing Godot skill Resonance selector, remaining combat-handler
+  branches and rich tooltips are separate migration steps.
+
 ## Migration status
 
 **Migrated:** monster identity, rarity, attributes, base stats, base skill
 and passive references, and canonical skill definitions. Godot consumes shared
 core skill parameters and selected handler data.
 
-**Still to migrate:** engine-specific skill handlers, passive definitions,
-Resonance upgrade rules, localized names and tooltip descriptions.
+**Still to migrate:** remaining engine-specific passive/skill execution
+branches, Godot's skill Resonance selector, localized names and tooltips.
 Combat handler implementations remain independent in Python and GDScript.
 
 Run `python -m pytest -q` after editing JSON. Open the battle scene in Godot
