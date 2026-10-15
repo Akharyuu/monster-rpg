@@ -153,6 +153,34 @@ static func create_status_effect(
                 "multiplicative"
             )
 
+        "regrowth":
+            return StatusEffectScript.new(
+                "regrowth",
+                "Regrowth",
+                null,
+                "buff",
+                null,
+                duration,
+                stacks,
+                1,
+                source,
+                "multiplicative"
+            )
+
+        "shield":
+            return StatusEffectScript.new(
+                "shield",
+                "Shield",
+                null,
+                "buff",
+                null,
+                duration,
+                stacks,
+                1,
+                source,
+                "multiplicative"
+            )
+
         "stun":
             return StatusEffectScript.new(
                 "stun",
