@@ -8,7 +8,10 @@ const SupportSkillScript = preload("res://scripts/models/support_skill.gd")
 const LEVEL_ONE_MULTIPLIER := 0.35
 
 
-static func create_level_one_monster(monster_id: String):
+static func create_level_one_monster(
+    monster_id: String,
+    resonance: int = 0
+):
     var monster = null
 
     match monster_id:
@@ -64,6 +67,8 @@ static func create_level_one_monster(monster_id: String):
             push_error("Unknown prototype monster id: %s" % monster_id)
             return null
 
+    monster.resonance = clampi(resonance, 0, 5)
+    _apply_resonance(monster)
     _attach_skill_descriptions(monster)
     _attach_passive_description(monster)
     return monster
@@ -526,17 +531,6 @@ static func _attach_passive_description(monster) -> void:
             ]
         },
 
-        "dryad_storm": {
-            "name": "Nature's Grace",
-            "summary": "Strengthens direct healing on wounded allies.",
-            "effects": [
-                {
-                    "kind": "heal",
-                    "text": "Direct healing is increased by [b]20%[/b] when the target is below [b]50% HP[/b]."
-                }
-            ]
-        },
-
         "dullahan_storm": {
             "name": "The Hunt",
             "summary": "Steals momentum from the enemy closest to taking a turn.",
@@ -603,9 +597,34 @@ static func _attach_passive_description(monster) -> void:
         {}
     )
 
+    if (
+        monster.monster_id == "dryad_storm"
+        and monster.resonance >= 1
+    ):
+        monster.passive_tooltip = {
+            "name": "Nature's Grace",
+            "summary": "Strengthens direct healing on wounded allies.",
+            "effects": [
+                {
+                    "kind": "heal",
+                    "text": "Direct healing is increased by [b]20%[/b] when the target is below [b]50% HP[/b]."
+                }
+            ]
+        }
+
 
 static func _scaled(value: float) -> int:
     return int(round(value * LEVEL_ONE_MULTIPLIER))
+
+
+static func _apply_resonance(monster) -> void:
+    # First resonance slice: Storm Dryad R1.
+    # Later ranks will reuse this hook for skill/passive replacements.
+    if (
+        monster.monster_id == "dryad_storm"
+        and monster.resonance >= 1
+    ):
+        return
 
 
 static func _create_igneous_drake():
