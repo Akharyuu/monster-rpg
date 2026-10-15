@@ -195,6 +195,34 @@ static func create_status_effect(
                 "multiplicative"
             )
 
+        "heal_block":
+            return StatusEffectScript.new(
+                "heal_block",
+                "Heal Block",
+                null,
+                "debuff",
+                null,
+                duration,
+                stacks,
+                1,
+                source,
+                "multiplicative"
+            )
+
+        "vulnerability":
+            return StatusEffectScript.new(
+                "vulnerability",
+                "Vulnerability",
+                null,
+                "debuff",
+                null,
+                duration,
+                stacks,
+                1,
+                source,
+                "multiplicative"
+            )
+
         _:
             push_error("Unknown status effect id: %s" % effect_id)
             return null
