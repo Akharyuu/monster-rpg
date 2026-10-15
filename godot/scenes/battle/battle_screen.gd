@@ -574,7 +574,7 @@ func update_skill_buttons() -> void:
             or battle_controller.active_monster not in allies
         ):
             button.text = "-"
-            button.tooltip_text = ""
+            button.set_tooltip_skill(null)
             button.disabled = true
             continue
 
@@ -582,12 +582,12 @@ func update_skill_buttons() -> void:
 
         if skill == null:
             button.text = "-"
-            button.tooltip_text = ""
+            button.set_tooltip_skill(null)
             button.disabled = true
             continue
 
         button.text = skill.skill_name
-        button.tooltip_text = skill.get_tooltip_text()
+        button.set_tooltip_skill(skill)
 
         if skill.current_cooldown > 0:
             button.text += "\nCD %d" % (
@@ -634,48 +634,6 @@ func disable_skill_buttons() -> void:
     skill_1_button.disabled = true
     skill_2_button.disabled = true
     skill_3_button.disabled = true
-
-
-func _make_custom_tooltip(for_text: String) -> Object:
-    var panel := PanelContainer.new()
-    panel.custom_minimum_size = Vector2(310.0, 0.0)
-
-    var style := StyleBoxFlat.new()
-    style.bg_color = Color(0.075, 0.085, 0.15, 0.98)
-    style.border_color = Color(0.52, 0.62, 0.92, 0.95)
-    style.border_width_left = 1
-    style.border_width_top = 1
-    style.border_width_right = 1
-    style.border_width_bottom = 1
-    style.corner_radius_top_left = 8
-    style.corner_radius_top_right = 8
-    style.corner_radius_bottom_left = 8
-    style.corner_radius_bottom_right = 8
-    style.content_margin_left = 14.0
-    style.content_margin_top = 11.0
-    style.content_margin_right = 14.0
-    style.content_margin_bottom = 11.0
-
-    panel.add_theme_stylebox_override(
-        "panel",
-        style
-    )
-
-    var label := Label.new()
-    label.text = for_text
-    label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-    label.custom_minimum_size = Vector2(280.0, 0.0)
-    label.add_theme_font_size_override(
-        "font_size",
-        14
-    )
-    label.add_theme_color_override(
-        "font_color",
-        Color(0.94, 0.95, 1.0)
-    )
-
-    panel.add_child(label)
-    return panel
 
 
 func finish_battle(player_won: bool) -> void:
