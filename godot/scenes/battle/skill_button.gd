@@ -18,6 +18,68 @@ func _ready() -> void:
     theme = tooltip_theme
 
 
+# Visually distinguish informative passives, cooling passives, and
+# locked / ready / selected actions without changing their tooltips.
+func set_visual_state(state: String) -> void:
+    var background := Color(0.13, 0.12, 0.23)
+    var outline := Color(0.38, 0.30, 0.54)
+    var foreground := Color(0.88, 0.81, 0.99)
+
+    match state:
+        "passive_cooldown":
+            background = Color(0.10, 0.105, 0.15)
+            outline = Color(0.29, 0.29, 0.35)
+            foreground = Color(0.72, 0.73, 0.79)
+        "passive_suppressed":
+            background = Color(0.085, 0.09, 0.12)
+            outline = Color(0.25, 0.25, 0.30)
+            foreground = Color(0.67, 0.68, 0.72)
+        "active_locked":
+            background = Color(0.09, 0.10, 0.15)
+            outline = Color(0.28, 0.30, 0.37)
+            foreground = Color(0.69, 0.72, 0.79)
+        "active_ready":
+            background = Color(0.22, 0.16, 0.39)
+            outline = Color(0.74, 0.51, 0.96)
+            foreground = Color(0.98, 0.93, 1.0)
+        "active_selected":
+            background = Color(0.30, 0.20, 0.48)
+            outline = Color(0.93, 0.77, 1.0)
+            foreground = Color(1.0, 0.96, 1.0)
+
+    var base_style := StyleBoxFlat.new()
+    base_style.bg_color = background
+    base_style.border_color = outline
+    base_style.border_width_left = 1
+    base_style.border_width_top = 1
+    base_style.border_width_right = 1
+    base_style.border_width_bottom = 1
+    base_style.corner_radius_top_left = 6
+    base_style.corner_radius_top_right = 6
+    base_style.corner_radius_bottom_left = 6
+    base_style.corner_radius_bottom_right = 6
+    base_style.content_margin_left = 4
+    base_style.content_margin_right = 4
+
+    var hover_style: StyleBoxFlat = base_style.duplicate()
+    hover_style.bg_color = background.lightened(0.13)
+    var pressed_style: StyleBoxFlat = base_style.duplicate()
+    pressed_style.bg_color = background.lightened(0.20)
+
+    add_theme_stylebox_override("normal", base_style)
+    add_theme_stylebox_override("hover", hover_style)
+    add_theme_stylebox_override("pressed", pressed_style)
+    add_theme_stylebox_override("disabled", base_style)
+
+    for color_name in [
+        "font_color",
+        "font_hover_color",
+        "font_pressed_color",
+        "font_disabled_color"
+    ]:
+        add_theme_color_override(color_name, foreground)
+
+
 func set_tooltip_skill(skill) -> void:
     tooltip_skill = skill
     tooltip_passive = {}
