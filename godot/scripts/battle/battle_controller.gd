@@ -322,7 +322,10 @@ func execute_active_skill(
     if (
         active_monster.monster_id == "drake_abyssal"
         and not active_monster.has_oblivion()
-        and skill.skill_id == "glacial_collapse"
+        and skill.skill_id in [
+            "glacial_collapse",
+            "glacial_collapse_absolute_zero"
+        ]
     ):
         var current_scales: int = (
             active_monster.get_combat_resource(
@@ -650,7 +653,10 @@ func execute_active_skill(
     if (
         active_monster.monster_id == "drake_abyssal"
         and not active_monster.has_oblivion()
-        and skill.skill_id == "glacial_collapse"
+        and skill.skill_id in [
+            "glacial_collapse",
+            "glacial_collapse_absolute_zero"
+        ]
         and not block_frozen_scales_generation
     ):
         var scales_gained := 0
@@ -684,6 +690,20 @@ func execute_active_skill(
             caster_feedback.append(
                 "FROZEN SCALES %d/3" % new_total
             )
+
+            if (
+                active_monster.resonance >= 3
+                and new_total >= 3
+            ):
+                var glacial_skill = (
+                    active_monster.get_skill(3)
+                )
+
+                if glacial_skill != null:
+                    glacial_skill.current_cooldown = 0
+                    caster_feedback.append(
+                        "EVERFROST - GLACIAL COLLAPSE READY!"
+                    )
 
     if (
         active_monster.monster_id == "dullahan_aether"
