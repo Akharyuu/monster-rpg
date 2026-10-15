@@ -116,6 +116,14 @@ func cannot_act() -> bool:
     return is_stunned() or is_frozen()
 
 
+func get_buff(effect_id: String):
+    for buff in buffs:
+        if buff.effect_id == effect_id:
+            return buff
+
+    return null
+
+
 func has_buff(effect_id: String) -> bool:
     for buff in buffs:
         if buff.effect_id == effect_id:
