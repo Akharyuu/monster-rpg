@@ -1129,17 +1129,25 @@ static func _attach_passive_description(monster) -> void:
     if monster.monster_id == "dullahan_void":
         var headless_data: Dictionary = {
             "name": (
-                "Headless Rider: Unbound"
-                if monster.resonance >= 3
-                else "Headless Rider"
+                "Deathless Rider"
+                if monster.resonance >= 4
+                else (
+                    "Headless Rider: Unbound"
+                    if monster.resonance >= 1
+                    else "Headless Rider"
+                )
             ),
-            "summary": "Empowers the Dullahan while it has a Named target.",
+            "summary": (
+                "Defies lethal blows while hunting a Named foe."
+                if monster.resonance >= 4
+                else "Empowers the Dullahan while it has a Named target."
+            ),
             "effects": [
                 {
                     "kind": "special",
                     "text": (
                         "While [color=#d9a6ff]Headless[/color], gains [b]+30% Speed[/b]."
-                        if monster.resonance >= 3
+                        if monster.resonance >= 1
                         else "While [color=#d9a6ff]Headless[/color], gains [b]+20% Speed[/b]."
                     )
                 },
@@ -1150,24 +1158,18 @@ static func _attach_passive_description(monster) -> void:
             ]
         }
 
+        if monster.resonance >= 4:
+            headless_data["effects"].append(
+                {
+                    "kind": "special",
+                    "text": "While [color=#d9a6ff]Headless[/color], survives lethal damage with [b]1 HP[/b]. After the attack, cleanses all debuffs and loses [color=#d9a6ff]Headless[/color]. [b]6-turn cooldown[/b]."
+                }
+            )
+
         monster.passive_tooltip = headless_data
         monster.passive_tooltips = [
             headless_data
         ]
-
-        if monster.resonance >= 2:
-            monster.passive_tooltips.append(
-                {
-                    "name": "Deathless Rider",
-                    "summary": "Periodically accelerates the Dullahan after it acts.",
-                    "effects": [
-                        {
-                            "kind": "special",
-                            "text": "After this monster's turn, gains [b]15% Action Gauge[/b]. This effect can trigger once every [b]6 of its turns[/b]."
-                        }
-                    ]
-                }
-            )
 
         if monster.resonance >= 5:
             monster.passive_tooltips.append(
@@ -1593,7 +1595,7 @@ static func _apply_resonance(monster) -> void:
         return
 
     if monster.monster_id == "dullahan_void":
-        if monster.resonance >= 1:
+        if monster.resonance >= 2:
             var ossuary = DamageSkillScript.new(
                 "spinal_scourge_ossuary",
                 "Spinal Scourge: Ossuary",
@@ -1612,7 +1614,7 @@ static func _apply_resonance(monster) -> void:
             ossuary.max_dead_monster_bonus = 0.40
             monster.skills[1] = ossuary
 
-        if monster.resonance >= 4:
+        if monster.resonance >= 3:
             var last_name = DamageSkillScript.new(
                 "deaths_gaze_last_name",
                 "Death's Gaze: Last Name",
