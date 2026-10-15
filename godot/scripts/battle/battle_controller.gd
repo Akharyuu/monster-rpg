@@ -288,6 +288,14 @@ func execute_active_skill(
 
     var caster_feedback: Array[String] = []
     var block_frozen_scales_generation := false
+    var annihilation_oblivion_snapshot: Dictionary = {}
+
+    if skill.skill_id == "null_rend_annihilation":
+        for target in targets:
+            if target != null:
+                annihilation_oblivion_snapshot[target] = (
+                    target.get_debuff("oblivion") != null
+                )
 
     active_monster.battle_dead_count = (
         (allies.size() - get_living(allies).size())
@@ -380,6 +388,49 @@ func execute_active_skill(
     ):
         _resolve_stormbreak_requiem_follow_up(
             skill,
+            result,
+            caster_feedback
+        )
+
+    if (
+        active_monster.monster_id == "drake_void"
+        and active_monster.resonance >= 2
+    ):
+        var voidborn_activations: int = int(
+            result.get("voidborn_activations", 0)
+        )
+
+        if voidborn_activations > 0:
+            caster_feedback.append(
+                "VOIDBORN ACTIVATED!"
+            )
+
+    if skill.skill_id == "null_rend_annihilation":
+        for target_result in result.get(
+            "target_results",
+            []
+        ):
+            var target = target_result["target"]
+
+            if (
+                not target.is_alive()
+                and bool(
+                    annihilation_oblivion_snapshot.get(
+                        target,
+                        false
+                    )
+                )
+            ):
+                target.banished = true
+                caster_feedback.append(
+                    "ANNIHILATION - BANISHED!"
+                )
+
+    if (
+        active_monster.monster_id == "dullahan_igneous"
+        and skill.skill_id == "death_sentence_massacre"
+    ):
+        _resolve_massacre_follow_up(
             result,
             caster_feedback
         )
@@ -815,6 +866,103 @@ func execute_active_skill(
 
     result["caster_feedback"] = caster_feedback
     return result
+
+
+func _resolve_massacre_follow_up(
+    result: Dictionary,
+    caster_feedback: Array[String]
+) -> void:
+    var killed_target := false
+
+    for target_result in result.get(
+        "target_results",
+        []
+    ):
+        if not target_result["target"].is_alive():
+            killed_target = true
+            break
+
+    if not killed_target:
+        return
+
+    var opponents: Array = (
+        enemies
+        if active_monster in allies
+        else allies
+    )
+    var living_opponents: Array = get_living(
+        opponents
+    )
+
+    if living_opponents.is_empty():
+        return
+
+    var follow_target = living_opponents[0]
+
+    for opponent in living_opponents:
+        var opponent_ratio: float = (
+            float(opponent.health)
+            / float(opponent.max_health)
+        )
+        var current_ratio: float = (
+            float(follow_target.health)
+            / float(follow_target.max_health)
+        )
+
+        if opponent_ratio < current_ratio:
+            follow_target = opponent
+
+    var follow_skill = active_monster.get_skill(2)
+
+    if follow_skill == null:
+        return
+
+    var follow_result: Dictionary = (
+        follow_skill.execute_targets(
+            active_monster,
+            [follow_target]
+        )
+    )
+
+    if not follow_result.get("success", false):
+        return
+
+    result["damage"] = int(
+        result.get("damage", 0)
+    ) + int(
+        follow_result.get("damage", 0)
+    )
+
+    result["critical_hits"] = int(
+        result.get("critical_hits", 0)
+    ) + int(
+        follow_result.get("critical_hits", 0)
+    )
+
+    result["effects_applied"].append_array(
+        follow_result.get(
+            "effects_applied",
+            []
+        )
+    )
+
+    result["resisted_effects"].append_array(
+        follow_result.get(
+            "resisted_effects",
+            []
+        )
+    )
+
+    result["target_results"].append_array(
+        follow_result.get(
+            "target_results",
+            []
+        )
+    )
+
+    caster_feedback.append(
+        "MASSACRE - RELENTLESS PURSUIT!"
+    )
 
 
 func _resolve_stormbreak_requiem_follow_up(
