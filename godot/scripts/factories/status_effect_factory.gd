@@ -139,6 +139,20 @@ static func create_status_effect(
                 "multiplicative"
             )
 
+        "poison":
+            return StatusEffectScript.new(
+                "poison",
+                "Poison",
+                null,
+                "debuff",
+                null,
+                duration,
+                stacks,
+                10,
+                source,
+                "multiplicative"
+            )
+
         "stun":
             return StatusEffectScript.new(
                 "stun",
