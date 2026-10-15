@@ -329,7 +329,15 @@ func _run_combat_regressions() -> Array[String]:
         abyssal, freeze_target, storm_rider, supported_ally, storm_target
     ]:
         if participant != null:
+            # Applied status effects can point back to the caster;
+            # clear both sides to avoid RefCounted cycles in CI.
+            participant.buffs.clear()
+            participant.debuffs.clear()
+            participant.special_states.clear()
             participant.combat_opponents = []
+            participant.named_target = null
+            participant.named_by = null
+            participant.death_named_by = null
     battle.active_monster = null
     battle.setup([], [])
 
