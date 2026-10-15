@@ -485,6 +485,11 @@ func apply_damage_over_time() -> Dictionary:
                 3:
                     damage = int(max_health * 0.10)
 
+        elif debuff.effect_id == "poison":
+            damage = int(
+                max_health * 0.05 * debuff.stacks
+            )
+
         if damage <= 0:
             continue
 
