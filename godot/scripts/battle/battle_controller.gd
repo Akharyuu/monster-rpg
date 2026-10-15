@@ -1418,20 +1418,9 @@ func can_use_soul_recall(caster) -> bool:
     ):
         return false
 
-    var team: Array = (
-        allies
-        if caster in allies
-        else enemies
-    )
-
-    for ally in team:
-        if (
-            not ally.is_alive()
-            and not ally.banished
-        ):
-            return true
-
-    return false
+    # The active is available at five charges, even when no ally is
+    # dead. Valid targets are checked only when a revive is executed.
+    return caster in allies or caster in enemies
 
 
 func execute_soul_recall(target) -> Dictionary:
