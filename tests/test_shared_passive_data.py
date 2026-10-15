@@ -216,3 +216,25 @@ def test_frozen_scales_reads_triggers_and_rewards_from_json():
     assert 'frozen_passive.get("required_scales", 0)' in source
     assert 'frozen_passive.get("max_scales", 0)' in source
     assert 'frozen_passive.get("buffs", [])' in source
+
+
+def test_short_circuit_uses_passive_json_parameters():
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[1]
+        / "godot" / "scripts" / "models" / "damage_skill.gd"
+    ).read_text(encoding="utf-8")
+    for token in (
+        'get_passive_by_handler(', '"stun_on_hit_if_buff"',
+        '"required_buff"', '"allowed_skill_ids"', '"chance"',
+        '"reduce_skill_cooldown"', '"skill_ids"', '"amount"'
+    ):
+        assert token in source
+
+    records = passive_module.PASSIVE_DATA
+    basic = records["short_circuit"]["handler_data"]
+    upgraded = records["short_circuit_chain_reaction"]["handler_data"]
+    assert basic["chance"] == upgraded["chance"] == 0.1
+    assert "on_success" not in basic
+    assert upgraded["on_success"]["reduce_skill_cooldown"]["amount"] == 1

@@ -759,50 +759,52 @@ func execute_on_target(
             effects_applied
         )
 
+        var short_circuit: Dictionary = attacker.get_passive_by_handler(
+            "stun_on_hit_if_buff"
+        )
+        var short_data: Dictionary = short_circuit.get("handler_data", {})
         if (
-            attacker.monster_id == "drake_storm"
-            and attacker.resonance >= 1
+            not short_circuit.is_empty()
             and not attacker.has_oblivion()
-            and attacker.has_buff("speed_up")
-            and skill_id in [
-                "draconic_claw",
-                "lightning_rush",
-                "lightning_rush_blitz"
-            ]
+            and attacker.has_buff(
+                str(short_data.get("required_buff", ""))
+            )
+            and skill_id in short_data.get("allowed_skill_ids", [])
             and defender.is_alive()
-            and randf() <= 0.10
+            and randf() <= float(short_data.get("chance", 0.0))
         ):
-            var short_circuit_result: Dictionary = (
-                try_apply_effect(
-                    {
-                        "effect_id": "stun",
-                        "chance": 1.00,
-                        "turns": 1
-                    },
-                    attacker,
-                    defender,
-                    effects_applied
-                )
+            var short_circuit_result: Dictionary = try_apply_effect(
+                {
+                    "effect_id": "stun",
+                    "chance": 1.0,
+                    "turns": int(short_data.get("turns", 0))
+                },
+                attacker,
+                defender,
+                effects_applied
             )
 
             var short_circuit_stun = (
                 short_circuit_result["applied_effect"]
             )
-
             if short_circuit_stun != null:
-                effects_applied.append(
-                    short_circuit_stun
+                effects_applied.append(short_circuit_stun)
+
+                var success_data: Dictionary = short_data.get(
+                    "on_success", {}
                 )
-
-                if attacker.resonance >= 4:
-                    var stormbreak_skill = (
-                        attacker.get_skill(3)
-                    )
-
-                    if stormbreak_skill != null:
-                        stormbreak_skill.current_cooldown = max(
+                var cooldown_data: Dictionary = success_data.get(
+                    "reduce_skill_cooldown", {}
+                )
+                for ally_skill in attacker.skills:
+                    if ally_skill.skill_id in cooldown_data.get(
+                        "skill_ids", []
+                    ):
+                        ally_skill.current_cooldown = maxi(
                             0,
-                            stormbreak_skill.current_cooldown - 1
+                            ally_skill.current_cooldown - int(
+                                cooldown_data.get("amount", 0)
+                            )
                         )
 
         if (
