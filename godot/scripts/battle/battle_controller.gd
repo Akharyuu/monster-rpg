@@ -224,6 +224,12 @@ func _resolve_after_turn_passives() -> void:
     )
 
     if active_monster.monster_id == "dullahan_abyssal":
+        var extend_count: int = (
+            2
+            if active_monster.resonance >= 3
+            else 1
+        )
+
         for enemy in opponents:
             if not enemy.is_alive():
                 continue
@@ -237,16 +243,20 @@ func _resolve_after_turn_passives() -> void:
             if eligible.is_empty():
                 continue
 
-            var chosen = eligible[
-                randi_range(0, eligible.size() - 1)
-            ]
+            eligible.shuffle()
 
-            chosen.remaining_turns += 1
-            chosen.duration += 1
+            for index in range(
+                mini(extend_count, eligible.size())
+            ):
+                eligible[index].remaining_turns += 1
+                eligible[index].duration += 1
 
         return
 
-    if active_monster.monster_id == "dullahan_storm":
+    if (
+        active_monster.monster_id == "dullahan_storm"
+        and active_monster.resonance >= 2
+    ):
         var living_opponents: Array = []
 
         for enemy in opponents:
@@ -403,6 +413,98 @@ func execute_active_skill(
         )
 
     if (
+        active_monster.monster_id == "dullahan_abyssal"
+        and skill.skill_id == "spectral_shackles_lockdown"
+    ):
+        for target_result in result.get(
+            "target_results",
+            []
+        ):
+            var applied_ids: Array[String] = []
+
+            for effect in target_result.get(
+                "effects_applied",
+                []
+            ):
+                applied_ids.append(effect.effect_id)
+
+            if (
+                "speed_break" in applied_ids
+                and "attack_break" in applied_ids
+            ):
+                target_result["target"].action_gauge = maxf(
+                    0.0,
+                    target_result["target"].action_gauge - 0.20
+                )
+                caster_feedback.append(
+                    "LOCKDOWN -20% AG"
+                )
+
+    if (
+        active_monster.monster_id == "dullahan_abyssal"
+        and skill.skill_id in [
+            "inescapable_fate",
+            "inescapable_fate_ironbound"
+        ]
+    ):
+        for target_result in result.get(
+            "target_results",
+            []
+        ):
+            var target = target_result["target"]
+
+            if not target.is_alive():
+                continue
+
+            for debuff in target.debuffs:
+                if debuff.extendable:
+                    debuff.remaining_turns += 1
+                    debuff.duration += 1
+
+            if target.debuffs.size() >= 3:
+                var silence = (
+                    StatusEffectFactoryScript.create_status_effect(
+                        "silence",
+                        1,
+                        active_monster
+                    )
+                )
+
+                if target.apply_status_effect(silence) != null:
+                    target_result["effects_applied"].append(
+                        silence
+                    )
+                    result["effects_applied"].append(
+                        silence
+                    )
+                    caster_feedback.append("SILENCE!")
+
+    if (
+        active_monster.monster_id == "dullahan_storm"
+        and skill.skill_id == "gale_pursuit_tempest"
+    ):
+        var storm_team: Array = (
+            allies
+            if active_monster in allies
+            else enemies
+        )
+
+        for ally in storm_team:
+            if not ally.is_alive():
+                continue
+
+            var team_speed_up = (
+                StatusEffectFactoryScript.create_status_effect(
+                    "speed_up",
+                    2,
+                    active_monster
+                )
+            )
+            ally.apply_status_effect(team_speed_up)
+
+        caster_feedback.append("TEMPEST - TEAM SPD UP!")
+
+    if (
         active_monster.monster_id == "drake_void"
         and active_monster.resonance >= 2
     ):
@@ -519,7 +621,11 @@ func execute_active_skill(
 
     if (
         active_monster.monster_id == "dullahan_storm"
-        and skill.skill_id == "headlong_charge"
+        and skill.skill_id in [
+            "headlong_charge",
+            "headlong_charge_rally",
+            "headlong_charge_stampede"
+        ]
     ):
         var attack_up = (
             StatusEffectFactoryScript.create_status_effect(
@@ -528,7 +634,6 @@ func execute_active_skill(
                 active_monster
             )
         )
-
         var speed_up = (
             StatusEffectFactoryScript.create_status_effect(
                 "speed_up",
@@ -545,7 +650,6 @@ func execute_active_skill(
             if active_monster in allies
             else enemies
         )
-
         var living_allies: Array = []
 
         for ally in team:
@@ -561,13 +665,59 @@ func execute_active_skill(
                 if ally.action_gauge < gauge_target.action_gauge:
                     gauge_target = ally
 
-        gauge_target.increase_action_gauge(0.20)
+        var gauge_gain: float = (
+            0.30
+            if skill.skill_id in [
+                "headlong_charge_rally",
+                "headlong_charge_stampede"
+            ]
+            else 0.20
+        )
+
+        if skill.skill_id in [
+            "headlong_charge_rally",
+            "headlong_charge_stampede"
+        ]:
+            var ally_attack_up = (
+                StatusEffectFactoryScript.create_status_effect(
+                    "attack_up",
+                    2,
+                    active_monster
+                )
+            )
+            var ally_speed_up = (
+                StatusEffectFactoryScript.create_status_effect(
+                    "speed_up",
+                    2,
+                    active_monster
+                )
+            )
+            gauge_target.apply_status_effect(
+                ally_attack_up
+            )
+            gauge_target.apply_status_effect(
+                ally_speed_up
+            )
+
+        gauge_target.increase_action_gauge(
+            gauge_gain
+        )
+
+        if (
+            skill.skill_id == "headlong_charge_stampede"
+            and gauge_target != active_monster
+        ):
+            forced_next_monster = gauge_target
 
         caster_feedback.append("ATK UP!")
         caster_feedback.append("SPD UP!")
         caster_feedback.append(
-            "HEADLONG CHARGE - %s +20%% AG"
-            % gauge_target.monster_name
+            "%s - %s +%d%% AG"
+            % [
+                skill.skill_name.to_upper(),
+                gauge_target.monster_name,
+                int(gauge_gain * 100.0)
+            ]
         )
 
     if (
