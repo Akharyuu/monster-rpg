@@ -224,7 +224,7 @@ static func _attach_skill_descriptions(monster) -> void:
             "effects": [
                 {
                     "kind": "damage",
-                    "text": "Deals increased damage if the target is already affected by [color=#ff7777]Poison[/color] when the skill begins."
+                    "text": "Deals increased damage if the target is already affected by [color=#ff7777]Poison[/color]."
                 }
             ]
         },
