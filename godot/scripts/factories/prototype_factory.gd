@@ -774,6 +774,95 @@ static func _attach_passive_description(monster) -> void:
         {}
     )
 
+    if monster.monster_id == "drake_igneous":
+        if monster.resonance >= 4:
+            monster.passive_tooltip = {
+                "name": "Cinderblood: Molten Core",
+                "summary": "Ignites enemies more aggressively and feeds the Drake's momentum.",
+                "effects": [
+                    {
+                        "kind": "debuff",
+                        "text": "Each landed hit has a [b]65% chance[/b] to apply [color=#ff7777]Burn[/color] for [b]2 turns[/b]."
+                    },
+                    {
+                        "kind": "special",
+                        "text": "The first Burn applied each skill grants [b]10% Action Gauge[/b]."
+                    }
+                ]
+            }
+        elif monster.resonance >= 1:
+            monster.passive_tooltip = {
+                "name": "Cinderblood: Ignite",
+                "summary": "Each landed hit can ignite the target.",
+                "effects": [
+                    {
+                        "kind": "debuff",
+                        "text": "Each landed hit has a [b]50% chance[/b] to apply [color=#ff7777]Burn[/color] for [b]2 turns[/b]."
+                    }
+                ]
+            }
+
+    if monster.monster_id == "drake_abyssal":
+        var frozen_scales_data: Dictionary = {
+            "name": (
+                "Frozen Scales: Everfrost"
+                if monster.resonance >= 3
+                else "Frozen Scales"
+            ),
+            "summary": "Builds Frozen Scales through successful Freezes, then consumes them to fortify the caster.",
+            "effects": [
+                {
+                    "kind": "special",
+                    "text": "Each enemy Frozen by [b]Glacial Collapse[/b] grants [b]1 Frozen Scale[/b], up to [b]3[/b]."
+                },
+                {
+                    "kind": "buff",
+                    "text": "Before casting Glacial Collapse at [b]3/3[/b], consumes all scales and grants [color=#70c8ff]Defense Up[/color] and [color=#70c8ff]Immunity[/color] for [b]2 turns[/b]."
+                }
+            ]
+        }
+
+        if monster.resonance >= 3:
+            frozen_scales_data["effects"].append(
+                {
+                    "kind": "special",
+                    "text": "Reaching [b]3 Frozen Scales[/b] resets [b]Glacial Collapse[/b]."
+                }
+            )
+
+        monster.passive_tooltips = [
+            frozen_scales_data
+        ]
+        monster.passive_tooltip = frozen_scales_data
+
+        if monster.resonance >= 2:
+            var frostborne_data: Dictionary = {
+                "name": (
+                    "Frostborne: Everlasting Winter"
+                    if monster.resonance >= 4
+                    else "Frostborne"
+                ),
+                "summary": "Prevents the Drake's frozen targets from being freed by damage.",
+                "effects": [
+                    {
+                        "kind": "special",
+                        "text": "Damage dealt by this monster does not break [color=#ff7777]Freeze[/color]."
+                    }
+                ]
+            }
+
+            if monster.resonance >= 4:
+                frostborne_data["effects"].append(
+                    {
+                        "kind": "special",
+                        "text": "[color=#ff7777]Freeze[/color] applied by this monster cannot be broken by damage."
+                    }
+                )
+
+            monster.passive_tooltips.append(
+                frostborne_data
+            )
+
     if (
         monster.monster_id == "dryad_storm"
         and monster.resonance >= 1
@@ -815,6 +904,15 @@ static func _attach_passive_description(monster) -> void:
                 }
             ]
         }
+
+
+    if (
+        monster.passive_tooltips.is_empty()
+        and not monster.passive_tooltip.is_empty()
+    ):
+        monster.passive_tooltips = [
+            monster.passive_tooltip
+        ]
 
 
 static func _scaled(value: float) -> int:
