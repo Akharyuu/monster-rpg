@@ -352,10 +352,7 @@ static func _attach_skill_descriptions(monster) -> void:
                     "kind": "control",
                     "text": "Each hit has a [b]75% chance[/b] to reduce the target's [b]Action Gauge by 30%[/b]."
                 },
-                {
-                    "kind": "special",
-                    "text": "Cooldown reduced to [b]3 turns[/b]."
-                }
+
             ]
         },
 
