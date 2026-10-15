@@ -208,6 +208,29 @@ func get_effective_stat(stat: String) -> float:
     ):
         value += speed * 0.20
 
+    if (
+        stat == "crit_rate"
+        and monster_id == "drake_storm"
+        and resonance >= 3
+        and not has_oblivion()
+    ):
+        var bonus_speed: float = maxf(
+            0.0,
+            get_effective_stat("speed") - speed
+        )
+        value += minf(
+            floorf(bonus_speed / 5.0),
+            30.0
+        )
+
+    if (
+        stat == "accuracy"
+        and monster_id == "drake_aether"
+        and resonance >= 4
+        and not has_oblivion()
+    ):
+        value += 25.0
+
     return value
 
 
