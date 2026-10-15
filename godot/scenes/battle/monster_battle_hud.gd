@@ -85,30 +85,31 @@ func set_target_enabled(enabled: bool) -> void:
 func set_target_mode(mode: String) -> void:
     target_mode = mode
 
-    var can_target: bool = (
-        bound_monster != null
-        and bound_monster.is_alive()
-        and is_enemy
-    )
+    var can_target := false
 
-    target_button.disabled = (
-        target_mode != "single"
-        or not can_target
-    )
+    if target_mode == "single":
+        can_target = (
+            bound_monster != null
+            and bound_monster.is_alive()
+            and is_enemy
+        )
+    elif target_mode == "dead_ally":
+        can_target = (
+            bound_monster != null
+            and not bound_monster.is_alive()
+            and not bound_monster.banished
+            and not is_enemy
+        )
 
-    target_button.visible = (
-        target_mode == "single"
-        and can_target
-    )
+    target_button.disabled = not can_target
+    target_button.visible = can_target
+    target_prompt.visible = can_target
+    target_highlight.visible = can_target
 
-    target_prompt.visible = (
-        target_mode == "single"
-        and can_target
-    )
-
-    target_highlight.visible = (
-        target_mode != "none"
-        and can_target
+    target_prompt.text = (
+        "REVIVE"
+        if target_mode == "dead_ally"
+        else "TARGET"
     )
 
     _update_target_style()
