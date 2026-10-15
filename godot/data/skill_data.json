@@ -7,7 +7,11 @@
       "multiplier": 2.3,
       "hits": 1,
       "target_type": "single_enemy",
-      "cooldown": 0
+      "cooldown": 0,
+      "tooltip": {
+        "summary": "Slams into one enemy.",
+        "effects": []
+      }
     },
     "nurturing_lash": {
       "name": "Nurturing Lash",
@@ -23,7 +27,16 @@
             "healing_hp_ratio": 0.05
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Strikes one enemy with a living vine, then restores a wounded ally.",
+        "effects": [
+          {
+            "kind": "heal",
+            "text": "After attacking, heals the living ally with the lowest HP ratio for [b]5% of the caster's Max HP[/b]."
+          }
+        ]
+      }
     },
     "will_o_glow": {
       "name": "Will-o'-Glow",
@@ -40,7 +53,16 @@
             "amount": 0.1
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Launches a flickering spirit flame at one enemy.",
+        "effects": [
+          {
+            "kind": "control",
+            "text": "[b]60% chance[/b] to reduce the target's [b]Action Gauge by 10%[/b]."
+          }
+        ]
+      }
     },
     "needle_rush": {
       "name": "Needle Rush",
@@ -56,7 +78,16 @@
           "turns": 2,
           "trigger": "per_hit"
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Strikes one enemy twice with venomous needles.",
+        "effects": [
+          {
+            "kind": "debuff",
+            "text": "Each hit has a [b]35% chance[/b] to apply [color=#ff7777]Poison[/color] for [b]2 turns[/b]."
+          }
+        ]
+      }
     },
     "fever_sting": {
       "name": "Fever Sting",
@@ -73,6 +104,15 @@
           "state": "skill_start"
         },
         "damage_multiplier": 1.15
+      },
+      "tooltip": {
+        "summary": "Drives three fevered stings into one enemy.",
+        "effects": [
+          {
+            "kind": "damage",
+            "text": "Deals increased damage if the target is already affected by [color=#ff7777]Poison[/color]."
+          }
+        ]
       }
     },
     "numbing_sting": {
@@ -99,7 +139,20 @@
             "effect_id": "poison"
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Pierces one enemy twice with numbing venom.",
+        "effects": [
+          {
+            "kind": "debuff",
+            "text": "Each hit has a [b]25% chance[/b] to apply [color=#ff7777]Poison[/color] for [b]2 turns[/b]."
+          },
+          {
+            "kind": "debuff",
+            "text": "If this skill applies Poison, has a [b]60% chance[/b] to apply [color=#ff7777]Stun[/color] for [b]1 turn[/b]."
+          }
+        ]
+      }
     },
     "swarm_pierce": {
       "name": "Swarm Pierce",
@@ -119,6 +172,15 @@
           "2": 1.15,
           "3": 1.3
         }
+      },
+      "tooltip": {
+        "summary": "Overwhelms one enemy with three rapid piercing attacks.",
+        "effects": [
+          {
+            "kind": "damage",
+            "text": "If the target already has a debuff when the skill begins, each successive hit deals more damage."
+          }
+        ]
       }
     },
     "vine_barrage": {
@@ -135,7 +197,16 @@
             "healing_hp_ratio": 0.08
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Strikes one enemy with three rapid vines.",
+        "effects": [
+          {
+            "kind": "heal",
+            "text": "After attacking, heals the living ally with the lowest HP ratio for [b]8% of the caster's Max HP[/b]."
+          }
+        ]
+      }
     },
     "vine_barrage_nourishment": {
       "name": "Vine Barrage: Nourishment",
@@ -151,7 +222,16 @@
             "healing_hp_ratio": 0.15
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Strikes one enemy with three rapid vines, then channels stronger restorative energy.",
+        "effects": [
+          {
+            "kind": "heal",
+            "text": "After attacking, heals the living ally with the lowest HP ratio for [b]15% of the caster's Max HP[/b]."
+          }
+        ]
+      }
     },
     "breath_of_the_grove": {
       "name": "Breath of the Grove",
@@ -165,7 +245,16 @@
             "healing_hp_ratio": 0.25
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Channels restorative energy through the entire allied team.",
+        "effects": [
+          {
+            "kind": "heal",
+            "text": "Heals all living allies for [b]25% of the caster's Max HP[/b]."
+          }
+        ]
+      }
     },
     "breath_of_the_grove_sanctuary": {
       "name": "Breath of the Grove: Sanctuary",
@@ -186,7 +275,20 @@
             "turns": 1
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Bathes the allied team in restorative energy and protective grace.",
+        "effects": [
+          {
+            "kind": "heal",
+            "text": "Heals all living allies for [b]35% of the caster's Max HP[/b]."
+          },
+          {
+            "kind": "buff",
+            "text": "Grants [color=#70c8ff]Immunity[/color] for [b]1 turn[/b]."
+          }
+        ]
+      }
     },
     "breath_of_the_grove_evergreen": {
       "name": "Breath of the Grove: Evergreen",
@@ -214,7 +316,24 @@
             "turns": 2
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Floods the allied team with lasting restorative energy.",
+        "effects": [
+          {
+            "kind": "heal",
+            "text": "Heals all living allies for [b]35% of the caster's Max HP[/b]."
+          },
+          {
+            "kind": "buff",
+            "text": "Grants [color=#70c8ff]Immunity[/color] for [b]1 turn[/b]."
+          },
+          {
+            "kind": "buff",
+            "text": "Grants [color=#70c8ff]Regrowth[/color] for [b]2 turns[/b]."
+          }
+        ]
+      }
     },
     "rending_talons": {
       "name": "Rending Talons",
@@ -222,7 +341,11 @@
       "multiplier": 1.8,
       "hits": 1,
       "target_type": "single_enemy",
-      "cooldown": 0
+      "cooldown": 0,
+      "tooltip": {
+        "summary": "Rends one enemy with a powerful talon strike.",
+        "effects": []
+      }
     },
     "searing_gale": {
       "name": "Searing Gale",
@@ -239,7 +362,16 @@
             "amount": 0.2
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Unleashes a scorching gale that tears through all enemies in two waves.",
+        "effects": [
+          {
+            "kind": "control",
+            "text": "Each hit has a [b]50% chance[/b] to reduce the target's [b]Action Gauge by 20%[/b]."
+          }
+        ]
+      }
     },
     "searing_gale_turbulence": {
       "name": "Searing Gale: Turbulence",
@@ -256,7 +388,16 @@
             "amount": 0.2
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Unleashes a scorching gale that tears through all enemies in two waves.",
+        "effects": [
+          {
+            "kind": "control",
+            "text": "Each hit has a [b]75% chance[/b] to reduce the target's [b]Action Gauge by 20%[/b]."
+          }
+        ]
+      }
     },
     "searing_gale_heatstorm": {
       "name": "Searing Gale: Heatstorm",
@@ -273,7 +414,16 @@
             "amount": 0.3
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Unleashes an intensified scorching gale across the enemy team.",
+        "effects": [
+          {
+            "kind": "control",
+            "text": "Each hit has a [b]75% chance[/b] to reduce the target's [b]Action Gauge by 30%[/b]."
+          }
+        ]
+      }
     },
     "meteor_dive": {
       "name": "Meteor Dive",
@@ -285,6 +435,15 @@
       "damage_handler": "damage_with_speed_scaling",
       "damage_handler_data": {
         "speed_scaling": 0.001
+      },
+      "tooltip": {
+        "summary": "Crashes down on one enemy with overwhelming speed.",
+        "effects": [
+          {
+            "kind": "damage",
+            "text": "Damage increases according to the caster's Speed."
+          }
+        ]
       }
     },
     "meteor_dive_violent_crash": {
@@ -309,7 +468,20 @@
             "threshold": 0.5
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Crashes down on one enemy with overwhelming speed.",
+        "effects": [
+          {
+            "kind": "damage",
+            "text": "Damage increases according to the caster's Speed."
+          },
+          {
+            "kind": "debuff",
+            "text": "If the target has less than [b]50% Action Gauge[/b], has a [b]75% chance[/b] to apply [color=#ff7777]Stun[/color] for [b]1 turn[/b]."
+          }
+        ]
+      }
     },
     "meteor_dive_terminal_impact": {
       "name": "Meteor Dive: Terminal Impact",
@@ -337,7 +509,20 @@
             }
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Crashes down on one enemy with overwhelming speed.",
+        "effects": [
+          {
+            "kind": "damage",
+            "text": "Damage increases according to the caster's Speed."
+          },
+          {
+            "kind": "debuff",
+            "text": "Applies [color=#ff7777]Stun[/color] for [b]1 turn[/b] if the target has less than [b]50% Action Gauge[/b] ([b]70%[/b] if the caster has [color=#70c8ff]Speed Up[/color])."
+          }
+        ]
+      }
     },
     "draconic_claw": {
       "name": "Draconic Claw",
@@ -352,7 +537,16 @@
           "chance": 0.3,
           "turns": 2
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "A precise claw strike against one enemy.",
+        "effects": [
+          {
+            "kind": "debuff",
+            "text": "[b]30% chance[/b] to apply [color=#ff7777]Defense Break[/color] for [b]2 turns[/b]."
+          }
+        ]
+      }
     },
     "scorching_breath": {
       "name": "Scorching Breath",
@@ -368,6 +562,15 @@
           "2": 1.16,
           "3": 1.24
         }
+      },
+      "tooltip": {
+        "summary": "Engulfs all enemies in a two-hit breath attack.",
+        "effects": [
+          {
+            "kind": "damage",
+            "text": "Damage increases with the target's [color=#ff7777]Burn[/color] stacks."
+          }
+        ]
       }
     },
     "scorching_breath_afterburn": {
@@ -393,7 +596,20 @@
             "turns": 3
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Engulfs all enemies in a two-hit breath attack and feeds existing flames.",
+        "effects": [
+          {
+            "kind": "damage",
+            "text": "Damage increases with the target's [color=#ff7777]Burn[/color] stacks."
+          },
+          {
+            "kind": "debuff",
+            "text": "If the target is already affected by [color=#ff7777]Burn[/color], applies [b]1 additional Burn stack[/b] for [b]3 turns[/b]."
+          }
+        ]
+      }
     },
     "flame_devourer": {
       "name": "Flame Devourer",
@@ -421,7 +637,20 @@
             }
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Consumes the target's flames to empower the strike and restore the caster.",
+        "effects": [
+          {
+            "kind": "damage",
+            "text": "Deals increased damage based on [color=#ff7777]Burn[/color] stacks."
+          },
+          {
+            "kind": "heal",
+            "text": "Consumes the Burn present before the attack and [color=#76e6a8]heals the caster[/color]."
+          }
+        ]
+      }
     },
     "flame_devourer_rekindled": {
       "name": "Flame Devourer: Rekindled",
@@ -456,7 +685,24 @@
             "skill_slot": 2
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Consumes the target's flames to empower the strike and restore the caster.",
+        "effects": [
+          {
+            "kind": "damage",
+            "text": "Deals increased damage based on [color=#ff7777]Burn[/color] stacks."
+          },
+          {
+            "kind": "heal",
+            "text": "Consumes the Burn present before the attack and [color=#76e6a8]heals the caster[/color]."
+          },
+          {
+            "kind": "special",
+            "text": "Consuming [b]3 Burn stacks[/b] resets [b]Scorching Breath[/b]."
+          }
+        ]
+      }
     },
     "flame_devourer_incineration": {
       "name": "Flame Devourer: Incineration",
@@ -492,7 +738,28 @@
             "skill_slot": 2
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Consumes the target's flames in a devastating finishing strike.",
+        "effects": [
+          {
+            "kind": "damage",
+            "text": "Deals increased damage based on [color=#ff7777]Burn[/color] stacks."
+          },
+          {
+            "kind": "damage",
+            "text": "At [b]3 Burn stacks[/b], ignores the target's Defense."
+          },
+          {
+            "kind": "heal",
+            "text": "Consumes the Burn present before the attack and [color=#76e6a8]heals the caster[/color]."
+          },
+          {
+            "kind": "special",
+            "text": "Consuming [b]3 Burn stacks[/b] resets [b]Scorching Breath[/b]."
+          }
+        ]
+      }
     },
     "rime_breath": {
       "name": "Rime Breath",
@@ -508,7 +775,16 @@
           "turns": 2,
           "trigger": "per_hit"
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "A freezing breath that strikes the entire enemy team twice.",
+        "effects": [
+          {
+            "kind": "debuff",
+            "text": "Each hit has a [b]50% chance[/b] to apply [color=#ff7777]Speed Break[/color] for [b]2 turns[/b]."
+          }
+        ]
+      }
     },
     "rime_breath_frigid": {
       "name": "Rime Breath: Frigid",
@@ -533,7 +809,20 @@
           "turns": 2,
           "trigger": "per_hit"
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "A freezing breath that strikes the entire enemy team twice.",
+        "effects": [
+          {
+            "kind": "control",
+            "text": "Each hit reduces [b]10% Action Gauge[/b] if the target is affected by [color=#ff7777]Speed Break[/color]."
+          },
+          {
+            "kind": "debuff",
+            "text": "Each hit has a [b]50% chance[/b] to apply [color=#ff7777]Speed Break[/color] for [b]2 turns[/b]."
+          }
+        ]
+      }
     },
     "glacial_collapse": {
       "name": "Glacial Collapse",
@@ -561,7 +850,20 @@
             "effect_id": "speed_break"
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Crushes the enemy team under a sudden glacial impact.",
+        "effects": [
+          {
+            "kind": "control",
+            "text": "Reduces each target's [b]Action Gauge by 10%[/b]."
+          },
+          {
+            "kind": "control",
+            "text": "Targets with [color=#ff7777]Speed Break[/color] can be [color=#ff7777]Frozen[/color] for [b]1 turn[/b]."
+          }
+        ]
+      }
     },
     "glacial_collapse_absolute_zero": {
       "name": "Glacial Collapse: Absolute Zero",
@@ -601,7 +903,24 @@
             "effect_id": "speed_break"
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Crushes the enemy team under an absolute glacial collapse.",
+        "effects": [
+          {
+            "kind": "control",
+            "text": "Reduces each target's [b]Action Gauge by 10%[/b]."
+          },
+          {
+            "kind": "debuff",
+            "text": "Targets with [color=#ff7777]Speed Break[/color] are [color=#ff7777]Frozen[/color] for [b]1 turn[/b], ignoring Resistance."
+          },
+          {
+            "kind": "debuff",
+            "text": "Other targets have a [b]75% chance[/b] to be [color=#ff7777]Frozen[/color] for [b]1 turn[/b], ignoring Resistance."
+          }
+        ]
+      }
     },
     "lightning_rush": {
       "name": "Lightning Rush",
@@ -618,7 +937,16 @@
             "turns": 2
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Rushes one enemy with two rapid lightning-infused strikes.",
+        "effects": [
+          {
+            "kind": "buff",
+            "text": "After attacking, grants the caster [color=#70c8ff]Speed Up[/color] for [b]2 turns[/b]."
+          }
+        ]
+      }
     },
     "lightning_rush_blitz": {
       "name": "Lightning Rush: Blitz",
@@ -641,7 +969,20 @@
             "amount": 0.15
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Rushes one enemy with two rapid lightning-infused strikes.",
+        "effects": [
+          {
+            "kind": "buff",
+            "text": "After attacking, grants the caster [color=#70c8ff]Speed Up[/color] for [b]2 turns[/b]."
+          },
+          {
+            "kind": "special",
+            "text": "After attacking, gains [b]15% Action Gauge[/b]."
+          }
+        ]
+      }
     },
     "stormbreak": {
       "name": "Stormbreak",
@@ -667,7 +1008,24 @@
           "trigger": "hit_count_threshold",
           "min_hits": 3
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Unleashes ten lightning strikes across random enemies.",
+        "effects": [
+          {
+            "kind": "special",
+            "text": "Hits every living enemy at least once before distributing the remaining strikes randomly."
+          },
+          {
+            "kind": "control",
+            "text": "A target hit [b]3+ times[/b] has a [b]50% chance[/b] to be [color=#ff7777]Stunned[/color]."
+          },
+          {
+            "kind": "damage",
+            "text": "Repeated hits after the fifth deal reduced damage. The first hit gains bonus damage while the caster has [color=#70c8ff]Speed Up[/color]."
+          }
+        ]
+      }
     },
     "stormbreak_requiem": {
       "name": "Stormbreak: Requiem",
@@ -701,7 +1059,20 @@
             "damage_multiplier": 0.75
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Unleashes ten lightning strikes across random enemies, followed by a final sweeping discharge.",
+        "effects": [
+          {
+            "kind": "control",
+            "text": "A target hit [b]3+ times[/b] has a [b]50% chance[/b] to be [color=#ff7777]Stunned[/color] for [b]1 turn[/b]."
+          },
+          {
+            "kind": "damage",
+            "text": "After the ten strikes, unleashes an additional attack against all living enemies."
+          }
+        ]
+      }
     },
     "sovereign_breath": {
       "name": "Sovereign Breath",
@@ -720,7 +1091,20 @@
             "turns": 1
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Blasts all enemies with sovereign aether.",
+        "effects": [
+          {
+            "kind": "debuff",
+            "text": "Applies [color=#ff7777]Silence[/color] for [b]1 turn[/b]."
+          },
+          {
+            "kind": "special",
+            "text": "Silence chance starts at [b]30%[/b] and gains [b]+10% per caster buff[/b], up to [b]80%[/b]."
+          }
+        ]
+      }
     },
     "sovereign_breath_subjugation": {
       "name": "Sovereign Breath: Subjugation",
@@ -739,7 +1123,16 @@
             "turns": 1
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Overwhelms the enemy team with sovereign aether, suppressing their ability to act.",
+        "effects": [
+          {
+            "kind": "debuff",
+            "text": "[b]50% chance[/b] to apply [color=#ff7777]Silence[/color] for [b]1 turn[/b] ([b]+10% chance[/b] for each buff on the caster)."
+          }
+        ]
+      }
     },
     "heavens_decree": {
       "name": "Heaven's Decree",
@@ -768,7 +1161,16 @@
             "turns": 2
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Empowers the entire allied team with celestial authority.",
+        "effects": [
+          {
+            "kind": "buff",
+            "text": "Grants [color=#70c8ff]Attack Up[/color], [color=#70c8ff]Immunity[/color] and [color=#70c8ff]Veil[/color] for [b]2 turns[/b]."
+          }
+        ]
+      }
     },
     "heavens_decree_apotheosis": {
       "name": "Heaven's Decree: Apotheosis",
@@ -801,7 +1203,20 @@
           "handler": "grant_extra_turn",
           "data": {}
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Elevates the entire allied team under overwhelming celestial authority.",
+        "effects": [
+          {
+            "kind": "buff",
+            "text": "Grants [color=#70c8ff]Attack Up[/color], [color=#70c8ff]Immunity[/color] and [color=#70c8ff]Veil[/color] for [b]3 turns[/b]."
+          },
+          {
+            "kind": "special",
+            "text": "Grants the caster an [b]extra turn[/b]."
+          }
+        ]
+      }
     },
     "null_rend": {
       "name": "Null Rend",
@@ -822,7 +1237,16 @@
             ]
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Tears into one enemy with two void-infused strikes.",
+        "effects": [
+          {
+            "kind": "debuff",
+            "text": "The second hit has a [b]60% chance[/b] to apply [color=#ff7777]Oblivion[/color] for [b]2 turns[/b]."
+          }
+        ]
+      }
     },
     "null_rend_obliterate": {
       "name": "Null Rend: Obliterate",
@@ -847,7 +1271,16 @@
             ]
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Tears into one enemy with two increasingly destructive void strikes.",
+        "effects": [
+          {
+            "kind": "debuff",
+            "text": "The second hit has an [b]80% chance[/b] to apply [color=#ff7777]Oblivion[/color] for [b]2 turns[/b]."
+          }
+        ]
+      }
     },
     "null_rend_annihilation": {
       "name": "Null Rend: Annihilation",
@@ -878,7 +1311,24 @@
           "handler": "banish_killed_oblivion_targets",
           "data": {}
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Tears into one enemy with two void strikes that can erase the fallen from battle.",
+        "effects": [
+          {
+            "kind": "debuff",
+            "text": "The second hit has an [b]80% chance[/b] to apply [color=#ff7777]Oblivion[/color] for [b]2 turns[/b]."
+          },
+          {
+            "kind": "special",
+            "text": "If this skill defeats a target that was already affected by [color=#ff7777]Oblivion[/color], the target becomes [color=#d9a6ff]Banished[/color]."
+          },
+          {
+            "kind": "special",
+            "text": "A [color=#d9a6ff]Banished[/color] monster cannot be revived."
+          }
+        ]
+      }
     },
     "dismantle": {
       "name": "Dismantle",
@@ -916,7 +1366,24 @@
             ]
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Disassembles the enemy team's defenses over three sweeping hits.",
+        "effects": [
+          {
+            "kind": "special",
+            "text": "[b]Hit 1:[/b] strips enemy buffs."
+          },
+          {
+            "kind": "damage",
+            "text": "[b]Hits 2-3:[/b] deal increased damage for every buff removed."
+          },
+          {
+            "kind": "debuff",
+            "text": "[b]Hits 2-3:[/b] each has a [b]30% chance[/b] to apply [color=#ff7777]Defense Break[/color] for [b]2 turns[/b]."
+          }
+        ]
+      }
     },
     "dismantle_decimation": {
       "name": "Dismantle: Decimation",
@@ -954,7 +1421,24 @@
             ]
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Disassembles the enemy team's defenses over three sweeping hits.",
+        "effects": [
+          {
+            "kind": "special",
+            "text": "[b]Hit 1:[/b] strips enemy buffs."
+          },
+          {
+            "kind": "damage",
+            "text": "[b]Hits 2-3:[/b] deal increased damage for every buff removed."
+          },
+          {
+            "kind": "debuff",
+            "text": "[b]Hits 2-3:[/b] each has a [b]50% chance[/b] to apply [color=#ff7777]Defense Break[/color] for [b]2 turns[/b]."
+          }
+        ]
+      }
     },
     "severing_blade": {
       "name": "Severing Blade",
@@ -970,7 +1454,16 @@
           "turns": 2,
           "trigger": "after_skill"
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "A heavy single-target slash.",
+        "effects": [
+          {
+            "kind": "debuff",
+            "text": "[b]30% chance[/b] to apply [color=#ff7777]Heal Block[/color] for [b]2 turns[/b]."
+          }
+        ]
+      }
     },
     "relentless_pursuit": {
       "name": "Relentless Pursuit",
@@ -982,6 +1475,15 @@
       "damage_handler": "damage_by_missing_health",
       "damage_handler_data": {
         "max_bonus_damage": 0.3
+      },
+      "tooltip": {
+        "summary": "Relentlessly hunts down a wounded enemy with two strikes.",
+        "effects": [
+          {
+            "kind": "damage",
+            "text": "Damage increases as the target loses Health."
+          }
+        ]
       }
     },
     "relentless_pursuit_blood_trail": {
@@ -1003,7 +1505,20 @@
             "amount": 0.2
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Relentlessly hunts down a wounded enemy with two increasingly dangerous strikes.",
+        "effects": [
+          {
+            "kind": "damage",
+            "text": "Damage increases as the target loses Health."
+          },
+          {
+            "kind": "special",
+            "text": "Each hit against a target below [b]50% HP[/b] grants [b]20% Action Gauge[/b]."
+          }
+        ]
+      }
     },
     "death_sentence": {
       "name": "Death Sentence",
@@ -1016,6 +1531,15 @@
       "damage_handler_data": {
         "health_threshold": 0.25,
         "defense_ignore_ratio": 0.5
+      },
+      "tooltip": {
+        "summary": "Delivers a lethal single-target strike.",
+        "effects": [
+          {
+            "kind": "damage",
+            "text": "Partially ignores Defense if the target is below [b]25% HP[/b]."
+          }
+        ]
       }
     },
     "death_sentence_execution": {
@@ -1029,6 +1553,15 @@
       "damage_handler_data": {
         "health_threshold": 0.33,
         "defense_ignore_ratio": 0.5
+      },
+      "tooltip": {
+        "summary": "Delivers a lethal strike designed to execute weakened enemies.",
+        "effects": [
+          {
+            "kind": "damage",
+            "text": "Partially ignores Defense if the target is below [b]33% HP[/b]."
+          }
+        ]
       }
     },
     "death_sentence_massacre": {
@@ -1050,7 +1583,20 @@
             "skill_slot": 2
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Executes a weakened enemy and immediately continues the hunt.",
+        "effects": [
+          {
+            "kind": "damage",
+            "text": "Partially ignores Defense if the target is below [b]33% HP[/b]."
+          },
+          {
+            "kind": "special",
+            "text": "If this skill defeats an enemy, immediately uses [b]Relentless Pursuit[/b] against the living enemy with the lowest HP ratio."
+          }
+        ]
+      }
     },
     "spectral_shackles": {
       "name": "Spectral Shackles",
@@ -1082,7 +1628,20 @@
             ]
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Binds one enemy with two spectral strikes.",
+        "effects": [
+          {
+            "kind": "debuff",
+            "text": "[b]Hit 1:[/b] 50% chance to apply [color=#ff7777]Speed Break[/color] for [b]2 turns[/b]."
+          },
+          {
+            "kind": "debuff",
+            "text": "[b]Hit 2:[/b] 50% chance to apply [color=#ff7777]Attack Break[/color] for [b]2 turns[/b]."
+          }
+        ]
+      }
     },
     "spectral_shackles_binding": {
       "name": "Spectral Shackles: Binding",
@@ -1114,7 +1673,20 @@
             ]
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Binds one enemy more tightly with two spectral strikes.",
+        "effects": [
+          {
+            "kind": "debuff",
+            "text": "[b]Hit 1:[/b] 70% chance to apply [color=#ff7777]Speed Break[/color] for [b]2 turns[/b]."
+          },
+          {
+            "kind": "debuff",
+            "text": "[b]Hit 2:[/b] 70% chance to apply [color=#ff7777]Attack Break[/color] for [b]2 turns[/b]."
+          }
+        ]
+      }
     },
     "spectral_shackles_lockdown": {
       "name": "Spectral Shackles: Lockdown",
@@ -1158,7 +1730,24 @@
             "amount": 0.2
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Locks one enemy down with two spectral strikes.",
+        "effects": [
+          {
+            "kind": "debuff",
+            "text": "[b]Hit 1:[/b] 90% chance to apply [color=#ff7777]Speed Break[/color] for [b]2 turns[/b]."
+          },
+          {
+            "kind": "debuff",
+            "text": "[b]Hit 2:[/b] 90% chance to apply [color=#ff7777]Attack Break[/color] for [b]2 turns[/b]."
+          },
+          {
+            "kind": "control",
+            "text": "If both debuffs are applied, reduces the target's [b]Action Gauge by 20%[/b]."
+          }
+        ]
+      }
     },
     "inescapable_fate": {
       "name": "Inescapable Fate",
@@ -1176,7 +1765,20 @@
             "silence_turns": 1
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Condemns one enemy to an inescapable fate.",
+        "effects": [
+          {
+            "kind": "debuff",
+            "text": "Extends all extendable debuffs on the target by [b]1 turn[/b]."
+          },
+          {
+            "kind": "debuff",
+            "text": "If the target has at least [b]3 debuffs[/b], applies [color=#ff7777]Silence[/color] for [b]1 turn[/b]."
+          }
+        ]
+      }
     },
     "inescapable_fate_ironbound": {
       "name": "Inescapable Fate: Ironbound",
@@ -1199,7 +1801,24 @@
             "silence_turns": 1
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Condemns one enemy with a strike strengthened by the Dullahan's Defense.",
+        "effects": [
+          {
+            "kind": "damage",
+            "text": "Damage also scales with the caster's Defense."
+          },
+          {
+            "kind": "debuff",
+            "text": "Extends all extendable debuffs on the target by [b]1 turn[/b]."
+          },
+          {
+            "kind": "debuff",
+            "text": "If the target has at least [b]3 debuffs[/b], applies [color=#ff7777]Silence[/color] for [b]1 turn[/b]."
+          }
+        ]
+      }
     },
     "gale_pursuit": {
       "name": "Gale Pursuit",
@@ -1215,7 +1834,16 @@
             "amount": 0.2
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Sweeps through the enemy team in a burst of storm speed.",
+        "effects": [
+          {
+            "kind": "control",
+            "text": "Reduces each enemy's [b]Action Gauge by 20%[/b]."
+          }
+        ]
+      }
     },
     "gale_pursuit_crosswind": {
       "name": "Gale Pursuit: Crosswind",
@@ -1233,7 +1861,16 @@
             "bonus_amount": 0.1
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Sweeps through the enemy team with a disruptive crosswind.",
+        "effects": [
+          {
+            "kind": "control",
+            "text": "Reduces each enemy's [b]Action Gauge by 25%[/b] ([b]35%[/b] if they have more than [b]50% Action Gauge[/b])."
+          }
+        ]
+      }
     },
     "gale_pursuit_tempest": {
       "name": "Gale Pursuit: Tempest",
@@ -1260,7 +1897,20 @@
             "turns": 2
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Sweeps through the enemy team and drives the allied team forward.",
+        "effects": [
+          {
+            "kind": "control",
+            "text": "Reduces each enemy's [b]Action Gauge by 25%[/b] ([b]35%[/b] if they have more than [b]50% Action Gauge[/b])."
+          },
+          {
+            "kind": "buff",
+            "text": "Grants all allies [color=#70c8ff]Speed Up[/color] for [b]2 turns[/b]."
+          }
+        ]
+      }
     },
     "headlong_charge": {
       "name": "Headlong Charge",
@@ -1284,7 +1934,20 @@
             "ally_action_gauge": 0.2
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Accelerates the Dullahan and pulls an ally into the fight.",
+        "effects": [
+          {
+            "kind": "buff",
+            "text": "Grants the caster [color=#70c8ff]Attack Up[/color] and [color=#70c8ff]Speed Up[/color] for [b]2 turns[/b]."
+          },
+          {
+            "kind": "special",
+            "text": "Increases the living ally with the lowest Action Gauge by [b]20%[/b]."
+          }
+        ]
+      }
     },
     "headlong_charge_rally": {
       "name": "Headlong Charge: Rally",
@@ -1318,7 +1981,20 @@
             "ally_action_gauge": 0.3
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Rallies the Dullahan and the ally furthest from taking a turn.",
+        "effects": [
+          {
+            "kind": "buff",
+            "text": "Grants the caster and the selected ally [color=#70c8ff]Attack Up[/color] and [color=#70c8ff]Speed Up[/color] for [b]2 turns[/b]."
+          },
+          {
+            "kind": "special",
+            "text": "Increases that ally's [b]Action Gauge by 30%[/b]."
+          }
+        ]
+      }
     },
     "headlong_charge_stampede": {
       "name": "Headlong Charge: Stampede",
@@ -1353,7 +2029,20 @@
             "force_next_turn": true
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Launches a coordinated charge that immediately brings an ally into action.",
+        "effects": [
+          {
+            "kind": "buff",
+            "text": "Grants the caster and the selected ally [color=#70c8ff]Attack Up[/color] and [color=#70c8ff]Speed Up[/color] for [b]2 turns[/b]."
+          },
+          {
+            "kind": "special",
+            "text": "Increases that ally's [b]Action Gauge by 30%[/b] and makes them take the next turn."
+          }
+        ]
+      }
     },
     "soulpiercer": {
       "name": "Soulpiercer",
@@ -1366,6 +2055,15 @@
       "damage_handler_data": {
         "damage_per_charge": 0.06,
         "max_charges": 5
+      },
+      "tooltip": {
+        "summary": "Pierces one enemy with condensed soul energy.",
+        "effects": [
+          {
+            "kind": "damage",
+            "text": "Damage increases with each [color=#d9a6ff]Soul Charge[/color], up to [b]5[/b]."
+          }
+        ]
       }
     },
     "soulpiercer_ascension": {
@@ -1379,6 +2077,15 @@
       "damage_handler_data": {
         "damage_per_charge": 0.08,
         "max_charges": 5
+      },
+      "tooltip": {
+        "summary": "Pierces one enemy with concentrated soul energy.",
+        "effects": [
+          {
+            "kind": "damage",
+            "text": "Damage increases more strongly with each [color=#d9a6ff]Soul Charge[/color], up to [b]5[/b]."
+          }
+        ]
       }
     },
     "beyond_the_veil": {
@@ -1393,6 +2100,19 @@
         "damage_per_charge": 0.1,
         "max_charges": 5,
         "use_consumed_charges": true
+      },
+      "tooltip": {
+        "summary": "Releases stored souls in a four-hit attack against all enemies.",
+        "effects": [
+          {
+            "kind": "special",
+            "text": "Consumes all [color=#d9a6ff]Soul Charges[/color] before attacking."
+          },
+          {
+            "kind": "damage",
+            "text": "Damage increases with each consumed Soul Charge."
+          }
+        ]
       }
     },
     "beyond_the_veil_soul_recall": {
@@ -1415,6 +2135,19 @@
         "revive_health_ratio": 0.5,
         "action_gauge": 1,
         "target": "selected_dead_ally"
+      },
+      "tooltip": {
+        "summary": "Releases stored souls in a four-hit attack against all enemies.",
+        "effects": [
+          {
+            "kind": "special",
+            "text": "Consumes all [color=#d9a6ff]Soul Charges[/color] before attacking."
+          },
+          {
+            "kind": "damage",
+            "text": "Damage increases with each consumed Soul Charge."
+          }
+        ]
       }
     },
     "beyond_the_veil_convergence": {
@@ -1437,6 +2170,19 @@
         "revive_health_ratio": 0.5,
         "action_gauge": 1,
         "target": "selected_dead_ally"
+      },
+      "tooltip": {
+        "summary": "Releases a convergence of stored souls in a four-hit attack against all enemies.",
+        "effects": [
+          {
+            "kind": "special",
+            "text": "Consumes all [color=#d9a6ff]Soul Charges[/color] before attacking."
+          },
+          {
+            "kind": "damage",
+            "text": "Damage increases with each consumed Soul Charge."
+          }
+        ]
       }
     },
     "spinal_scourge": {
@@ -1451,6 +2197,15 @@
         "damage_per_dead_monster": 0.05,
         "max_dead_monsters": 5,
         "max_bonus_damage": 0.25
+      },
+      "tooltip": {
+        "summary": "Sweeps through all enemies with three brutal strikes.",
+        "effects": [
+          {
+            "kind": "damage",
+            "text": "Damage increases for every monster that has died in battle."
+          }
+        ]
       }
     },
     "spinal_scourge_ossuary": {
@@ -1465,6 +2220,15 @@
         "damage_per_dead_monster": 0.08,
         "max_dead_monsters": 5,
         "max_bonus_damage": 0.4
+      },
+      "tooltip": {
+        "summary": "Sweeps through all enemies with three strikes empowered by the dead.",
+        "effects": [
+          {
+            "kind": "damage",
+            "text": "Damage increases for every monster defeated in the battle."
+          }
+        ]
       }
     },
     "deaths_gaze": {
@@ -1486,7 +2250,20 @@
             "vulnerability_turns": 2
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Names one enemy for death before delivering a devastating strike.",
+        "effects": [
+          {
+            "kind": "special",
+            "text": "Applies [color=#d9a6ff]Named[/color] for [b]2 turns[/b]."
+          },
+          {
+            "kind": "debuff",
+            "text": "Applies [color=#ff7777]Vulnerability[/color] for [b]2 turns[/b]."
+          }
+        ]
+      }
     },
     "deaths_gaze_last_name": {
       "name": "Death's Gaze: Last Name",
@@ -1507,7 +2284,20 @@
             "vulnerability_turns": 3
           }
         }
-      ]
+      ],
+      "tooltip": {
+        "summary": "Names one enemy for death before delivering a devastating strike.",
+        "effects": [
+          {
+            "kind": "special",
+            "text": "Applies [color=#d9a6ff]Named[/color] for [b]2 turns[/b]."
+          },
+          {
+            "kind": "debuff",
+            "text": "Applies [color=#ff7777]Vulnerability[/color] for [b]3 turns[/b]."
+          }
+        ]
+      }
     }
   }
 }

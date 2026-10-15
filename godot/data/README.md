@@ -84,6 +84,18 @@ the Godot front end. Do not create separate per-engine copies.
 - Remaining combat-handler branches and rich tooltips are separate
   migration steps.
 
+## Canonical tooltip descriptions
+
+- All 68 skill tooltips (`summary`, rich-text `effects`) are stored in
+  their respective `skill_data.json` records under `tooltip`.
+- The eight base passive tooltips now live under `tooltip` in their
+  `passive_data.json` entries. Godot reads the monster's base passive
+  references to resolve them.
+- Rich BBCode markup, effect ordering, and the existing UI fallback
+  behavior are preserved. Combat execution still uses separate fields.
+- Resonance-dependent passive tooltip compositions remain in GDScript
+  until they can be represented without losing special UI behavior.
+
 ## Migration status
 
 **Migrated:** monster identity, rarity, attributes, base stats, base skill
@@ -91,8 +103,8 @@ and passive references, and canonical skill definitions. Godot consumes shared
 core skill parameters and selected handler data.
 
 **Still to migrate:** remaining engine-specific passive/skill execution
-branches, localized names and rich tooltips. All kit-level Resonance rules
-for skills and passives are now shared.
+branches, dynamic Resonance-dependent passive tooltip composition, and
+localization. All skill and base-passive tooltip records are now shared.
 Combat handler implementations remain independent in Python and GDScript.
 
 Run `python -m pytest -q` after editing JSON. Open the battle scene in Godot
