@@ -281,7 +281,7 @@ static func _attach_skill_descriptions(monster) -> void:
             "effects": [
                 {
                     "kind": "debuff",
-                    "text": "Attempts to apply [color=#ff7777]Silence[/color] for [b]1 turn[/b]."
+                    "text": "Applies [color=#ff7777]Silence[/color] for [b]1 turn[/b]."
                 },
                 {
                     "kind": "special",
@@ -897,7 +897,7 @@ static func _attach_skill_descriptions(monster) -> void:
             "effects": [
                 {
                     "kind": "damage",
-                    "text": "Damage increases more strongly for every monster that has died in battle."
+                    "text": "Damage increases for every monster defeated in the battle."
                 }
             ]
         },
@@ -912,10 +912,6 @@ static func _attach_skill_descriptions(monster) -> void:
                 {
                     "kind": "debuff",
                     "text": "Applies [color=#ff7777]Vulnerability[/color] for [b]2 turns[/b]."
-                },
-                {
-                    "kind": "special",
-                    "text": "While a target is Named, the Dullahan becomes [color=#d9a6ff]Headless[/color]: gains Speed and immunity to Silence unless affected by Oblivion."
                 }
             ]
         },
@@ -930,10 +926,6 @@ static func _attach_skill_descriptions(monster) -> void:
                 {
                     "kind": "debuff",
                     "text": "Applies [color=#ff7777]Vulnerability[/color] for [b]3 turns[/b]."
-                },
-                {
-                    "kind": "special",
-                    "text": "While a target is Named, the Dullahan becomes [color=#d9a6ff]Headless[/color]: gains Speed and immunity to Silence unless affected by Oblivion."
                 }
             ]
         },
@@ -1070,7 +1062,7 @@ static func _attach_passive_description(monster) -> void:
                 },
                 {
                     "kind": "special",
-                    "text": "While Headless, cannot be Silenced unless affected by [color=#ff7777]Oblivion[/color]."
+                    "text": "While [color=#d9a6ff]Headless[/color], cannot be Silenced unless affected by [color=#ff7777]Oblivion[/color]."
                 }
             ]
         }
@@ -1189,7 +1181,7 @@ static func _attach_passive_description(monster) -> void:
                         },
                         {
                             "kind": "debuff",
-                            "text": "Attempts to apply [color=#ff7777]Vulnerability[/color] to the new target for [b]3 turns[/b]."
+                            "text": "Applies [color=#ff7777]Vulnerability[/color] to the new target for [b]3 turns[/b]."
                         }
                     ]
                 }
