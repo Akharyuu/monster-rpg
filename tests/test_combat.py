@@ -5874,10 +5874,12 @@ def test_vulnerability_increases_direct_damage_by_fifteen_percent(
         0
     )
 
-    assert vulnerable_damage == int(
-        base_damage
-        * 1.15
-    )
+    # Both results are floored independently after applying
+    # the damage multipliers to the unrounded base damage.
+    # Comparing two truncated results allows 1 HP of difference.
+    assert abs(
+        vulnerable_damage - int(base_damage * 1.15)
+    ) <= 1
 
 
 
