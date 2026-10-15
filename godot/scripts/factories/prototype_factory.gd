@@ -32,6 +32,8 @@ static func create_level_one_monster(monster_id: String):
             monster = _create_abyssal_dullahan()
         "dullahan_storm":
             monster = _create_storm_dullahan()
+        "dryad_storm":
+            monster = _create_storm_dryad()
         "slime_storm":
             monster = _create_storm_slime()
         "slime_abyssal":
@@ -183,6 +185,26 @@ static func _attach_skill_descriptions(monster) -> void:
                 {
                     "kind": "debuff",
                     "text": "[b]Hits 2-3:[/b] each has a [b]30% chance[/b] to apply [color=#ff7777]Defense Break[/color] for [b]2 turns[/b]."
+                }
+            ]
+        },
+
+        "vine_barrage": {
+            "summary": "Strikes one enemy with three rapid vines.",
+            "effects": [
+                {
+                    "kind": "heal",
+                    "text": "After attacking, heals the living ally with the lowest HP ratio by [b]8% of Healing HP[/b]."
+                }
+            ]
+        },
+
+        "breath_of_the_grove": {
+            "summary": "Channels restorative energy through the entire allied team.",
+            "effects": [
+                {
+                    "kind": "heal",
+                    "text": "Heals all living allies by [b]25% of Healing HP[/b]."
                 }
             ]
         },
@@ -391,6 +413,17 @@ static func _attach_passive_description(monster) -> void:
                 {
                     "kind": "special",
                     "text": "For each enemy buff removed, gains [b]8% Action Gauge[/b]."
+                }
+            ]
+        },
+
+        "dryad_storm": {
+            "name": "Nature's Grace",
+            "summary": "Strengthens direct healing on wounded allies.",
+            "effects": [
+                {
+                    "kind": "heal",
+                    "text": "Direct healing is increased by [b]20%[/b] when the target is below [b]50% HP[/b]."
                 }
             ]
         },
@@ -646,6 +679,47 @@ static func _create_abyssal_drake():
     ] = 3
 
     return monster
+
+
+static func _create_storm_dryad():
+    var vine_barrage = DamageSkillScript.new(
+        "vine_barrage",
+        "Vine Barrage",
+        0.70,
+        3,
+        [],
+        "attack",
+        0,
+        []
+    )
+
+    var breath_of_the_grove = SupportSkillScript.new(
+        "breath_of_the_grove",
+        "Breath of the Grove",
+        5,
+        [],
+        "all_allies"
+    )
+    breath_of_the_grove.healing_hp_ratio = 0.25
+
+    var skills: Array = [
+        vine_barrage,
+        breath_of_the_grove
+    ]
+
+    return MonsterScript.new(
+        "dryad_storm",
+        "Storm Dryad",
+        "Dryad",
+        "storm",
+        3,
+        _scaled(11150),
+        _scaled(545),
+        _scaled(760),
+        _scaled(204),
+        skills,
+        LEVEL_ONE_MULTIPLIER
+    )
 
 
 static func _create_storm_dullahan():
