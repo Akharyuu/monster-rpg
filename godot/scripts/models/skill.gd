@@ -7,6 +7,8 @@ var cooldown: int
 var current_cooldown: int = 0
 var target_type: String = "single_enemy"
 var description: String = ""
+var tooltip_summary: String = ""
+var tooltip_effects: Array = []
 
 
 func _init(
@@ -51,3 +53,7 @@ func get_tooltip_text() -> String:
         lines.append(description)
 
     return "\n".join(lines)
+
+
+func get_tooltip_hit_count() -> int:
+    return 0
