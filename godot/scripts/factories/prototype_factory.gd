@@ -32,6 +32,12 @@ static func create_level_one_monster(monster_id: String):
             monster = _create_abyssal_dullahan()
         "dullahan_storm":
             monster = _create_storm_dullahan()
+        "wisp_igneous":
+            monster = _create_wisp("igneous")
+        "wisp_abyssal":
+            monster = _create_wisp("abyssal")
+        "wisp_storm":
+            monster = _create_wisp("storm")
         "sprout_igneous":
             monster = _create_sprout("igneous")
         "sprout_abyssal":
@@ -193,6 +199,16 @@ static func _attach_skill_descriptions(monster) -> void:
                 {
                     "kind": "debuff",
                     "text": "[b]Hits 2-3:[/b] each has a [b]30% chance[/b] to apply [color=#ff7777]Defense Break[/color] for [b]2 turns[/b]."
+                }
+            ]
+        },
+
+        "will_o_glow": {
+            "summary": "Launches a flickering spirit flame at one enemy.",
+            "effects": [
+                {
+                    "kind": "control",
+                    "text": "[b]60% chance[/b] to reduce the target's [b]Action Gauge by 10%[/b]."
                 }
             ]
         },
@@ -722,6 +738,62 @@ static func _create_abyssal_drake():
     ] = 3
 
     return monster
+
+
+static func _create_wisp(attribute: String):
+    var will_o_glow = DamageSkillScript.new(
+        "will_o_glow",
+        "Will-o'-Glow",
+        2.60,
+        1,
+        [],
+        "attack",
+        0,
+        [],
+        {},
+        {},
+        "single_enemy",
+        0.10
+    )
+    will_o_glow.action_gauge_reduction_chance = 0.60
+
+    var monster_id: String = "wisp_%s" % attribute
+    var display_name: String = "%s Wisp" % attribute.capitalize()
+
+    var hp: int = 5500
+    var attack: int = 465
+    var defense: int = 292
+    var speed: int = 158
+
+    match attribute:
+        "abyssal":
+            hp = 5750
+            attack = 425
+            defense = 318
+            speed = 154
+        "storm":
+            hp = 5250
+            attack = 445
+            defense = 278
+            speed = 166
+
+    var skills: Array = [
+        will_o_glow
+    ]
+
+    return MonsterScript.new(
+        monster_id,
+        display_name,
+        "Wisp",
+        attribute,
+        1,
+        _scaled(hp),
+        _scaled(attack),
+        _scaled(defense),
+        _scaled(speed),
+        skills,
+        LEVEL_ONE_MULTIPLIER
+    )
 
 
 static func _create_sprout(attribute: String):
