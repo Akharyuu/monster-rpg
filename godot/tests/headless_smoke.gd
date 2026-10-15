@@ -268,10 +268,65 @@ func _run_combat_regressions() -> Array[String]:
         ):
             errors.append("Soul Recall did not revive and spend charges")
 
+    # Frozen Scales: spending a full stack pool grants the JSON buffs.
+    var abyssal = Factory.create_level_one_monster("drake_abyssal", 3)
+    var freeze_target = Factory.create_level_one_monster(
+        "drake_igneous", 0
+    )
+    if abyssal == null or freeze_target == null:
+        errors.append("Frozen Scales fixture could not be constructed")
+        return errors
+    battle.setup([abyssal], [freeze_target])
+    battle.active_monster = abyssal
+    abyssal.combat_resources["frozen_scales"] = 3
+    var freeze_result: Dictionary = battle.execute_active_skill(
+        abyssal.get_skill(3), [freeze_target]
+    )
+    if (
+        not bool(freeze_result.get("success", false))
+        or abyssal.get_combat_resource("frozen_scales") != 0
+        or not abyssal.has_buff("defense_up")
+        or not abyssal.has_buff("immunity")
+    ):
+        errors.append("Frozen Scales did not consume stacks and grant buffs")
+
+    # Headlong Charge: JSON-driven ally buffs, Action Gauge, forced turn.
+    var storm_rider = Factory.create_level_one_monster(
+        "dullahan_storm", 5
+    )
+    var supported_ally = Factory.create_level_one_monster(
+        "slime_igneous", 0
+    )
+    var storm_target = Factory.create_level_one_monster(
+        "drake_abyssal", 0
+    )
+    if (
+        storm_rider == null
+        or supported_ally == null
+        or storm_target == null
+    ):
+        errors.append("Headlong Charge fixture could not be constructed")
+        return errors
+    battle.setup([storm_rider, supported_ally], [storm_target])
+    battle.active_monster = storm_rider
+    supported_ally.action_gauge = 0.0
+    var headlong_result: Dictionary = battle.execute_active_skill(
+        storm_rider.get_skill(3), [storm_target]
+    )
+    if (
+        not bool(headlong_result.get("success", false))
+        or not supported_ally.has_buff("attack_up")
+        or not supported_ally.has_buff("speed_up")
+        or supported_ally.action_gauge < 0.29
+        or battle.forced_next_monster != supported_ally
+    ):
+        errors.append("Headlong Charge did not grant ally support")
+
     # RefCounted monsters retain team references through combat_opponents.
     # Break those cycles before the headless engine exits.
     for participant in [
-        attacker, defender, dryad, ally, foe, dullahan, fallen
+        attacker, defender, dryad, ally, foe, dullahan, fallen,
+        abyssal, freeze_target, storm_rider, supported_ally, storm_target
     ]:
         if participant != null:
             participant.combat_opponents = []
@@ -279,5 +334,8 @@ func _run_combat_regressions() -> Array[String]:
     battle.setup([], [])
 
     if errors.is_empty():
-        print("GODOT_COMBAT_OK: damage, healing and Soul Recall")
+        print(
+            "GODOT_COMBAT_OK: damage, healing, Soul Recall, "
+            + "Frozen Scales and Headlong Charge"
+        )
     return errors
