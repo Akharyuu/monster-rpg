@@ -1113,7 +1113,7 @@ static func _attach_passive_description(monster) -> void:
             soul_vessel_data["effects"].append(
                 {
                     "kind": "special",
-                    "text": "At [b]5 Soul Charges[/b], this passive becomes [color=#d9a6ff]Soul Recall[/color], an active skill that consumes all charges to revive a selected fallen ally with [b]50% HP[/b] and [b]100% Action Gauge[/b]."
+                    "text": "At [b]5 Soul Charges[/b], unlocks [color=#d9a6ff]Soul Recall[/color], an active skill that consumes all charges to revive a selected fallen ally with [b]50% HP[/b] and [b]100% Action Gauge[/b]."
                 }
             )
 
