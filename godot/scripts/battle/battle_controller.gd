@@ -15,6 +15,7 @@ var active_turn_effects: Array = []
 func setup(p_allies: Array, p_enemies: Array) -> void:
     allies = p_allies
     enemies = p_enemies
+    recorded_dead_monsters = []
 
 
 func get_living(team: Array) -> Array:
@@ -210,6 +211,37 @@ func execute_active_skill(
         + (enemies.size() - get_living(enemies).size())
     )
 
+    if active_monster.monster_id == "dullahan_aether":
+        active_monster.special_states["ally_dead"] = (
+            get_living(allies).size() < allies.size()
+            if active_monster in allies
+            else get_living(enemies).size() < enemies.size()
+        )
+
+        if (
+            not active_monster.has_oblivion()
+            and skill.skill_id == "beyond_the_veil"
+        ):
+            var soul_charges: int = (
+                active_monster.get_combat_resource(
+                    "soul_charges"
+                )
+            )
+
+            skill.soul_charges_consumed = soul_charges
+
+            if soul_charges > 0:
+                active_monster.consume_combat_resource(
+                    "soul_charges",
+                    soul_charges
+                )
+
+                caster_feedback.append(
+                    "SOUL CHARGES CONSUMED %d" % soul_charges
+                )
+        else:
+            skill.soul_charges_consumed = 0
+
     if (
         active_monster.monster_id == "drake_abyssal"
         and not active_monster.has_oblivion()
@@ -392,8 +424,58 @@ func execute_active_skill(
                 "FROZEN SCALES %d/3" % new_total
             )
 
+    if (
+        active_monster.monster_id == "dullahan_aether"
+        and not active_monster.has_oblivion()
+    ):
+        var new_total: int = active_monster.add_combat_resource(
+            "soul_charges",
+            1,
+            5
+        )
+
+        caster_feedback.append(
+            "SOUL CHARGE %d/5" % new_total
+        )
+
+    _resolve_new_deaths(caster_feedback)
+
     result["caster_feedback"] = caster_feedback
     return result
+
+
+func _resolve_new_deaths(
+    caster_feedback: Array[String]
+) -> void:
+    var combatants: Array = allies + enemies
+
+    for monster in combatants:
+        if monster.is_alive():
+            continue
+
+        if monster in recorded_dead_monsters:
+            continue
+
+        recorded_dead_monsters.append(monster)
+
+        for owner in combatants:
+            if (
+                not owner.is_alive()
+                or owner.monster_id != "dullahan_aether"
+                or owner.has_oblivion()
+            ):
+                continue
+
+            var new_total: int = owner.add_combat_resource(
+                "soul_charges",
+                1,
+                5
+            )
+
+            if owner == active_monster:
+                caster_feedback.append(
+                    "SOUL VESSEL - DEATH %d/5" % new_total
+                )
 
 
 func _resolve_receive_hit_passives(
