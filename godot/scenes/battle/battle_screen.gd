@@ -111,6 +111,31 @@ func start_next_turn() -> void:
 
     update_battle_ui()
 
+    var hot_result: Dictionary = context.get(
+        "hot_result",
+        {"healing": 0}
+    )
+
+    if hot_result["healing"] > 0:
+        turn_label.text = "%s recovers %d HP from Regrowth!" % [
+            battle_controller.active_monster.monster_name,
+            hot_result["healing"]
+        ]
+
+        update_battle_ui()
+
+        var hot_hud = get_hud_for_monster(
+            battle_controller.active_monster
+        )
+
+        if hot_hud != null:
+            await hot_hud.play_status_feedback(
+                "+%d HP" % hot_result["healing"],
+                "buff"
+            )
+
+        await get_tree().create_timer(0.35).timeout
+
     var dot_result: Dictionary = context["dot_result"]
 
     if dot_result["damage"] > 0:
