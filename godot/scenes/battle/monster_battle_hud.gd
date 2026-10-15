@@ -22,8 +22,8 @@ signal target_pressed
 const ALLY_SPRITE_CONFIG := {
     "drake_igneous": {
         "path": "res://assets/monster_sprites/drake_igneous.png",
-        "position": Vector2(43.0, -205.0),
-        "size": Vector2(236.0, 200.0),
+        "position": Vector2(-75.0, -305.0),
+        "size": Vector2(472.0, 400.0),
         "scale": 1.0,
         "flip_h": false
     }
