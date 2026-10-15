@@ -326,11 +326,7 @@ static func _attach_skill_descriptions(monster) -> void:
                 },
                 {
                     "kind": "debuff",
-                    "text": "Applies [color=#ff7777]Stun[/color] for [b]1 turn[/b] if the target has less than [b]50% Action Gauge[/b]."
-                },
-                {
-                    "kind": "special",
-                    "text": "While the caster has [color=#70c8ff]Speed Up[/color], the Action Gauge threshold becomes [b]70%[/b]."
+                    "text": "Applies [color=#ff7777]Stun[/color] for [b]1 turn[/b] if the target has less than [b]50% Action Gauge[/b] ([b]70%[/b] if the caster has [color=#70c8ff]Speed Up[/color])."
                 }
             ]
         },
