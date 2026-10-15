@@ -152,10 +152,21 @@ def test_analyze_unit_balance_aggregates_matchups(
 
 
 
-def test_analyze_requires_manual_benchmarks_when_none_exist():
+def test_analyze_requires_manual_benchmarks_when_none_exist(
+    monkeypatch
+):
+    # Griffons now have other same-rarity benchmark candidates.
+    # Simulate an empty default pool rather than assuming roster size.
+    monkeypatch.setattr(
+        balance_module,
+        "get_default_balance_benchmarks",
+        lambda monster_id: []
+    )
 
-    with pytest.raises(ValueError):
-
+    with pytest.raises(
+        ValueError,
+        match="No balance benchmarks available"
+    ):
         analyze_unit_balance(
             "griffon_igneous",
             runs=10,
