@@ -472,32 +472,33 @@ RESONANCE_DATA = {
     "dullahan_void": {
         1: [
             {
-                "action": "replace_skill",
-                "slot": 2,
-                "new": "spinal_scourge_ossuary"
-            }
-        ],
-
-        2: [
-            {
-                "action": "add_passive",
-                "passive": "deathless_rider"
-            }
-        ],
-
-        3: [
-            {
                 "action": "replace_passive",
                 "old": "headless_rider",
                 "new": "headless_rider_unbound"
             }
         ],
 
-        4: [
+        2: [
+            {
+                "action": "replace_skill",
+                "slot": 2,
+                "new": "spinal_scourge_ossuary"
+            }
+        ],
+
+        3: [
             {
                 "action": "replace_skill",
                 "slot": 3,
                 "new": "deaths_gaze_last_name"
+            }
+        ],
+
+        4: [
+            {
+                "action": "replace_passive",
+                "old": "headless_rider_unbound",
+                "new": "deathless_rider"
             }
         ],
 
