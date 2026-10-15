@@ -295,6 +295,9 @@ func _make_effect_row(effect_data: Dictionary) -> Control:
     line.scroll_active = false
     line.custom_minimum_size = Vector2(328.0, 0.0)
     line.add_theme_font_size_override("normal_font_size", 13)
+    line.add_theme_font_size_override("bold_font_size", 13)
+    line.add_theme_font_size_override("italics_font_size", 13)
+    line.add_theme_font_size_override("bold_italics_font_size", 13)
     line.add_theme_color_override(
         "default_color",
         Color(0.88, 0.90, 0.96)
