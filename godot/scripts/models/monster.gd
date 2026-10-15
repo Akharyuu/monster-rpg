@@ -38,6 +38,7 @@ var named_by = null
 var battle_dead_count: int = 0
 var ally_dead_for_soul_bonus: bool = false
 var passive_tooltip: Dictionary = {}
+var passive_tooltips: Array = []
 
 # Lightweight prototype representation of passive effects that trigger
 # whenever this monster lands a hit. This will later become the full
