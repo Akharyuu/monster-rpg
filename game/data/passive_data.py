@@ -489,11 +489,10 @@ PASSIVE_DATA = {
 
     "deathless_rider": {
         "name": "Deathless Rider",
-        "trigger": "after_turn",
         "handler": "deathless_rider",
 
         "handler_data": {
-            "action_gauge_after_turn": 0.15,
+            "speed_bonus": 0.30,
             "internal_cooldown": 6
         }
     },
