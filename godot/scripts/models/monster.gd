@@ -240,9 +240,31 @@ func get_attribute_modifier(defender) -> float:
 
 
 func receive_damage(amount: int) -> int:
+    var was_alive: bool = is_alive()
     var actual_damage: int = mini(amount, health)
+
     health = maxi(0, health - amount)
+
+    if was_alive and not is_alive():
+        _clear_special_states_on_death()
+
     return actual_damage
+
+
+func _clear_special_states_on_death() -> void:
+    if named_by != null:
+        var source = named_by
+        named_by = null
+        special_states.erase("named")
+
+        if (
+            source != null
+            and source.named_target == self
+        ):
+            source.clear_named_target()
+
+    if named_target != null:
+        clear_named_target()
 
 
 func heal(amount: int) -> int:
