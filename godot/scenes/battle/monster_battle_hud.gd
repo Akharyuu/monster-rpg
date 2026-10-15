@@ -298,6 +298,8 @@ func _battle_state_display_name(state_id: String) -> String:
             return "Named"
         "headless":
             return "Headless"
+        "banished":
+            return "Banished"
         _:
             return state_id.replace("_", " ").capitalize()
 
@@ -393,6 +395,14 @@ func _populate_battle_states() -> void:
             _create_battle_state_badge(
                 str(state_id),
                 state_value
+            )
+        )
+
+    if bound_monster.banished:
+        battle_state_container.add_child(
+            _create_battle_state_badge(
+                "banished",
+                true
             )
         )
 
