@@ -14,6 +14,7 @@ const StatusEffectFactoryScript = preload(
 
 @onready var passive_button = $"Passive Button"
 @onready var passive_button_2 = $"Passive Button 2"
+@onready var passive_button_3 = $"Passive Button 3"
 @onready var skill_1_button = $"Skill 1 Button"
 @onready var skill_2_button = $"Skill 2 Button"
 @onready var skill_3_button = $"Skill 3 Button"
@@ -34,6 +35,7 @@ var enemies: Array = []
 
 var battle_controller
 var pending_skill_slot := 0
+var pending_special_action: String = ""
 var battle_finished := false
 var action_in_progress := true
 
@@ -77,6 +79,11 @@ func _ready() -> void:
             false
         )
 
+        ally_huds[index].target_pressed.connect(
+            func(index_copy = index):
+                _on_ally_target_pressed(index_copy)
+        )
+
     for index in range(enemy_huds.size()):
         enemy_huds[index].bind_monster(
             enemies[index],
@@ -100,7 +107,9 @@ func start_next_turn() -> void:
 
     action_in_progress = true
     pending_skill_slot = 0
+    pending_special_action = ""
     set_target_selection(false)
+    set_revive_target_selection(false)
 
     var context: Dictionary = (
         battle_controller.begin_next_turn()
@@ -263,6 +272,50 @@ func request_player_skill(slot: int) -> void:
     pending_skill_slot = slot
     set_target_selection(true)
     turn_label.text = "Choose an enemy target"
+
+
+func _on_ally_target_pressed(index: int) -> void:
+    if pending_special_action != "soul_recall":
+        return
+
+    if index < 0 or index >= allies.size():
+        return
+
+    var target = allies[index]
+
+    if target.is_alive() or target.banished:
+        return
+
+    pending_special_action = ""
+    set_revive_target_selection(false)
+    disable_skill_buttons()
+
+    var result: Dictionary = (
+        battle_controller.execute_soul_recall(
+            target
+        )
+    )
+
+    if not result.get("success", false):
+        action_in_progress = false
+        update_skill_buttons()
+        return
+
+    update_battle_ui()
+    await play_caster_feedback(result)
+
+    turn_label.text = "%s revives %s" % [
+        battle_controller.active_monster.monster_name,
+        target.monster_name
+    ]
+
+    battle_controller.end_active_turn()
+    update_battle_ui()
+
+    await get_tree().create_timer(0.6).timeout
+
+    battle_controller.clear_active_monster()
+    start_next_turn()
 
 
 func _on_enemy_target_pressed(index: int) -> void:
@@ -640,13 +693,15 @@ func update_skill_buttons() -> void:
 func _update_passive_button() -> void:
     var buttons := [
         passive_button,
-        passive_button_2
+        passive_button_2,
+        passive_button_3
     ]
 
     for button in buttons:
         button.text = "PASSIVE"
         button.set_tooltip_passive({})
         button.visible = false
+        button.disabled = false
 
     if (
         battle_controller.active_monster == null
@@ -654,14 +709,11 @@ func _update_passive_button() -> void:
     ):
         return
 
-    var passive_list: Array = (
-        battle_controller.active_monster.passive_tooltips
-    )
+    var active = battle_controller.active_monster
+    var passive_list: Array = active.passive_tooltips
 
     if passive_list.is_empty():
-        var legacy: Dictionary = (
-            battle_controller.active_monster.passive_tooltip
-        )
+        var legacy: Dictionary = active.passive_tooltip
 
         if not legacy.is_empty():
             passive_list = [legacy]
@@ -678,11 +730,86 @@ func _update_passive_button() -> void:
         )
         button.set_tooltip_passive(passive_data)
 
+    if (
+        active.monster_id == "dullahan_aether"
+        and active.resonance >= 2
+        and active.get_combat_resource("soul_charges") >= 5
+    ):
+        var has_revivable_ally := false
+
+        for ally in allies:
+            if (
+                not ally.is_alive()
+                and not ally.banished
+            ):
+                has_revivable_ally = true
+                break
+
+        if has_revivable_ally and passive_list.size() < buttons.size():
+            var action_button = buttons[passive_list.size()]
+            var action_name: String = (
+                "Soul Recall: Convergence"
+                if active.resonance >= 5
+                else "Soul Recall"
+            )
+            var action_data: Dictionary = {
+                "name": action_name,
+                "badge": "ACTIVE",
+                "summary": "Consumes stored souls to return a fallen ally to battle.",
+                "effects": [
+                    {
+                        "kind": "special",
+                        "text": "Consumes all [color=#d9a6ff]5 Soul Charges[/color] and revives a selected non-Banished ally with [b]70% HP[/b] and [b]30% Action Gauge[/b]."
+                    }
+                ]
+            }
+
+            action_button.visible = true
+            action_button.text = action_name
+            action_button.set_tooltip_passive(
+                action_data
+            )
+
+
+func _on_passive_button_2_pressed() -> void:
+    if (
+        battle_finished
+        or action_in_progress
+        or battle_controller.active_monster == null
+    ):
+        return
+
+    var active = battle_controller.active_monster
+
+    if (
+        active.monster_id != "dullahan_aether"
+        or active.resonance < 2
+        or active.get_combat_resource("soul_charges") < 5
+        or active.has_oblivion()
+        or active.is_silenced()
+        or not battle_controller.can_use_soul_recall(active)
+    ):
+        return
+
+    action_in_progress = true
+    pending_skill_slot = 0
+    pending_special_action = "soul_recall"
+    set_target_selection(false)
+    set_revive_target_selection(true)
+    turn_label.text = "Choose a fallen ally to revive"
+
 
 func set_target_selection(enabled: bool) -> void:
     for hud in enemy_huds:
         hud.set_target_mode(
             "single" if enabled else "none"
+        )
+
+
+func set_revive_target_selection(enabled: bool) -> void:
+    for hud in ally_huds:
+        hud.set_target_mode(
+            "dead_ally" if enabled else "none"
         )
 
 
@@ -716,6 +843,7 @@ func finish_battle(player_won: bool) -> void:
 
     disable_skill_buttons()
     set_target_selection(false)
+    set_revive_target_selection(false)
     set_aoe_preview(false)
     update_battle_ui()
 
