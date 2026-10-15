@@ -59,6 +59,12 @@ func _ready() -> void:
         )
     ]
 
+    # Temporary training dummies for resonance testing.
+    # This only affects this battle scene, not canonical monster data.
+    for enemy in enemies:
+        enemy.max_health = 100000
+        enemy.health = enemy.max_health
+
     battle_controller = BattleControllerScript.new()
     battle_controller.setup(
         allies,
