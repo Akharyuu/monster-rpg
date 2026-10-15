@@ -4,6 +4,19 @@ extends Button
 var tooltip_skill = null
 
 
+func _ready() -> void:
+    var tooltip_theme := Theme.new()
+    var empty_tooltip_style := StyleBoxEmpty.new()
+
+    tooltip_theme.set_stylebox(
+        "panel",
+        "TooltipPanel",
+        empty_tooltip_style
+    )
+
+    theme = tooltip_theme
+
+
 func set_tooltip_skill(skill) -> void:
     tooltip_skill = skill
     tooltip_text = "skill" if skill != null else ""
