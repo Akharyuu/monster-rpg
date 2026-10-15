@@ -133,8 +133,8 @@ const ALLY_ARCS := {
         Vector2(420, 390)
     ],
     4: [
-        Vector2(10, 290),
-        Vector2(155, 340),
+        Vector2(10, 340),
+        Vector2(155, 390),
         Vector2(305, 390),
         Vector2(470, 375)
     ]
@@ -152,9 +152,9 @@ const ENEMY_ARCS := {
         Vector2(1050, 120)
     ],
     4: [
-        Vector2(665, 95),
+        Vector2(665, 78),
         Vector2(815, 60),
-        Vector2(970, 78),
+        Vector2(970, 60),
         Vector2(1120, 140)
     ]
 }
