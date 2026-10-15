@@ -216,16 +216,11 @@ func damage_calc(
             max_soul_charges
         )
 
-        if disable_soul_bonus_if_ally_dead:
-            var ally_dead: bool = bool(
-                attacker.special_states.get(
-                    "ally_dead",
-                    false
-                )
-            )
-
-            if ally_dead:
-                soul_charges = 0
+        if (
+            disable_soul_bonus_if_ally_dead
+            and attacker.ally_dead_for_soul_bonus
+        ):
+            soul_charges = 0
 
         bonus_damage *= (
             1.0
