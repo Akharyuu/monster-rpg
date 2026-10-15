@@ -1145,7 +1145,7 @@ static func _attach_passive_description(monster) -> void:
                 },
                 {
                     "kind": "special",
-                    "text": "While Headless, cannot be Silenced unless affected by [color=#ff7777]Oblivion[/color]."
+                    "text": "While [color=#d9a6ff]Headless[/color], cannot be Silenced unless affected by [color=#ff7777]Oblivion[/color]."
                 }
             ]
         }
@@ -1159,11 +1159,11 @@ static func _attach_passive_description(monster) -> void:
             monster.passive_tooltips.append(
                 {
                     "name": "Deathless Rider",
-                    "summary": "Keeps the Dullahan's momentum alive between turns.",
+                    "summary": "Periodically accelerates the Dullahan after it acts.",
                     "effects": [
                         {
                             "kind": "special",
-                            "text": "After this monster's turn, gains [b]15% Action Gauge[/b]. Can activate once every [b]6 turns[/b]."
+                            "text": "After this monster's turn, gains [b]15% Action Gauge[/b]. This effect can trigger once every [b]6 of its turns[/b]."
                         }
                     ]
                 }
