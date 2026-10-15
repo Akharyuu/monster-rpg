@@ -197,7 +197,7 @@ func _build_passive_card(passive_data: Dictionary) -> Control:
 
     header.add_child(
         _make_badge(
-            "PASSIVE",
+            str(passive_data.get("badge", "PASSIVE")),
             Color(0.30, 0.18, 0.43, 0.96),
             Color(0.89, 0.74, 1.0)
         )
