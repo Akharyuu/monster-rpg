@@ -104,7 +104,7 @@ def get_passive_stat_bonus(owner, stat):
         if (
             stat == "speed"
             and passive.handler
-            == "headless_rider"
+            in ("headless_rider", "deathless_rider")
             and owner.is_headless
         ):
             bonus += (
