@@ -40,13 +40,27 @@ the Godot front end. Do not create separate per-engine copies.
   handlers still use compatibility constructors; those will be migrated
   incrementally without changing their combat behavior.
 
+## Godot Drake factories
+
+- All five Drakes and their 12 Resonance skill variants now construct
+  abilities through `skill_data.json`. Their base monster identities and
+  skill slots remain in `monster_data.json`.
+- The adapter translates numeric stack lookups (Burn damage/healing),
+  conditional on-hit debuffs, buff stripping, removed-buff damage,
+  additional Burn and cooldown resets to the existing GDScript runtime.
+- Support buffs and healing ratios are also resolved from the shared
+  `after_use_handlers`. Unique Cinderblood and Frozen Scales monster
+  resources are still initialized by Godot; game mechanics are unchanged.
+- Remaining Dullahan/Griffon/Dryad constructors still use compatibility
+  code and are next in the migration.
+
 ## Migration status
 
 **Migrated:** monster identity, rarity, attributes, base stats, base skill
 and passive references, and canonical skill definitions. Godot consumes shared
 core skill parameters and selected handler data.
 
-**Still to migrate:** remaining Godot skill handler adapters, passive
+**Still to migrate:** remaining Godot (non-Drake) skill constructors and handlers, passive
 definitions, Resonance upgrade rules, localized names and tooltip descriptions.
 Combat handler implementations remain independent in Python and GDScript.
 

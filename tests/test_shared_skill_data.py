@@ -157,3 +157,77 @@ def test_godot_uses_shared_lowest_ally_heal_ratios():
     assert "var heal_lowest_hp_ally_ratio: float = 0.0" in damage
     assert "skill.heal_lowest_hp_ally_ratio > 0.0" in controller
     assert 'skill.skill_id == "vine_barrage"' not in controller
+
+
+DRAKE_IDS = (
+    "drake_igneous", "drake_abyssal", "drake_storm",
+    "drake_aether", "drake_void",
+)
+
+DRAKE_RESONANCE_SKILL_IDS = (
+    "scorching_breath_afterburn",
+    "flame_devourer_rekindled",
+    "flame_devourer_incineration",
+    "rime_breath_frigid",
+    "glacial_collapse_absolute_zero",
+    "lightning_rush_blitz",
+    "stormbreak_requiem",
+    "sovereign_breath_subjugation",
+    "heavens_decree_apotheosis",
+    "null_rend_obliterate",
+    "null_rend_annihilation",
+    "dismantle_decimation",
+)
+
+
+def test_all_drakes_and_resonance_skills_use_canonical_json():
+    definitions = skill_module.SKILL_DATA
+    for monster_id in DRAKE_IDS:
+        for skill_id in MONSTER_DATA[monster_id]["skills"]:
+            assert skill_id in definitions
+
+    assert set(DRAKE_RESONANCE_SKILL_IDS).issubset(definitions)
+
+    source = GODOT_FACTORY.read_text(encoding="utf-8")
+    assert source.count("monster = _create_shared_drake(monster_id)") == 5
+    assert "static func _create_shared_drake(" in source
+    assert "static func _create_shared_skill(" in source
+    for obsolete in (
+        "static func _create_igneous_drake(",
+        "static func _create_abyssal_drake(",
+        "static func _create_storm_drake(",
+        "static func _create_aether_drake(",
+        "static func _create_void_drake(",
+    ):
+        assert obsolete not in source
+
+
+def test_godot_drake_skill_adapters_cover_shared_handlers():
+    source = GODOT_FACTORY.read_text(encoding="utf-8")
+    for handler in (
+        "apply_debuff_on_hit_indices",
+        "strip_buffs_on_hit",
+        "damage_for_burn_stacks",
+        "damage_for_removed_buffs",
+        "consume_burn_and_heal",
+        "add_burn_if_target_started_with_burn",
+        "reset_cooldown_by_burn_stacks",
+        "reduce_action_gauge_if_debuff",
+    ):
+        assert handler in source
+
+    # JSON map keys must become integers: Godot's Burn stack damage and
+    # healing code looks up stack counts as integers.
+    assert "values[int(key)] = float(raw[key])" in source
+    assert "_int_keyed_skill_values(" in source
+
+
+def test_drake_resonance_skill_variants_share_base_core_schema():
+    for skill_id in DRAKE_RESONANCE_SKILL_IDS:
+        record = skill_module.SKILL_DATA[skill_id]
+        assert record["type"] in {SkillType.DAMAGE, SkillType.SUPPORT}
+        assert record["target_type"] in TargetType
+        assert isinstance(record["cooldown"], int)
+        if record["type"] is SkillType.DAMAGE:
+            assert record["hits"] >= 1
+            assert record["multiplier"] > 0

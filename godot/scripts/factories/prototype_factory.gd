@@ -115,13 +115,23 @@ static func _sync_skill_from_shared_data(skill) -> bool:
         # Simple JSON handler adapters shared by the early monster set
         # (and reused by existing advanced monster constructors).
         for handler_config in entry.get("on_hit_handlers", []):
-            if str(handler_config.get("handler", "")) == "reduce_action_gauge":
-                var gauge_data: Dictionary = handler_config.get("data", {})
+            var handler_id: String = str(
+                handler_config.get("handler", "")
+            )
+            var gauge_data: Dictionary = handler_config.get("data", {})
+            if handler_id == "reduce_action_gauge":
                 skill.action_gauge_reduction_per_hit = float(
                     gauge_data.get("amount", 0.0)
                 )
                 skill.action_gauge_reduction_chance = float(
                     gauge_data.get("chance", 1.0)
+                )
+            elif handler_id == "reduce_action_gauge_if_debuff":
+                skill.action_gauge_reduction_if_debuff_id = str(
+                    gauge_data.get("effect_id", "")
+                )
+                skill.action_gauge_reduction_if_debuff_amount = float(
+                    gauge_data.get("amount", 0.0)
                 )
 
         for handler_config in entry.get("after_use_handlers", []):
@@ -158,7 +168,7 @@ static func _sync_skill_from_shared_data(skill) -> bool:
                     ))
                 skill.conditional_hit_damage_multipliers = multipliers
 
-    elif skill_type == "healing":
+    elif skill_type == "healing" or skill_type == "support":
         var buffs: Array = []
         for handler_config in entry.get("after_use_handlers", []):
             var handler_id: String = str(
@@ -190,6 +200,17 @@ static func _sync_monster_skills(monster) -> bool:
 
 # Generic constructor for monsters whose basic skills are fully
 # described by skill_data.json. Richer handlers will migrate gradually.
+# JSON stores numeric map keys as strings, while the GDScript damage
+# handlers use integer stack-count lookups.
+static func _int_keyed_skill_values(raw: Dictionary) -> Dictionary:
+    var values: Dictionary = {}
+    for key in raw:
+        values[int(key)] = float(raw[key])
+    return values
+
+
+# Build effects/handler adapters from canonical definitions. Gameplay
+# execution remains in DamageSkill and BattleController.
 static func _create_shared_damage_skill(skill_id: String):
     var definitions: Dictionary = _get_shared_skills()
     if not definitions.has(skill_id):
@@ -201,7 +222,53 @@ static func _create_shared_damage_skill(skill_id: String):
         push_error("Expected shared damage skill: %s" % skill_id)
         return null
 
-    return DamageSkillScript.new(
+    var effects: Array = entry.get("effects", []).duplicate(true)
+    var strip_hit_index: int = -1
+
+    for handler_config in entry.get("on_hit_handlers", []):
+        var handler_id: String = str(
+            handler_config.get("handler", "")
+        )
+        var handler_data: Dictionary = handler_config.get("data", {})
+
+        if handler_id == "apply_debuff_on_hit_indices":
+            # The Godot execution engine consumes targeted debuffs from
+            # DamageSkill.effects, rather than from a Python handler.
+            effects.append({
+                "effect_id": str(handler_data["effect_id"]),
+                "chance": float(handler_data.get("chance", 1.0)),
+                "turns": int(handler_data["turns"]),
+                "hit_indices": handler_data["hit_indices"]
+            })
+        elif handler_id == "strip_buffs_on_hit":
+            strip_hit_index = int(handler_data["hit_index"])
+
+    var burn_damage: Dictionary = {}
+    var burn_healing: Dictionary = {}
+    var damage_handler: String = str(entry.get("damage_handler", ""))
+    var damage_data: Dictionary = entry.get("damage_handler_data", {})
+
+    if damage_handler == "damage_for_burn_stacks":
+        burn_damage["multipliers_by_stacks"] = (
+            _int_keyed_skill_values(
+                damage_data.get("multipliers_by_stacks", {})
+            )
+        )
+        if damage_data.has("ignore_defense_at_stacks"):
+            burn_damage["ignore_defense_at_stacks"] = int(
+                damage_data["ignore_defense_at_stacks"]
+            )
+
+    for handler_config in entry.get("after_skill_handlers", []):
+        if str(handler_config.get("handler", "")) == "consume_burn_and_heal":
+            var handler_data: Dictionary = handler_config.get("data", {})
+            burn_healing["heal_by_stacks"] = (
+                _int_keyed_skill_values(
+                    handler_data.get("heal_by_stacks", {})
+                )
+            )
+
+    var skill = DamageSkillScript.new(
         skill_id,
         str(entry["name"]),
         float(entry["multiplier"]),
@@ -209,11 +276,112 @@ static func _create_shared_damage_skill(skill_id: String):
         entry.get("hit_multipliers", []),
         str(entry.get("scaling_stat", "attack")),
         int(entry["cooldown"]),
-        entry.get("effects", []),
-        {},
-        {},
+        effects,
+        burn_damage,
+        burn_healing,
         str(entry["target_type"])
     )
+
+    skill.strip_buffs_hit_index = strip_hit_index
+
+    if damage_handler == "damage_for_removed_buffs":
+        skill.damage_per_removed_buff = float(
+            damage_data.get("damage_per_removed_buff", 0.0)
+        )
+        skill.removed_buff_damage_hit_indices = damage_data.get(
+            "affected_hit_indices", []
+        )
+
+    for handler_config in entry.get("after_skill_handlers", []):
+        var handler_id: String = str(
+            handler_config.get("handler", "")
+        )
+        var handler_data: Dictionary = handler_config.get("data", {})
+
+        if handler_id == "add_burn_if_target_started_with_burn":
+            skill.add_burn_if_started_with_burn = true
+            skill.extra_burn_stacks = int(
+                handler_data.get("stacks", 1)
+            )
+            skill.extra_burn_turns = int(
+                handler_data.get("turns", 3)
+            )
+        elif handler_id == "reset_cooldown_by_burn_stacks":
+            skill.reset_skill_slot_if_burn_stacks = int(
+                handler_data.get("skill_slot", 0)
+            )
+            skill.reset_skill_required_burn_stacks = int(
+                handler_data.get("required_stacks", 0)
+            )
+
+    return skill
+
+
+static func _create_shared_skill(skill_id: String):
+    var definitions: Dictionary = _get_shared_skills()
+    if not definitions.has(skill_id):
+        push_error("Unknown shared skill: %s" % skill_id)
+        return null
+
+    var entry: Dictionary = definitions[skill_id]
+    var skill_type: String = str(entry.get("type", ""))
+
+    if skill_type == "damage":
+        return _create_shared_damage_skill(skill_id)
+
+    if skill_type == "healing" or skill_type == "support":
+        var buffs: Array = []
+        for handler_config in entry.get("after_use_handlers", []):
+            if str(handler_config.get("handler", "")) == "apply_aoe_buff":
+                var data: Dictionary = handler_config.get("data", {})
+                buffs.append({
+                    "effect_id": str(data["effect_id"]),
+                    "turns": int(data["turns"])
+                })
+        return SupportSkillScript.new(
+            skill_id,
+            str(entry["name"]),
+            int(entry["cooldown"]),
+            buffs,
+            str(entry["target_type"])
+        )
+
+    push_error("Unsupported shared skill type: %s" % skill_id)
+    return null
+
+
+static func _create_shared_drake(monster_id: String):
+    var monsters: Dictionary = _get_shared_monsters()
+    if not monsters.has(monster_id):
+        push_error("Unknown shared Drake: %s" % monster_id)
+        return null
+
+    var skills: Array = []
+    for skill_id in monsters[monster_id].get("skills", []):
+        var skill = _create_shared_skill(str(skill_id))
+        if skill == null:
+            return null
+        skills.append(skill)
+
+    var monster = _make_monster_from_data(monster_id, skills)
+    if monster == null:
+        return null
+
+    # Monster-specific passive resources are not skill definitions.
+    if monster_id == "drake_igneous":
+        monster.on_hit_effects = [
+            {
+                "effect_id": "burn",
+                "chance": 0.35,
+                "turns": 2,
+                "stacks": 1
+            }
+        ]
+    elif monster_id == "drake_abyssal":
+        monster.combat_resources["frozen_scales"] = 0
+        monster.combat_resource_maximums["frozen_scales"] = 3
+
+    return monster
 
 
 static func _create_shared_damage_monster(monster_id: String):
@@ -291,15 +459,15 @@ static func create_level_one_monster(
 
     match monster_id:
         "drake_igneous":
-            monster = _create_igneous_drake()
+            monster = _create_shared_drake(monster_id)
         "drake_abyssal":
-            monster = _create_abyssal_drake()
+            monster = _create_shared_drake(monster_id)
         "drake_aether":
-            monster = _create_aether_drake()
+            monster = _create_shared_drake(monster_id)
         "drake_storm":
-            monster = _create_storm_drake()
+            monster = _create_shared_drake(monster_id)
         "drake_void":
-            monster = _create_void_drake()
+            monster = _create_shared_drake(monster_id)
         "dullahan_void":
             monster = _create_void_dullahan()
         "dullahan_aether":
@@ -2036,67 +2204,21 @@ static func _apply_resonance(monster) -> void:
 
     if monster.monster_id == "drake_void":
         if monster.resonance >= 1:
-            var obliterate = DamageSkillScript.new(
-                (
-                    "null_rend_annihilation"
-                    if monster.resonance >= 5
-                    else "null_rend_obliterate"
-                ),
-                (
-                    "Null Rend: Annihilation"
-                    if monster.resonance >= 5
-                    else "Null Rend: Obliterate"
-                ),
-                2.10,
-                2,
-                [1.00, 1.30],
-                "attack",
-                4,
-                [
-                    {
-                        "effect_id": "oblivion",
-                        "chance": 0.80,
-                        "turns": 2,
-                        "hit_indices": [1]
-                    }
-                ]
+            var rend_id: String = (
+                "null_rend_annihilation"
+                if monster.resonance >= 5
+                else "null_rend_obliterate"
             )
-            monster.skills[1] = obliterate
+            monster.skills[1] = _create_shared_skill(rend_id)
 
         if monster.resonance >= 2:
             monster.combat_resources["voidborn"] = 0
             monster.combat_resource_maximums["voidborn"] = 5
 
         if monster.resonance >= 4:
-            var decimation = DamageSkillScript.new(
-                "dismantle_decimation",
-                "Dismantle: Decimation",
-                1.45,
-                3,
-                [],
-                "attack",
-                4,
-                [
-                    {
-                        "effect_id": "defense_break",
-                        "chance": 0.50,
-                        "turns": 2,
-                        "hit_indices": [1, 2]
-                    }
-                ],
-                {},
-                {},
-                "all_enemies",
-                0.0,
-                "",
-                {},
-                true,
-                0,
-                0.08,
-                [1, 2]
+            monster.skills[2] = _create_shared_skill(
+                "dismantle_decimation"
             )
-            monster.skills[2] = decimation
-
         return
 
     if monster.monster_id == "dullahan_igneous":
@@ -2143,94 +2265,24 @@ static func _apply_resonance(monster) -> void:
 
     if monster.monster_id == "drake_storm":
         if monster.resonance >= 2:
-            var blitz = DamageSkillScript.new(
-                "lightning_rush_blitz",
-                "Lightning Rush: Blitz",
-                1.75,
-                2,
-                [],
-                "attack",
-                3,
-                []
+            monster.skills[1] = _create_shared_skill(
+                "lightning_rush_blitz"
             )
-            monster.skills[1] = blitz
-
         if monster.resonance >= 5:
-            var requiem = DamageSkillScript.new(
-                "stormbreak_requiem",
-                "Stormbreak: Requiem",
-                1.60,
-                10,
-                [],
-                "attack",
-                6,
-                [
-                    {
-                        "effect_id": "stun",
-                        "chance": 0.50,
-                        "turns": 1,
-                        "trigger": "hit_count_threshold",
-                        "min_hits": 3
-                    }
-                ],
-                {},
-                {},
-                "random_enemies",
-                0.0,
-                "one_each_then_random",
-                {
-                    "full_damage_hits": 5,
-                    "later_hit_multiplier": 0.25,
-                    "first_hit_bonus_if_caster_buff": {
-                        "effect_id": "speed_up",
-                        "multiplier": 1.50
-                    }
-                }
+            monster.skills[2] = _create_shared_skill(
+                "stormbreak_requiem"
             )
-            monster.skills[2] = requiem
-
         return
 
     if monster.monster_id == "drake_aether":
         if monster.resonance >= 3:
-            var subjugation = DamageSkillScript.new(
-                "sovereign_breath_subjugation",
-                "Sovereign Breath: Subjugation",
-                3.00,
-                1,
-                [],
-                "attack",
-                3,
-                [],
-                {},
-                {},
-                "all_enemies"
+            monster.skills[1] = _create_shared_skill(
+                "sovereign_breath_subjugation"
             )
-            monster.skills[1] = subjugation
-
         if monster.resonance >= 5:
-            var apotheosis = SupportSkillScript.new(
-                "heavens_decree_apotheosis",
-                "Heaven's Decree: Apotheosis",
-                6,
-                [
-                    {
-                        "effect_id": "attack_up",
-                        "turns": 3
-                    },
-                    {
-                        "effect_id": "immunity",
-                        "turns": 3
-                    },
-                    {
-                        "effect_id": "veil",
-                        "turns": 3
-                    }
-                ],
-                "all_allies"
+            monster.skills[2] = _create_shared_skill(
+                "heavens_decree_apotheosis"
             )
-            monster.skills[2] = apotheosis
-
         return
 
     if monster.monster_id == "drake_igneous":
@@ -2257,159 +2309,28 @@ static func _apply_resonance(monster) -> void:
             ]
 
         if monster.resonance >= 2:
-            var afterburn = DamageSkillScript.new(
-                "scorching_breath_afterburn",
-                "Scorching Breath: Afterburn",
-                3.75,
-                2,
-                [],
-                "attack",
-                4,
-                [],
-                {
-                    "multipliers_by_stacks": {
-                        1: 1.08,
-                        2: 1.16,
-                        3: 1.24
-                    }
-                },
-                {},
-                "all_enemies"
+            monster.skills[1] = _create_shared_skill(
+                "scorching_breath_afterburn"
             )
-            afterburn.add_burn_if_started_with_burn = true
-            afterburn.extra_burn_stacks = 1
-            afterburn.extra_burn_turns = 3
-            monster.skills[1] = afterburn
-
         if monster.resonance >= 3:
-            var rekindled = DamageSkillScript.new(
-                "flame_devourer_rekindled",
-                "Flame Devourer: Rekindled",
-                4.60,
-                1,
-                [],
-                "attack",
-                5,
-                [],
-                {
-                    "multipliers_by_stacks": {
-                        1: 1.15,
-                        2: 1.30,
-                        3: 1.45
-                    }
-                },
-                {
-                    "heal_by_stacks": {
-                        1: 0.12,
-                        2: 0.25,
-                        3: 0.40
-                    }
-                }
+            monster.skills[2] = _create_shared_skill(
+                "flame_devourer_rekindled"
             )
-            rekindled.reset_skill_slot_if_burn_stacks = 2
-            rekindled.reset_skill_required_burn_stacks = 3
-            monster.skills[2] = rekindled
-
         if monster.resonance >= 5:
-            var incineration = DamageSkillScript.new(
-                "flame_devourer_incineration",
-                "Flame Devourer: Incineration",
-                4.60,
-                1,
-                [],
-                "attack",
-                5,
-                [],
-                {
-                    "multipliers_by_stacks": {
-                        1: 1.15,
-                        2: 1.30,
-                        3: 1.45
-                    },
-                    "ignore_defense_at_stacks": 3
-                },
-                {
-                    "heal_by_stacks": {
-                        1: 0.12,
-                        2: 0.25,
-                        3: 0.40
-                    }
-                }
+            monster.skills[2] = _create_shared_skill(
+                "flame_devourer_incineration"
             )
-            incineration.reset_skill_slot_if_burn_stacks = 2
-            incineration.reset_skill_required_burn_stacks = 3
-            monster.skills[2] = incineration
-
         return
 
     if monster.monster_id == "drake_abyssal":
         if monster.resonance >= 1:
-            var frigid = DamageSkillScript.new(
-                "rime_breath_frigid",
-                "Rime Breath: Frigid",
-                3.15,
-                2,
-                [],
-                "attack",
-                4,
-                [
-                    {
-                        "effect_id": "speed_break",
-                        "chance": 0.50,
-                        "turns": 2,
-                        "trigger": "per_hit"
-                    }
-                ],
-                {},
-                {},
-                "all_enemies"
+            monster.skills[1] = _create_shared_skill(
+                "rime_breath_frigid"
             )
-            frigid.action_gauge_reduction_if_debuff_id = (
-                "speed_break"
-            )
-            frigid.action_gauge_reduction_if_debuff_amount = 0.10
-            monster.skills[1] = frigid
-
         if monster.resonance >= 5:
-            var absolute_zero = DamageSkillScript.new(
-                "glacial_collapse_absolute_zero",
-                "Glacial Collapse: Absolute Zero",
-                4.10,
-                1,
-                [],
-                "attack",
-                5,
-                [
-                    {
-                        "effect_id": "freeze",
-                        "chance": 1.00,
-                        "turns": 1,
-                        "trigger": "per_hit",
-                        "ignore_resistance": true,
-                        "condition": {
-                            "type": "target_has_debuff",
-                            "effect_id": "speed_break"
-                        }
-                    },
-                    {
-                        "effect_id": "freeze",
-                        "chance": 0.75,
-                        "turns": 1,
-                        "trigger": "per_hit",
-                        "ignore_resistance": true,
-                        "condition": {
-                            "type": "target_lacks_debuff",
-                            "effect_id": "speed_break"
-                        }
-                    }
-                ],
-                {},
-                {},
-                "all_enemies",
-                0.10
+            monster.skills[2] = _create_shared_skill(
+                "glacial_collapse_absolute_zero"
             )
-            monster.skills[2] = absolute_zero
-
         return
 
     if monster.monster_id == "dryad_storm":
@@ -2556,170 +2477,6 @@ static func _apply_resonance(monster) -> void:
             monster.skills[1] = heatstorm
 
         return
-
-
-static func _create_igneous_drake():
-    var skills: Array = [
-        DamageSkillScript.new(
-            "draconic_claw",
-            "Draconic Claw",
-            2.5,
-            1,
-            [],
-            "attack",
-            0,
-            [
-                {
-                    "effect_id": "defense_break",
-                    "chance": 0.30,
-                    "turns": 2
-                }
-            ]
-        ),
-
-        DamageSkillScript.new(
-            "scorching_breath",
-            "Scorching Breath",
-            3.75,
-            2,
-            [],
-            "attack",
-            4,
-            [],
-            {
-                "multipliers_by_stacks": {
-                    1: 1.08,
-                    2: 1.16,
-                    3: 1.24
-                }
-            },
-            {},
-            "all_enemies"
-        ),
-
-        DamageSkillScript.new(
-            "flame_devourer",
-            "Flame Devourer",
-            4.6,
-            1,
-            [],
-            "attack",
-            5,
-            [],
-            {
-                "multipliers_by_stacks": {
-                    1: 1.15,
-                    2: 1.30,
-                    3: 1.45
-                }
-            },
-            {
-                "heal_by_stacks": {
-                    1: 0.12,
-                    2: 0.25,
-                    3: 0.40
-                }
-            }
-        )
-    ]
-
-    var monster = _make_monster_from_data(
-        "drake_igneous",
-        skills
-    )
-
-    # Cinderblood (base): each landed hit has a 35% chance to attempt
-    # applying one Burn stack for 2 turns.
-    monster.on_hit_effects = [
-        {
-            "effect_id": "burn",
-            "chance": 0.35,
-            "turns": 2,
-            "stacks": 1
-        }
-    ]
-
-    return monster
-
-
-static func _create_abyssal_drake():
-    var skills: Array = [
-        DamageSkillScript.new(
-            "draconic_claw",
-            "Draconic Claw",
-            2.5,
-            1,
-            [],
-            "attack",
-            0,
-            [
-                {
-                    "effect_id": "defense_break",
-                    "chance": 0.30,
-                    "turns": 2
-                }
-            ]
-        ),
-
-        DamageSkillScript.new(
-            "rime_breath",
-            "Rime Breath",
-            3.15,
-            2,
-            [],
-            "attack",
-            4,
-            [
-                {
-                    "effect_id": "speed_break",
-                    "chance": 0.50,
-                    "turns": 2,
-                    "trigger": "per_hit"
-                }
-            ],
-            {},
-            {},
-            "all_enemies"
-        ),
-
-        DamageSkillScript.new(
-            "glacial_collapse",
-            "Glacial Collapse",
-            4.10,
-            1,
-            [],
-            "attack",
-            5,
-            [
-                {
-                    "effect_id": "freeze",
-                    "chance": 1.00,
-                    "turns": 1,
-                    "trigger": "per_hit",
-                    "condition": {
-                        "type": "target_has_debuff",
-                        "effect_id": "speed_break"
-                    }
-                }
-            ],
-            {},
-            {},
-            "all_enemies",
-            0.10
-        )
-    ]
-
-    var monster = _make_monster_from_data(
-        "drake_abyssal",
-        skills
-    )
-
-    monster.combat_resources["frozen_scales"] = 0
-    monster.combat_resource_maximums[
-        "frozen_scales"
-    ] = 3
-
-    return monster
 
 
 static func _create_igneous_griffon():
@@ -3097,209 +2854,5 @@ static func _create_void_dullahan():
 
     return _make_monster_from_data(
         "dullahan_void",
-        skills
-    )
-
-
-static func _create_void_drake():
-    var skills: Array = [
-        DamageSkillScript.new(
-            "draconic_claw",
-            "Draconic Claw",
-            2.5,
-            1,
-            [],
-            "attack",
-            0,
-            [
-                {
-                    "effect_id": "defense_break",
-                    "chance": 0.30,
-                    "turns": 2
-                }
-            ]
-        ),
-
-        DamageSkillScript.new(
-            "null_rend",
-            "Null Rend",
-            2.10,
-            2,
-            [],
-            "attack",
-            4,
-            [
-                {
-                    "effect_id": "oblivion",
-                    "chance": 0.60,
-                    "turns": 2,
-                    "hit_indices": [1]
-                }
-            ]
-        ),
-
-        DamageSkillScript.new(
-            "dismantle",
-            "Dismantle",
-            1.45,
-            3,
-            [],
-            "attack",
-            5,
-            [
-                {
-                    "effect_id": "defense_break",
-                    "chance": 0.30,
-                    "turns": 2,
-                    "hit_indices": [1, 2]
-                }
-            ],
-            {},
-            {},
-            "all_enemies",
-            0.0,
-            "",
-            {},
-            true,
-            0,
-            0.08,
-            [1, 2]
-        )
-    ]
-
-    var monster = _make_monster_from_data(
-        "drake_void",
-        skills
-    )
-
-    return monster
-
-
-static func _create_storm_drake():
-    var skills: Array = [
-        DamageSkillScript.new(
-            "draconic_claw",
-            "Draconic Claw",
-            2.5,
-            1,
-            [],
-            "attack",
-            0,
-            [
-                {
-                    "effect_id": "defense_break",
-                    "chance": 0.30,
-                    "turns": 2
-                }
-            ]
-        ),
-
-        DamageSkillScript.new(
-            "lightning_rush",
-            "Lightning Rush",
-            1.75,
-            2,
-            [],
-            "attack",
-            4,
-            []
-        ),
-
-        DamageSkillScript.new(
-            "stormbreak",
-            "Stormbreak",
-            1.60,
-            10,
-            [],
-            "attack",
-            6,
-            [
-                {
-                    "effect_id": "stun",
-                    "chance": 0.50,
-                    "turns": 1,
-                    "trigger": "hit_count_threshold",
-                    "min_hits": 3
-                }
-            ],
-            {},
-            {},
-            "random_enemies",
-            0.0,
-            "one_each_then_random",
-            {
-                "full_damage_hits": 5,
-                "later_hit_multiplier": 0.25,
-                "first_hit_bonus_if_caster_buff": {
-                    "effect_id": "speed_up",
-                    "multiplier": 1.50
-                }
-            }
-        )
-    ]
-
-    return _make_monster_from_data(
-        "drake_storm",
-        skills
-    )
-
-
-static func _create_aether_drake():
-    var skills: Array = [
-        DamageSkillScript.new(
-            "draconic_claw",
-            "Draconic Claw",
-            2.5,
-            1,
-            [],
-            "attack",
-            0,
-            [
-                {
-                    "effect_id": "defense_break",
-                    "chance": 0.30,
-                    "turns": 2
-                }
-            ]
-        ),
-
-        DamageSkillScript.new(
-            "sovereign_breath",
-            "Sovereign Breath",
-            3.00,
-            1,
-            [],
-            "attack",
-            4,
-            [],
-            {},
-            {},
-            "all_enemies"
-        ),
-
-        SupportSkillScript.new(
-            "heavens_decree",
-            "Heaven's Decree",
-            6,
-            [
-                {
-                    "effect_id": "attack_up",
-                    "turns": 2
-                },
-                {
-                    "effect_id": "immunity",
-                    "turns": 2
-                },
-                {
-                    "effect_id": "veil",
-                    "turns": 2
-                }
-            ],
-            "all_allies"
-        )
-    ]
-
-    return _make_monster_from_data(
-        "drake_aether",
         skills
     )
