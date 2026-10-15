@@ -38,6 +38,8 @@ var named_by = null
 var battle_dead_count: int = 0
 var ally_dead_for_soul_bonus: bool = false
 var on_hit_action_gauge_granted_this_skill: bool = false
+var banished: bool = false
+var combat_opponents: Array = []
 var passive_tooltip: Dictionary = {}
 var passive_tooltips: Array = []
 
@@ -316,6 +318,9 @@ func receive_damage(
     amount: int,
     source = null
 ) -> int:
+    if has_buff("invincibility"):
+        return 0
+
     var was_alive: bool = is_alive()
     var remaining_damage: int = maxi(0, amount)
 
@@ -414,8 +419,46 @@ func heal(amount: int) -> int:
     if get_debuff("heal_block") != null:
         return 0
 
+    var hp_ratio_before: float = (
+        float(health) / float(max_health)
+        if max_health > 0
+        else 0.0
+    )
+
+    var healing_multiplier := 1.0
+
+    for opponent in combat_opponents:
+        if (
+            opponent == null
+            or not opponent.is_alive()
+            or opponent.has_oblivion()
+            or opponent.monster_id != "dullahan_igneous"
+            or opponent.resonance < 2
+            or hp_ratio_before >= 0.50
+        ):
+            continue
+
+        var attack_up = (
+            StatusEffectFactoryScript.create_status_effect(
+                "attack_up",
+                1,
+                opponent
+            )
+        )
+        opponent.apply_status_effect(attack_up)
+
+        if opponent.resonance >= 4:
+            healing_multiplier *= 0.70
+
+    var adjusted_amount: int = int(
+        amount * healing_multiplier
+    )
+
     var old_health: int = health
-    health = mini(max_health, health + amount)
+    health = mini(
+        max_health,
+        health + adjusted_amount
+    )
     return health - old_health
 
 
