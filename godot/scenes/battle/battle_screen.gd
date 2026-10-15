@@ -896,6 +896,7 @@ func _on_passive_button_2_pressed() -> void:
     pending_special_action = "soul_recall"
     set_target_selection(false)
     set_revive_target_selection(true)
+    update_skill_buttons()
     turn_label.text = "Choose a fallen ally to revive"
 
 
@@ -931,9 +932,9 @@ func preview_aoe_targets() -> void:
 
 
 func disable_skill_buttons() -> void:
-    skill_1_button.disabled = true
-    skill_2_button.disabled = true
-    skill_3_button.disabled = true
+    _set_action_button_state(skill_1_button, true)
+    _set_action_button_state(skill_2_button, true)
+    _set_action_button_state(skill_3_button, true)
 
 
 func finish_battle(player_won: bool) -> void:
