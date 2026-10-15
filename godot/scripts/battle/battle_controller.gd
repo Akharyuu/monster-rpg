@@ -10,6 +10,7 @@ var enemies: Array = []
 
 var active_monster
 var active_turn_effects: Array = []
+var recorded_dead_monsters: Array = []
 
 
 func setup(p_allies: Array, p_enemies: Array) -> void:
