@@ -53,17 +53,17 @@ var passive_ids: Array[String] = []
 
 
 func get_passive_by_handler(handler_id: String) -> Dictionary:
-    for record in passive_definitions.values():
-        if str(record.get("handler", "")) == handler_id:
-            return record
-    return {}
+	for record in passive_definitions.values():
+		if str(record.get("handler", "")) == handler_id:
+			return record
+	return {}
 
 
 func has_passive_trait(trait_id: String) -> bool:
-    for record in passive_definitions.values():
-        if trait_id in record.get("traits", []):
-            return true
-    return false
+	for record in passive_definitions.values():
+		if trait_id in record.get("traits", []):
+			return true
+	return false
 
 # Lightweight prototype representation of passive effects that trigger
 # whenever this monster lands a hit. This will later become the full
@@ -72,741 +72,741 @@ var on_hit_effects: Array = []
 
 
 func _init(
-    p_monster_id: String,
-    p_name: String,
-    p_family: String,
-    p_attribute: String,
-    p_rarity: int,
-    p_max_health: int,
-    p_attack: int,
-    p_defense: int,
-    p_speed: int,
-    p_skills: Array = [],
-    p_stat_scale: float = 1.0
+	p_monster_id: String,
+	p_name: String,
+	p_family: String,
+	p_attribute: String,
+	p_rarity: int,
+	p_max_health: int,
+	p_attack: int,
+	p_defense: int,
+	p_speed: int,
+	p_skills: Array = [],
+	p_stat_scale: float = 1.0
 ) -> void:
-    monster_id = p_monster_id
-    monster_name = p_name
-    family = p_family
-    attribute = p_attribute
-    rarity = p_rarity
+	monster_id = p_monster_id
+	monster_name = p_name
+	family = p_family
+	attribute = p_attribute
+	rarity = p_rarity
 
-    max_health = p_max_health
-    health = p_max_health
-    attack = p_attack
-    defense = p_defense
-    speed = p_speed
-    skills = p_skills
-    stat_scale = p_stat_scale
+	max_health = p_max_health
+	health = p_max_health
+	attack = p_attack
+	defense = p_defense
+	speed = p_speed
+	skills = p_skills
+	stat_scale = p_stat_scale
 
 
 func is_alive() -> bool:
-    return health > 0
+	return health > 0
 
 
 func is_stunned() -> bool:
-    return get_debuff("stun") != null
+	return get_debuff("stun") != null
 
 
 func is_frozen() -> bool:
-    return get_debuff("freeze") != null
+	return get_debuff("freeze") != null
 
 
 func is_silenced() -> bool:
-    if (
-        is_headless()
-        and not has_oblivion()
-    ):
-        return false
+	if (
+		is_headless()
+		and not has_oblivion()
+	):
+		return false
 
-    return get_debuff("silence") != null
+	return get_debuff("silence") != null
 
 
 func has_oblivion() -> bool:
-    return get_debuff("oblivion") != null
+	return get_debuff("oblivion") != null
 
 
 func is_headless() -> bool:
-    return bool(
-        special_states.get("headless", false)
-    )
+	return bool(
+		special_states.get("headless", false)
+	)
 
 
 func cannot_act() -> bool:
-    return is_stunned() or is_frozen()
+	return is_stunned() or is_frozen()
 
 
 func get_buff(effect_id: String):
-    for buff in buffs:
-        if buff.effect_id == effect_id:
-            return buff
+	for buff in buffs:
+		if buff.effect_id == effect_id:
+			return buff
 
-    return null
+	return null
 
 
 func has_buff(effect_id: String) -> bool:
-    for buff in buffs:
-        if buff.effect_id == effect_id:
-            return true
+	for buff in buffs:
+		if buff.effect_id == effect_id:
+			return true
 
-    return false
+	return false
 
 
 func get_combat_resource(
-    resource_id: String,
-    default_value: int = 0
+	resource_id: String,
+	default_value: int = 0
 ) -> int:
-    return int(
-        combat_resources.get(resource_id, default_value)
-    )
+	return int(
+		combat_resources.get(resource_id, default_value)
+	)
 
 
 func add_combat_resource(
-    resource_id: String,
-    amount: int,
-    maximum: int
+	resource_id: String,
+	amount: int,
+	maximum: int
 ) -> int:
-    var new_value: int = mini(
-        maximum,
-        get_combat_resource(resource_id) + amount
-    )
+	var new_value: int = mini(
+		maximum,
+		get_combat_resource(resource_id) + amount
+	)
 
-    combat_resources[resource_id] = new_value
-    return new_value
+	combat_resources[resource_id] = new_value
+	return new_value
 
 
 func consume_combat_resource(
-    resource_id: String,
-    amount: int
+	resource_id: String,
+	amount: int
 ) -> int:
-    var current: int = get_combat_resource(resource_id)
-    var consumed: int = mini(current, amount)
+	var current: int = get_combat_resource(resource_id)
+	var consumed: int = mini(current, amount)
 
-    combat_resources[resource_id] = current - consumed
-    return consumed
+	combat_resources[resource_id] = current - consumed
+	return consumed
 
 
 func get_base_stat(stat: String) -> float:
-    match stat:
-        "max_health", "health":
-            return max_health
-        "attack":
-            return attack
-        "defense":
-            return defense
-        "speed":
-            return speed
-        "accuracy":
-            return accuracy
-        "resistance":
-            return resistance
-        "crit_rate":
-            return crit_rate
-        "crit_damage":
-            return crit_damage
-        _:
-            push_error("Unknown stat: %s" % stat)
-            return 0.0
+	match stat:
+		"max_health", "health":
+			return max_health
+		"attack":
+			return attack
+		"defense":
+			return defense
+		"speed":
+			return speed
+		"accuracy":
+			return accuracy
+		"resistance":
+			return resistance
+		"crit_rate":
+			return crit_rate
+		"crit_damage":
+			return crit_damage
+		_:
+			push_error("Unknown stat: %s" % stat)
+			return 0.0
 
 
 func get_effective_stat(stat: String) -> float:
-    var multiplicative_modifier := 1.0
-    var additive_modifier := 0.0
+	var multiplicative_modifier := 1.0
+	var additive_modifier := 0.0
 
-    for buff in buffs:
-        if buff.stat == stat:
-            if buff.modifier_mode == "additive":
-                additive_modifier += float(buff.modifier)
-            elif buff.modifier != null:
-                multiplicative_modifier *= float(buff.modifier)
+	for buff in buffs:
+		if buff.stat == stat:
+			if buff.modifier_mode == "additive":
+				additive_modifier += float(buff.modifier)
+			elif buff.modifier != null:
+				multiplicative_modifier *= float(buff.modifier)
 
-    for debuff in debuffs:
-        if debuff.stat == stat:
-            if debuff.modifier_mode == "additive":
-                additive_modifier += float(debuff.modifier)
-            elif debuff.modifier != null:
-                multiplicative_modifier *= float(debuff.modifier)
+	for debuff in debuffs:
+		if debuff.stat == stat:
+			if debuff.modifier_mode == "additive":
+				additive_modifier += float(debuff.modifier)
+			elif debuff.modifier != null:
+				multiplicative_modifier *= float(debuff.modifier)
 
-    var value: float = (
-        get_base_stat(stat)
-        * multiplicative_modifier
-        + additive_modifier
-    )
+	var value: float = (
+		get_base_stat(stat)
+		* multiplicative_modifier
+		+ additive_modifier
+	)
 
-    if not has_oblivion():
-        var rider: Dictionary = get_passive_by_handler("headless_rider")
-        if rider.is_empty():
-            rider = get_passive_by_handler("deathless_rider")
-        if stat == "speed" and is_headless() and not rider.is_empty():
-            var rider_data: Dictionary = rider.get("handler_data", {})
-            value += speed * float(rider_data.get("speed_bonus", 0.0))
+	if not has_oblivion():
+		var rider: Dictionary = get_passive_by_handler("headless_rider")
+		if rider.is_empty():
+			rider = get_passive_by_handler("deathless_rider")
+		if stat == "speed" and is_headless() and not rider.is_empty():
+			var rider_data: Dictionary = rider.get("handler_data", {})
+			value += speed * float(rider_data.get("speed_bonus", 0.0))
 
-        var thunder: Dictionary = get_passive_by_handler("thunderheart")
-        var thunder_data: Dictionary = thunder.get("handler_data", {})
-        if stat == "crit_rate" and thunder_data.has("speed_per_crit"):
-            var bonus_speed: float = maxf(
-                0.0, get_effective_stat("speed") - speed
-            )
-            value += minf(
-                floorf(bonus_speed / float(
-                    thunder_data["speed_per_crit"]
-                )),
-                float(thunder_data.get("max_crit_rate_bonus", 0.0))
-            )
+		var thunder: Dictionary = get_passive_by_handler("thunderheart")
+		var thunder_data: Dictionary = thunder.get("handler_data", {})
+		if stat == "crit_rate" and thunder_data.has("speed_per_crit"):
+			var bonus_speed: float = maxf(
+				0.0, get_effective_stat("speed") - speed
+			)
+			value += minf(
+				floorf(bonus_speed / float(
+					thunder_data["speed_per_crit"]
+				)),
+				float(thunder_data.get("max_crit_rate_bonus", 0.0))
+			)
 
-        var grace: Dictionary = get_passive_by_handler("divine_grace")
-        var grace_data: Dictionary = grace.get("handler_data", {})
-        if stat == "accuracy":
-            value += float(grace_data.get("accuracy_bonus", 0.0))
+		var grace: Dictionary = get_passive_by_handler("divine_grace")
+		var grace_data: Dictionary = grace.get("handler_data", {})
+		if stat == "accuracy":
+			value += float(grace_data.get("accuracy_bonus", 0.0))
 
-    return value
+	return value
 
 
 func get_passive_damage_multiplier() -> float:
-    if has_oblivion():
-        return 1.0
+	if has_oblivion():
+		return 1.0
 
-    var thunder: Dictionary = get_passive_by_handler("thunderheart")
-    if thunder.is_empty():
-        return 1.0
+	var thunder: Dictionary = get_passive_by_handler("thunderheart")
+	if thunder.is_empty():
+		return 1.0
 
-    var data: Dictionary = thunder.get("handler_data", {})
-    var bonus_speed: float = maxf(
-        0.0,
-        get_effective_stat("speed") - speed
-    )
-    return 1.0 + bonus_speed * float(
-        data.get("damage_per_bonus_speed", 0.0)
-    )
+	var data: Dictionary = thunder.get("handler_data", {})
+	var bonus_speed: float = maxf(
+		0.0,
+		get_effective_stat("speed") - speed
+	)
+	return 1.0 + bonus_speed * float(
+		data.get("damage_per_bonus_speed", 0.0)
+	)
 
 
 func get_healing_hp() -> float:
-    # Equipment is not ported to Godot yet, so at prototype level
-    # Healing HP equals current Max HP.
-    return float(max_health)
+	# Equipment is not ported to Godot yet, so at prototype level
+	# Healing HP equals current Max HP.
+	return float(max_health)
 
 
 func get_direct_heal_multiplier(target) -> float:
-    if has_oblivion():
-        return 1.0
+	if has_oblivion():
+		return 1.0
 
-    var passive: Dictionary = get_passive_by_handler("natures_grace")
-    if passive.is_empty() or target.max_health <= 0:
-        return 1.0
+	var passive: Dictionary = get_passive_by_handler("natures_grace")
+	if passive.is_empty() or target.max_health <= 0:
+		return 1.0
 
-    var data: Dictionary = passive.get("handler_data", {})
-    var target_hp_ratio: float = (
-        float(target.health) / float(target.max_health)
-    )
-    if target_hp_ratio < float(data.get("hp_threshold", 0.0)):
-        return float(data.get("healing_multiplier", 1.0))
-    return 1.0
+	var data: Dictionary = passive.get("handler_data", {})
+	var target_hp_ratio: float = (
+		float(target.health) / float(target.max_health)
+	)
+	if target_hp_ratio < float(data.get("hp_threshold", 0.0)):
+		return float(data.get("healing_multiplier", 1.0))
+	return 1.0
 
 
 func get_attribute_modifier(defender) -> float:
-    if (
-        (attribute == "igneous" and defender.attribute == "abyssal")
-        or (attribute == "abyssal" and defender.attribute == "storm")
-        or (attribute == "storm" and defender.attribute == "igneous")
-    ):
-        return 0.85
+	if (
+		(attribute == "igneous" and defender.attribute == "abyssal")
+		or (attribute == "abyssal" and defender.attribute == "storm")
+		or (attribute == "storm" and defender.attribute == "igneous")
+	):
+		return 0.85
 
-    if (
-        (attribute == "igneous" and defender.attribute == "storm")
-        or (attribute == "abyssal" and defender.attribute == "igneous")
-        or (attribute == "storm" and defender.attribute == "abyssal")
-    ):
-        return 1.15
+	if (
+		(attribute == "igneous" and defender.attribute == "storm")
+		or (attribute == "abyssal" and defender.attribute == "igneous")
+		or (attribute == "storm" and defender.attribute == "abyssal")
+	):
+		return 1.15
 
-    return 1.0
+	return 1.0
 
 
 func preserves_freeze_on_hit() -> bool:
-    return (
-        not has_oblivion()
-        and has_passive_trait("preserve_freeze_on_hit")
-    )
+	return (
+		not has_oblivion()
+		and has_passive_trait("preserve_freeze_on_hit")
+	)
 
 
 func preserves_applied_freeze_on_damage() -> bool:
-    return (
-        not has_oblivion()
-        and has_passive_trait("preserve_applied_freeze_on_damage")
-    )
+	return (
+		not has_oblivion()
+		and has_passive_trait("preserve_applied_freeze_on_damage")
+	)
 
 
 func receive_damage(
-    amount: int,
-    source = null
+	amount: int,
+	source = null
 ) -> int:
-    if has_buff("invincibility"):
-        return 0
+	if has_buff("invincibility"):
+		return 0
 
-    var was_alive: bool = is_alive()
-    var remaining_damage: int = maxi(0, amount)
+	var was_alive: bool = is_alive()
+	var remaining_damage: int = maxi(0, amount)
 
-    var shield = null
+	var shield = null
 
-    for buff in buffs:
-        if buff.effect_id == "shield":
-            shield = buff
-            break
+	for buff in buffs:
+		if buff.effect_id == "shield":
+			shield = buff
+			break
 
-    if shield != null and shield.value > 0:
-        var absorbed: int = mini(
-            remaining_damage,
-            shield.value
-        )
-        shield.value -= absorbed
-        remaining_damage -= absorbed
+	if shield != null and shield.value > 0:
+		var absorbed: int = mini(
+			remaining_damage,
+			shield.value
+		)
+		shield.value -= absorbed
+		remaining_damage -= absorbed
 
-        if shield.value <= 0:
-            buffs.erase(shield)
+		if shield.value <= 0:
+			buffs.erase(shield)
 
-    # Deathless Rider preserves the last HP for the entire incoming
-    # skill, including every hit of a multi-hit attack.
-    var can_trigger_deathless: bool = (
-        source != null
-        and not get_passive_by_handler("deathless_rider").is_empty()
-        and is_headless()
-        and not has_oblivion()
-        and get_internal_cooldown("deathless_rider") == 0
-    )
+	# Deathless Rider preserves the last HP for the entire incoming
+	# skill, including every hit of a multi-hit attack.
+	var can_trigger_deathless: bool = (
+		source != null
+		and not get_passive_by_handler("deathless_rider").is_empty()
+		and is_headless()
+		and not has_oblivion()
+		and get_internal_cooldown("deathless_rider") == 0
+	)
 
-    var actual_damage: int = 0
+	var actual_damage: int = 0
 
-    if (
-        remaining_damage > 0
-        and (
-            deathless_triggered_this_skill
-            or (
-                can_trigger_deathless
-                and remaining_damage >= health
-            )
-        )
-    ):
-        deathless_triggered_this_skill = true
-        actual_damage = maxi(0, health - 1)
-        health = 1
-    else:
-        actual_damage = mini(remaining_damage, health)
-        health = maxi(0, health - remaining_damage)
+	if (
+		remaining_damage > 0
+		and (
+			deathless_triggered_this_skill
+			or (
+				can_trigger_deathless
+				and remaining_damage >= health
+			)
+		)
+	):
+		deathless_triggered_this_skill = true
+		actual_damage = maxi(0, health - 1)
+		health = 1
+	else:
+		actual_damage = mini(remaining_damage, health)
+		health = maxi(0, health - remaining_damage)
 
-    if actual_damage > 0:
-        var new_debuffs: Array = []
+	if actual_damage > 0:
+		var new_debuffs: Array = []
 
-        for debuff in debuffs:
-            if debuff.effect_id != "freeze":
-                new_debuffs.append(debuff)
-                continue
+		for debuff in debuffs:
+			if debuff.effect_id != "freeze":
+				new_debuffs.append(debuff)
+				continue
 
-            var preserve_from_attacker: bool = (
-                source != null
-                and source.has_method(
+			var preserve_from_attacker: bool = (
+				source != null
+				and source.has_method(
                     "preserves_freeze_on_hit"
-                )
-                and source.preserves_freeze_on_hit()
-            )
+				)
+				and source.preserves_freeze_on_hit()
+			)
 
-            var preserve_from_source: bool = (
-                debuff.source != null
-                and debuff.source.has_method(
+			var preserve_from_source: bool = (
+				debuff.source != null
+				and debuff.source.has_method(
                     "preserves_applied_freeze_on_damage"
-                )
-                and debuff.source.preserves_applied_freeze_on_damage()
-            )
+				)
+				and debuff.source.preserves_applied_freeze_on_damage()
+			)
 
-            if preserve_from_attacker or preserve_from_source:
-                new_debuffs.append(debuff)
+			if preserve_from_attacker or preserve_from_source:
+				new_debuffs.append(debuff)
 
-        debuffs = new_debuffs
+		debuffs = new_debuffs
 
-    if was_alive and not is_alive():
-        _clear_combat_state_on_death()
+	if was_alive and not is_alive():
+		_clear_combat_state_on_death()
 
-    return actual_damage
+	return actual_damage
 
 
 func finalize_deathless_rider() -> bool:
-    if not deathless_triggered_this_skill:
-        return false
+	if not deathless_triggered_this_skill:
+		return false
 
-    deathless_triggered_this_skill = false
-    clear_named_target()
-    debuffs.clear()
-    var deathless: Dictionary = get_passive_by_handler("deathless_rider")
-    var data: Dictionary = deathless.get("handler_data", {})
-    set_internal_cooldown(
-        "deathless_rider", int(data.get("internal_cooldown", 6))
-    )
-    return true
+	deathless_triggered_this_skill = false
+	clear_named_target()
+	debuffs.clear()
+	var deathless: Dictionary = get_passive_by_handler("deathless_rider")
+	var data: Dictionary = deathless.get("handler_data", {})
+	set_internal_cooldown(
+		"deathless_rider", int(data.get("internal_cooldown", 6))
+	)
+	return true
 
 
 func _clear_combat_state_on_death() -> void:
-    # Preserve who Named this monster so Death March can react
-    # after normal death cleanup has removed linked combat states.
-    death_named_by = named_by
+	# Preserve who Named this monster so Death March can react
+	# after normal death cleanup has removed linked combat states.
+	death_named_by = named_by
 
-    # Resolve linked special states before clearing local containers.
-    if named_by != null:
-        var source = named_by
-        named_by = null
+	# Resolve linked special states before clearing local containers.
+	if named_by != null:
+		var source = named_by
+		named_by = null
 
-        if (
-            source != null
-            and source.named_target == self
-        ):
-            source.clear_named_target()
+		if (
+			source != null
+			and source.named_target == self
+		):
+			source.clear_named_target()
 
-    if named_target != null:
-        clear_named_target()
+	if named_target != null:
+		clear_named_target()
 
-    buffs.clear()
-    debuffs.clear()
-    combat_resources.clear()
-    special_states.clear()
-    deathless_triggered_this_skill = false
+	buffs.clear()
+	debuffs.clear()
+	combat_resources.clear()
+	special_states.clear()
+	deathless_triggered_this_skill = false
 
-    named_target = null
-    named_by = null
-    action_gauge = 0.0
+	named_target = null
+	named_by = null
+	action_gauge = 0.0
 
 
 func heal(amount: int) -> int:
-    if not is_alive():
-        return 0
+	if not is_alive():
+		return 0
 
-    if get_debuff("heal_block") != null:
-        return 0
+	if get_debuff("heal_block") != null:
+		return 0
 
-    var hp_ratio_before: float = (
-        float(health) / float(max_health)
-        if max_health > 0
-        else 0.0
-    )
+	var hp_ratio_before: float = (
+		float(health) / float(max_health)
+		if max_health > 0
+		else 0.0
+	)
 
-    var healing_multiplier := 1.0
+	var healing_multiplier := 1.0
 
-    for opponent in combat_opponents:
-        if (
-            opponent == null
-            or not opponent.is_alive()
-            or opponent.has_oblivion()
-        ):
-            continue
+	for opponent in combat_opponents:
+		if (
+			opponent == null
+			or not opponent.is_alive()
+			or opponent.has_oblivion()
+		):
+			continue
 
-        var omen: Dictionary = opponent.get_passive_by_handler(
+		var omen: Dictionary = opponent.get_passive_by_handler(
             "final_omen"
-        )
-        if omen.is_empty():
-            continue
+		)
+		if omen.is_empty():
+			continue
 
-        var omen_data: Dictionary = omen.get("handler_data", {})
-        if hp_ratio_before >= float(
-            omen_data.get("hp_threshold", 0.0)
-        ):
-            continue
+		var omen_data: Dictionary = omen.get("handler_data", {})
+		if hp_ratio_before >= float(
+			omen_data.get("hp_threshold", 0.0)
+		):
+			continue
 
-        var attack_up = (
-            StatusEffectFactoryScript.create_status_effect(
-                "attack_up",
-                int(omen_data.get("attack_up_turns", 1)),
-                opponent
-            )
-        )
-        opponent.apply_status_effect(attack_up)
-        healing_multiplier *= float(
-            omen_data.get("healing_received_multiplier", 1.0)
-        )
+		var attack_up = (
+			StatusEffectFactoryScript.create_status_effect(
+				"attack_up",
+				int(omen_data.get("attack_up_turns", 1)),
+				opponent
+			)
+		)
+		opponent.apply_status_effect(attack_up)
+		healing_multiplier *= float(
+			omen_data.get("healing_received_multiplier", 1.0)
+		)
 
-    var adjusted_amount: int = int(
-        amount * healing_multiplier
-    )
+	var adjusted_amount: int = int(
+		amount * healing_multiplier
+	)
 
-    var old_health: int = health
-    health = mini(
-        max_health,
-        health + adjusted_amount
-    )
-    return health - old_health
+	var old_health: int = health
+	health = mini(
+		max_health,
+		health + adjusted_amount
+	)
+	return health - old_health
 
 
 func apply_status_effect(effect):
-    if effect == null:
-        return null
+	if effect == null:
+		return null
 
-    var effects_list: Array
+	var effects_list: Array
 
-    if effect.effect_type == "buff":
-        effects_list = buffs
-    elif effect.effect_type == "debuff":
-        if (
-            effect.effect_id == "silence"
-            and is_headless()
-            and not has_oblivion()
-        ):
-            return null
+	if effect.effect_type == "buff":
+		effects_list = buffs
+	elif effect.effect_type == "debuff":
+		if (
+			effect.effect_id == "silence"
+			and is_headless()
+			and not has_oblivion()
+		):
+			return null
 
-        if has_buff("immunity"):
-            return null
+		if has_buff("immunity"):
+			return null
 
-        effects_list = debuffs
-    else:
-        return null
+		effects_list = debuffs
+	else:
+		return null
 
-    for active_effect in effects_list:
-        if active_effect.effect_id == effect.effect_id:
-            if effect.duration > active_effect.remaining_turns:
-                active_effect.remaining_turns = effect.duration
+	for active_effect in effects_list:
+		if active_effect.effect_id == effect.effect_id:
+			if effect.duration > active_effect.remaining_turns:
+				active_effect.remaining_turns = effect.duration
 
-            if (
-                effect.effect_id == "shield"
-                and effect.value > active_effect.value
-            ):
-                active_effect.value = effect.value
+			if (
+				effect.effect_id == "shield"
+				and effect.value > active_effect.value
+			):
+				active_effect.value = effect.value
 
-            active_effect.stacks = mini(
-                active_effect.max_stacks,
-                active_effect.stacks + effect.stacks
-            )
+			active_effect.stacks = mini(
+				active_effect.max_stacks,
+				active_effect.stacks + effect.stacks
+			)
 
-            active_effect.source = effect.source
-            return active_effect
+			active_effect.source = effect.source
+			return active_effect
 
-    if effects_list.size() < 5:
-        effects_list.append(effect)
-        return effect
+	if effects_list.size() < 5:
+		effects_list.append(effect)
+		return effect
 
-    return null
+	return null
 
 
 func apply_named(
-    target,
-    turns: int = 2
+	target,
+	turns: int = 2
 ) -> void:
-    clear_named_target()
+	clear_named_target()
 
-    named_target = target
-    special_states["headless"] = true
+	named_target = target
+	special_states["headless"] = true
 
-    target.named_by = self
-    target.special_states["named"] = turns
+	target.named_by = self
+	target.special_states["named"] = turns
 
 
 func clear_named_target() -> void:
-    if (
-        named_target != null
-        and named_target.named_by == self
-    ):
-        named_target.named_by = null
-        named_target.special_states.erase("named")
+	if (
+		named_target != null
+		and named_target.named_by == self
+	):
+		named_target.named_by = null
+		named_target.special_states.erase("named")
 
-    named_target = null
-    special_states.erase("headless")
+	named_target = null
+	special_states.erase("headless")
 
 
 func reduce_special_state_turns() -> void:
-    if named_by == null:
-        return
+	if named_by == null:
+		return
 
-    var remaining: int = int(
-        special_states.get("named", 0)
-    ) - 1
+	var remaining: int = int(
+		special_states.get("named", 0)
+	) - 1
 
-    if remaining > 0:
-        special_states["named"] = remaining
-        return
+	if remaining > 0:
+		special_states["named"] = remaining
+		return
 
-    var source = named_by
-    named_by = null
-    special_states.erase("named")
+	var source = named_by
+	named_by = null
+	special_states.erase("named")
 
-    if (
-        source != null
-        and source.named_target == self
-    ):
-        source.clear_named_target()
+	if (
+		source != null
+		and source.named_target == self
+	):
+		source.clear_named_target()
 
 
 func get_direct_damage_taken_multiplier() -> float:
-    if get_debuff("vulnerability") != null:
-        return 1.15
+	if get_debuff("vulnerability") != null:
+		return 1.15
 
-    return 1.0
+	return 1.0
 
 
 func remove_buffs_for_strip() -> int:
-    var veil = null
+	var veil = null
 
-    for buff in buffs:
-        if buff.effect_id == "veil":
-            veil = buff
-            break
+	for buff in buffs:
+		if buff.effect_id == "veil":
+			veil = buff
+			break
 
-    if veil != null:
-        buffs.erase(veil)
-        return 0
+	if veil != null:
+		buffs.erase(veil)
+		return 0
 
-    var removed_count: int = buffs.size()
+	var removed_count: int = buffs.size()
 
-    if removed_count > 0:
-        buffs.clear()
+	if removed_count > 0:
+		buffs.clear()
 
-    return removed_count
+	return removed_count
 
 
 func get_debuff(effect_id: String):
-    for debuff in debuffs:
-        if debuff.effect_id == effect_id:
-            return debuff
+	for debuff in debuffs:
+		if debuff.effect_id == effect_id:
+			return debuff
 
-    return null
+	return null
 
 
 func get_debuff_stacks(effect_id: String) -> int:
-    var debuff = get_debuff(effect_id)
+	var debuff = get_debuff(effect_id)
 
-    if debuff == null:
-        return 0
+	if debuff == null:
+		return 0
 
-    return debuff.stacks
+	return debuff.stacks
 
 
 func consume_debuff_stacks(
-    effect_id: String,
-    amount: int
+	effect_id: String,
+	amount: int
 ) -> int:
-    var debuff = get_debuff(effect_id)
+	var debuff = get_debuff(effect_id)
 
-    if debuff == null:
-        return 0
+	if debuff == null:
+		return 0
 
-    var consumed: int = mini(amount, debuff.stacks)
-    debuff.stacks -= consumed
+	var consumed: int = mini(amount, debuff.stacks)
+	debuff.stacks -= consumed
 
-    if debuff.stacks <= 0:
-        debuffs.erase(debuff)
+	if debuff.stacks <= 0:
+		debuffs.erase(debuff)
 
-    return consumed
+	return consumed
 
 
 func apply_healing_over_time() -> Dictionary:
-    var total_healing: int = 0
+	var total_healing: int = 0
 
-    for buff in buffs:
-        if buff.effect_id != "regrowth":
-            continue
+	for buff in buffs:
+		if buff.effect_id != "regrowth":
+			continue
 
-        total_healing += heal(
-            int(max_health * 0.08)
-        )
+		total_healing += heal(
+			int(max_health * 0.08)
+		)
 
-    return {
-        "healing": total_healing
-    }
+	return {
+		"healing": total_healing
+	}
 
 
 func apply_damage_over_time() -> Dictionary:
-    var total_damage := 0
-    var sources: Array[String] = []
+	var total_damage := 0
+	var sources: Array[String] = []
 
-    for debuff in debuffs:
-        var damage := 0
+	for debuff in debuffs:
+		var damage := 0
 
-        if debuff.effect_id == "burn":
-            match debuff.stacks:
-                1:
-                    damage = int(max_health * 0.03)
-                2:
-                    damage = int(max_health * 0.06)
-                3:
-                    damage = int(max_health * 0.10)
+		if debuff.effect_id == "burn":
+			match debuff.stacks:
+				1:
+					damage = int(max_health * 0.03)
+				2:
+					damage = int(max_health * 0.06)
+				3:
+					damage = int(max_health * 0.10)
 
-        elif debuff.effect_id == "poison":
-            damage = int(
-                max_health * 0.05 * debuff.stacks
-            )
+		elif debuff.effect_id == "poison":
+			damage = int(
+				max_health * 0.05 * debuff.stacks
+			)
 
-        if damage <= 0:
-            continue
+		if damage <= 0:
+			continue
 
-        total_damage += receive_damage(damage)
+		total_damage += receive_damage(damage)
 
-        sources.append(
-            "%s x%d" % [
-                debuff.effect_name,
-                debuff.stacks
-            ]
-        )
+		sources.append(
+			"%s x%d" % [
+				debuff.effect_name,
+				debuff.stacks
+			]
+		)
 
-    return {
-        "damage": total_damage,
-        "sources": sources
-    }
+	return {
+		"damage": total_damage,
+		"sources": sources
+	}
 
 
 func reduce_status_effect_turns(
-    effects_at_turn_start: Array = []
+	effects_at_turn_start: Array = []
 ) -> void:
-    # Match Python exactly: only effects that existed when the
-    # turn began lose duration. An empty snapshot means reduce none.
-    for buff in buffs:
-        if buff in effects_at_turn_start:
-            buff.reduce_remaining_turns()
+	# Match Python exactly: only effects that existed when the
+	# turn began lose duration. An empty snapshot means reduce none.
+	for buff in buffs:
+		if buff in effects_at_turn_start:
+			buff.reduce_remaining_turns()
 
-    for debuff in debuffs:
-        if debuff in effects_at_turn_start:
-            debuff.reduce_remaining_turns()
+	for debuff in debuffs:
+		if debuff in effects_at_turn_start:
+			debuff.reduce_remaining_turns()
 
-    buffs = buffs.filter(
-        func(effect): return effect.is_active()
-    )
+	buffs = buffs.filter(
+		func(effect): return effect.is_active()
+	)
 
-    debuffs = debuffs.filter(
-        func(effect): return effect.is_active()
-    )
+	debuffs = debuffs.filter(
+		func(effect): return effect.is_active()
+	)
 
 
 func get_skill(index: int):
-    if index < 1 or index > skills.size():
-        return null
+	if index < 1 or index > skills.size():
+		return null
 
-    return skills[index - 1]
+	return skills[index - 1]
 
 
 func reduce_skill_cooldowns() -> void:
-    for skill in skills:
-        skill.reduce_cooldown()
+	for skill in skills:
+		skill.reduce_cooldown()
 
-    for cooldown_id in internal_cooldowns.keys():
-        internal_cooldowns[cooldown_id] = maxi(
-            0,
-            int(internal_cooldowns[cooldown_id]) - 1
-        )
+	for cooldown_id in internal_cooldowns.keys():
+		internal_cooldowns[cooldown_id] = maxi(
+			0,
+			int(internal_cooldowns[cooldown_id]) - 1
+		)
 
 
 func get_internal_cooldown(cooldown_id: String) -> int:
-    return int(
-        internal_cooldowns.get(cooldown_id, 0)
-    )
+	return int(
+		internal_cooldowns.get(cooldown_id, 0)
+	)
 
 
 func set_internal_cooldown(
-    cooldown_id: String,
-    turns: int
+	cooldown_id: String,
+	turns: int
 ) -> void:
-    internal_cooldowns[cooldown_id] = maxi(
-        0,
-        turns
-    )
+	internal_cooldowns[cooldown_id] = maxi(
+		0,
+		turns
+	)
 
 
 func increase_action_gauge(amount: float) -> void:
-    action_gauge = clampf(
-        action_gauge + amount,
-        0.0,
-        1.0
-    )
+	action_gauge = clampf(
+		action_gauge + amount,
+		0.0,
+		1.0
+	)
 
 
 func reset_action_gauge() -> void:
-    action_gauge = 0.0
+	action_gauge = 0.0
