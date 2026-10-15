@@ -272,7 +272,26 @@ func get_attribute_modifier(defender) -> float:
     return 1.0
 
 
-func receive_damage(amount: int) -> int:
+func preserves_freeze_on_hit() -> bool:
+    return (
+        monster_id == "drake_abyssal"
+        and resonance >= 2
+        and not has_oblivion()
+    )
+
+
+func preserves_applied_freeze_on_damage() -> bool:
+    return (
+        monster_id == "drake_abyssal"
+        and resonance >= 4
+        and not has_oblivion()
+    )
+
+
+func receive_damage(
+    amount: int,
+    source = null
+) -> int:
     var was_alive: bool = is_alive()
     var remaining_damage: int = maxi(0, amount)
 
@@ -303,6 +322,35 @@ func receive_damage(amount: int) -> int:
         0,
         health - remaining_damage
     )
+
+    if actual_damage > 0:
+        var new_debuffs: Array = []
+
+        for debuff in debuffs:
+            if debuff.effect_id != "freeze":
+                new_debuffs.append(debuff)
+                continue
+
+            var preserve_from_attacker: bool = (
+                source != null
+                and source.has_method(
+                    "preserves_freeze_on_hit"
+                )
+                and source.preserves_freeze_on_hit()
+            )
+
+            var preserve_from_source: bool = (
+                debuff.source != null
+                and debuff.source.has_method(
+                    "preserves_applied_freeze_on_damage"
+                )
+                and debuff.source.preserves_applied_freeze_on_damage()
+            )
+
+            if preserve_from_attacker or preserve_from_source:
+                new_debuffs.append(debuff)
+
+        debuffs = new_debuffs
 
     if was_alive and not is_alive():
         _clear_combat_state_on_death()
