@@ -273,9 +273,35 @@ func get_attribute_modifier(defender) -> float:
 
 func receive_damage(amount: int) -> int:
     var was_alive: bool = is_alive()
-    var actual_damage: int = mini(amount, health)
+    var remaining_damage: int = maxi(0, amount)
 
-    health = maxi(0, health - amount)
+    var shield = null
+
+    for buff in buffs:
+        if buff.effect_id == "shield":
+            shield = buff
+            break
+
+    if shield != null and shield.value > 0:
+        var absorbed: int = mini(
+            remaining_damage,
+            shield.value
+        )
+        shield.value -= absorbed
+        remaining_damage -= absorbed
+
+        if shield.value <= 0:
+            buffs.erase(shield)
+
+    var actual_damage: int = mini(
+        remaining_damage,
+        health
+    )
+
+    health = maxi(
+        0,
+        health - remaining_damage
+    )
 
     if was_alive and not is_alive():
         _clear_combat_state_on_death()
@@ -347,6 +373,12 @@ func apply_status_effect(effect):
         if active_effect.effect_id == effect.effect_id:
             if effect.duration > active_effect.remaining_turns:
                 active_effect.remaining_turns = effect.duration
+
+            if (
+                effect.effect_id == "shield"
+                and effect.value > active_effect.value
+            ):
+                active_effect.value = effect.value
 
             active_effect.stacks = mini(
                 active_effect.max_stacks,
@@ -471,6 +503,22 @@ func consume_debuff_stacks(
         debuffs.erase(debuff)
 
     return consumed
+
+
+func apply_healing_over_time() -> Dictionary:
+    var total_healing: int = 0
+
+    for buff in buffs:
+        if buff.effect_id != "regrowth":
+            continue
+
+        total_healing += heal(
+            int(max_health * 0.08)
+        )
+
+    return {
+        "healing": total_healing
+    }
 
 
 func apply_damage_over_time() -> Dictionary:
