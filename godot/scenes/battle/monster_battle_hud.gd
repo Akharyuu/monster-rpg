@@ -14,6 +14,7 @@ signal target_pressed
 @onready var battle_state_container: HBoxContainer = $"Battle States"
 @onready var status_container: HBoxContainer = $"Status"
 @onready var target_button: Button = $"Target Button"
+@onready var portrait: ColorRect = $"Portrait"
 
 var bound_monster
 var is_enemy := false
@@ -53,6 +54,9 @@ func refresh(is_active: bool) -> void:
     level_label.text = "Lv. %d" % bound_monster.level
 
     hp_bar.value = bound_monster.health
+    hp_bar.tooltip_text = "%d / %d HP" % [
+        bound_monster.health, bound_monster.max_health
+    ]
     action_gauge.value = (
         bound_monster.action_gauge * 100.0
     )
@@ -167,6 +171,11 @@ func _update_attribute(attribute: String) -> void:
         "font_color",
         attribute_color
     )
+    portrait.color = Color(
+        0.07 + attribute_color.r * 0.26,
+        0.08 + attribute_color.g * 0.26,
+        0.12 + attribute_color.b * 0.26, 1.0
+    )
 
 
 func _update_turn_style() -> void:
@@ -240,7 +249,8 @@ func _status_short_name(effect_id: String) -> String:
 func _create_status_badge(effect) -> Label:
     var badge := Label.new()
 
-    badge.custom_minimum_size = Vector2(58.0, 25.0)
+    badge.custom_minimum_size = Vector2(25.0, 12.0)
+    badge.add_theme_font_size_override("font_size", 7)
     badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
@@ -251,10 +261,7 @@ func _create_status_badge(effect) -> Label:
     if effect.max_stacks > 1:
         text += " x%d" % effect.stacks
 
-    badge.text = "%s · %d" % [
-        text,
-        effect.remaining_turns
-    ]
+    badge.text = "%s%d" % [text.left(3), effect.remaining_turns]
 
     badge.tooltip_text = "%s — %d turn(s)" % [
         effect.effect_name,
@@ -312,17 +319,19 @@ func _create_battle_state_badge(
 ) -> Label:
     var badge := Label.new()
 
-    badge.custom_minimum_size = Vector2(94.0, 23.0)
+    badge.custom_minimum_size = Vector2(46.0, 12.0)
     badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
     badge.add_theme_font_size_override(
         "font_size",
-        13
+        7
     )
 
     var display_name: String = (
         _battle_state_display_name(state_id)
     )
+
+    display_name = "SOUL" if state_id == "soul_charges" else display_name.left(4).to_upper()
 
     if maximum != null:
         badge.text = "%s %d/%d" % [
@@ -428,10 +437,9 @@ func play_attack_feedback() -> void:
         return
 
     var start_position: Vector2 = position
-    var direction: float = -1.0 if is_enemy else 1.0
+    var direction: float = 1.0 if is_enemy else -1.0
     var attack_position := start_position + Vector2(
-        22.0 * direction,
-        0.0
+        0.0, 12.0 * direction
     )
 
     var tween := create_tween()
@@ -524,14 +532,8 @@ func play_damage_feedback(
 
     add_child(damage_label)
 
-    damage_label.position = Vector2(
-        80.0,
-        35.0
-    )
-    damage_label.size = Vector2(
-        160.0,
-        36.0
-    )
+    damage_label.position = Vector2(-25.0, 32.0)
+    damage_label.size = Vector2(160.0, 26.0)
 
     var label_start: Vector2 = damage_label.position
     var label_end := label_start + Vector2(
@@ -601,14 +603,8 @@ func play_status_feedback(
 
     add_child(status_label)
 
-    status_label.position = Vector2(
-        80.0,
-        66.0
-    )
-    status_label.size = Vector2(
-        160.0,
-        32.0
-    )
+    status_label.position = Vector2(-25.0, 54.0)
+    status_label.size = Vector2(160.0, 24.0)
 
     var start_position: Vector2 = status_label.position
     var end_position := start_position + Vector2(
