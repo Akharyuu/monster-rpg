@@ -1166,6 +1166,11 @@ static func _attach_passive_description(monster) -> void:
                 }
             )
 
+        if monster.resonance >= 4:
+            headless_data["internal_cooldown_id"] = (
+                "deathless_rider"
+            )
+
         monster.passive_tooltip = headless_data
         monster.passive_tooltips = [
             headless_data
