@@ -1058,11 +1058,12 @@ func execute_active_skill(
 
     # Finalize Deathless Rider only after the entire skill (including
     # follow-up hits) has resolved, so later hits cannot kill the target.
+    result["deathless_survivors"] = []
+
     for combatant in allies + enemies:
         if combatant.finalize_deathless_rider():
-            caster_feedback.append(
-                "DEATHLESS RIDER - %s SURVIVES!"
-                % combatant.monster_name
+            result["deathless_survivors"].append(
+                combatant
             )
 
     _resolve_new_deaths(caster_feedback)
