@@ -24,6 +24,8 @@ static func create_level_one_monster(monster_id: String):
             monster = _create_void_drake()
         "dullahan_void":
             monster = _create_void_dullahan()
+        "dullahan_aether":
+            monster = _create_aether_dullahan()
         "slime_storm":
             monster = _create_storm_slime()
         "slime_abyssal":
@@ -179,6 +181,34 @@ static func _attach_skill_descriptions(monster) -> void:
             ]
         },
 
+        "soulpiercer": {
+            "summary": "Pierces one enemy with condensed soul energy.",
+            "effects": [
+                {
+                    "kind": "damage",
+                    "text": "Deals [b]+6% damage[/b] for each [color=#d9a6ff]Soul Charge[/color], up to [b]5[/b]."
+                }
+            ]
+        },
+
+        "beyond_the_veil": {
+            "summary": "Releases stored souls in a four-hit attack against all enemies.",
+            "effects": [
+                {
+                    "kind": "special",
+                    "text": "Consumes all [color=#d9a6ff]Soul Charges[/color] before attacking."
+                },
+                {
+                    "kind": "damage",
+                    "text": "Each consumed Soul Charge grants [b]+10% damage[/b]."
+                },
+                {
+                    "kind": "special",
+                    "text": "If an ally is already defeated, the consumed charges do not increase this skill's damage."
+                }
+            ]
+        },
+
         "severing_blade": {
             "summary": "A heavy single-target slash.",
             "effects": [
@@ -301,6 +331,25 @@ static func _attach_passive_description(monster) -> void:
                 {
                     "kind": "special",
                     "text": "For each enemy buff removed, gains [b]8% Action Gauge[/b]."
+                }
+            ]
+        },
+
+        "dullahan_aether": {
+            "name": "Soul Vessel",
+            "summary": "Collects Soul Charges through combat and empowers soul-based attacks.",
+            "effects": [
+                {
+                    "kind": "special",
+                    "text": "Gains [b]1 Soul Charge[/b] after using a damage skill, up to [b]5[/b]."
+                },
+                {
+                    "kind": "special",
+                    "text": "Gains [b]1 Soul Charge[/b] whenever any monster dies."
+                },
+                {
+                    "kind": "special",
+                    "text": "[b]Beyond the Veil[/b] consumes all stored Soul Charges before attacking."
                 }
             ]
         },
@@ -509,6 +558,82 @@ static func _create_abyssal_drake():
     monster.combat_resource_maximums[
         "frozen_scales"
     ] = 3
+
+    return monster
+
+
+static func _create_aether_dullahan():
+    var severing_blade = DamageSkillScript.new(
+        "severing_blade",
+        "Severing Blade",
+        2.60,
+        1,
+        [],
+        "attack",
+        0,
+        [
+            {
+                "effect_id": "heal_block",
+                "chance": 0.30,
+                "turns": 2,
+                "trigger": "after_skill"
+            }
+        ]
+    )
+
+    var soulpiercer = DamageSkillScript.new(
+        "soulpiercer",
+        "Soulpiercer",
+        4.10,
+        1,
+        [],
+        "attack",
+        3,
+        []
+    )
+    soulpiercer.damage_per_soul_charge = 0.06
+    soulpiercer.max_soul_charges = 5
+
+    var beyond_the_veil = DamageSkillScript.new(
+        "beyond_the_veil",
+        "Beyond the Veil",
+        1.25,
+        4,
+        [],
+        "attack",
+        7,
+        [],
+        {},
+        {},
+        "all_enemies"
+    )
+    beyond_the_veil.damage_per_soul_charge = 0.10
+    beyond_the_veil.max_soul_charges = 5
+    beyond_the_veil.use_consumed_soul_charges = true
+    beyond_the_veil.disable_soul_bonus_if_ally_dead = true
+
+    var skills: Array = [
+        severing_blade,
+        soulpiercer,
+        beyond_the_veil
+    ]
+
+    var monster = MonsterScript.new(
+        "dullahan_aether",
+        "Aether Dullahan",
+        "Dullahan",
+        "aether",
+        5,
+        _scaled(11200),
+        _scaled(900),
+        _scaled(720),
+        _scaled(222),
+        skills,
+        LEVEL_ONE_MULTIPLIER
+    )
+
+    monster.combat_resources["soul_charges"] = 0
+    monster.combat_resource_maximums["soul_charges"] = 5
 
     return monster
 
