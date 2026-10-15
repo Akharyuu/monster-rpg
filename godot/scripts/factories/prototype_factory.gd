@@ -815,7 +815,17 @@ static func _attach_skill_descriptions(monster) -> void:
             "effects": [
                 {
                     "kind": "damage",
-                    "text": "Deals [b]+6% damage[/b] for each [color=#d9a6ff]Soul Charge[/color], up to [b]5[/b]."
+                    "text": "Damage increases with each [color=#d9a6ff]Soul Charge[/color], up to [b]5[/b]."
+                }
+            ]
+        },
+
+        "soulpiercer_ascension": {
+            "summary": "Pierces one enemy with concentrated soul energy.",
+            "effects": [
+                {
+                    "kind": "damage",
+                    "text": "Damage increases more strongly with each [color=#d9a6ff]Soul Charge[/color], up to [b]5[/b]."
                 }
             ]
         },
@@ -829,7 +839,35 @@ static func _attach_skill_descriptions(monster) -> void:
                 },
                 {
                     "kind": "damage",
-                    "text": "Each consumed Soul Charge grants [b]+10% damage[/b]."
+                    "text": "Damage increases with each consumed Soul Charge."
+                }
+            ]
+        },
+
+        "beyond_the_veil_soul_recall": {
+            "summary": "Releases stored souls in a four-hit attack against all enemies.",
+            "effects": [
+                {
+                    "kind": "special",
+                    "text": "Consumes all [color=#d9a6ff]Soul Charges[/color] before attacking."
+                },
+                {
+                    "kind": "damage",
+                    "text": "Damage increases with each consumed Soul Charge."
+                }
+            ]
+        },
+
+        "beyond_the_veil_convergence": {
+            "summary": "Releases a convergence of stored souls in a four-hit attack against all enemies.",
+            "effects": [
+                {
+                    "kind": "special",
+                    "text": "Consumes all [color=#d9a6ff]Soul Charges[/color] before attacking."
+                },
+                {
+                    "kind": "damage",
+                    "text": "Damage increases with each consumed Soul Charge."
                 }
             ]
         },
@@ -849,7 +887,17 @@ static func _attach_skill_descriptions(monster) -> void:
             "effects": [
                 {
                     "kind": "damage",
-                    "text": "Gains [b]+5% damage[/b] for every monster that has died in battle, up to [b]+25%[/b]."
+                    "text": "Damage increases for every monster that has died in battle."
+                }
+            ]
+        },
+
+        "spinal_scourge_ossuary": {
+            "summary": "Sweeps through all enemies with three strikes empowered by the dead.",
+            "effects": [
+                {
+                    "kind": "damage",
+                    "text": "Damage increases more strongly for every monster that has died in battle."
                 }
             ]
         },
@@ -867,7 +915,25 @@ static func _attach_skill_descriptions(monster) -> void:
                 },
                 {
                     "kind": "special",
-                    "text": "While a target is Named, the Dullahan becomes [color=#d9a6ff]Headless[/color]: [b]+20% Speed[/b] and immunity to Silence unless affected by Oblivion."
+                    "text": "While a target is Named, the Dullahan becomes [color=#d9a6ff]Headless[/color]: gains Speed and immunity to Silence unless affected by Oblivion."
+                }
+            ]
+        },
+
+        "deaths_gaze_last_name": {
+            "summary": "Names one enemy for death before delivering a devastating strike.",
+            "effects": [
+                {
+                    "kind": "special",
+                    "text": "Applies [color=#d9a6ff]Named[/color] for [b]2 turns[/b]."
+                },
+                {
+                    "kind": "debuff",
+                    "text": "Applies [color=#ff7777]Vulnerability[/color] for [b]3 turns[/b]."
+                },
+                {
+                    "kind": "special",
+                    "text": "While a target is Named, the Dullahan becomes [color=#d9a6ff]Headless[/color]: gains Speed and immunity to Silence unless affected by Oblivion."
                 }
             ]
         },
@@ -1375,6 +1441,90 @@ static func _scaled(value: float) -> int:
 
 
 static func _apply_resonance(monster) -> void:
+    if monster.monster_id == "dullahan_aether":
+        if monster.resonance >= 2:
+            var soul_recall = DamageSkillScript.new(
+                (
+                    "beyond_the_veil_convergence"
+                    if monster.resonance >= 5
+                    else "beyond_the_veil_soul_recall"
+                ),
+                (
+                    "Beyond the Veil: Convergence"
+                    if monster.resonance >= 5
+                    else "Beyond the Veil: Soul Recall"
+                ),
+                1.25,
+                4,
+                [],
+                "attack",
+                6,
+                [],
+                {},
+                {},
+                "all_enemies"
+            )
+            soul_recall.damage_per_soul_charge = 0.10
+            soul_recall.max_soul_charges = 5
+            soul_recall.use_consumed_soul_charges = true
+            monster.skills[2] = soul_recall
+
+        if monster.resonance >= 3:
+            var ascension = DamageSkillScript.new(
+                "soulpiercer_ascension",
+                "Soulpiercer: Ascension",
+                4.10,
+                1,
+                [],
+                "attack",
+                3,
+                []
+            )
+            ascension.damage_per_soul_charge = 0.08
+            ascension.max_soul_charges = 5
+            monster.skills[1] = ascension
+
+        return
+
+    if monster.monster_id == "dullahan_void":
+        if monster.resonance >= 1:
+            var ossuary = DamageSkillScript.new(
+                "spinal_scourge_ossuary",
+                "Spinal Scourge: Ossuary",
+                1.40,
+                3,
+                [],
+                "attack",
+                4,
+                [],
+                {},
+                {},
+                "all_enemies"
+            )
+            ossuary.damage_per_dead_monster = 0.08
+            ossuary.max_dead_monsters = 5
+            ossuary.max_dead_monster_bonus = 0.40
+            monster.skills[1] = ossuary
+
+        if monster.resonance >= 4:
+            var last_name = DamageSkillScript.new(
+                "deaths_gaze_last_name",
+                "Death's Gaze: Last Name",
+                4.70,
+                1,
+                [],
+                "attack",
+                5,
+                []
+            )
+            last_name.apply_named_before_hit = true
+            last_name.named_turns = 2
+            last_name.vulnerability_chance = 1.00
+            last_name.vulnerability_turns = 3
+            monster.skills[2] = last_name
+
+        return
+
     if monster.monster_id == "dullahan_abyssal":
         if monster.resonance >= 1:
             var shackles = DamageSkillScript.new(
