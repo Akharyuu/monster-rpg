@@ -172,3 +172,24 @@ def test_passive_resource_caps_handle_top_level_and_nested_data():
         factory,
     )
     assert 'monster.combat_resource_maximums[key] = maximum' in factory
+
+
+def test_shared_passive_combat_parameters_are_used_by_godot():
+    from pathlib import Path
+
+    repo = Path(__file__).resolve().parents[1]
+    source = (
+        repo / "godot" / "scripts" / "battle" / "battle_controller.gd"
+    ).read_text(encoding="utf-8")
+    for handler in (
+        "bottomless_hunger", "divine_grace", "apply_self_buff",
+        "celestial_authority", "natures_grace"
+    ):
+        assert f'get_passive_by_handler(\n' in source
+        assert f'"{handler}"' in source
+    for parameter in (
+        "heal_ratio_per_buff", "action_gauge_per_buff",
+        "action_gauge_to_most_buffed_ally", "overheal_conversion",
+        "max_shield_ratio", "shield_turns"
+    ):
+        assert parameter in source

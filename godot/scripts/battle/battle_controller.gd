@@ -746,10 +746,11 @@ func execute_active_skill(
             ]
         )
 
-    if (
-        active_monster.monster_id == "drake_void"
-        and not active_monster.has_oblivion()
-    ):
+    var hunger: Dictionary = active_monster.get_passive_by_handler(
+        "bottomless_hunger"
+    )
+    if not hunger.is_empty() and not active_monster.has_oblivion():
+        var hunger_data: Dictionary = hunger.get("handler_data", {})
         var removed_buffs: int = int(
             result.get("removed_buffs", 0)
         )
@@ -759,11 +760,14 @@ func execute_active_skill(
 
             for _removed_buff in range(removed_buffs):
                 total_passive_healing += active_monster.heal(
-                    int(active_monster.max_health * 0.10)
+                    int(
+                        active_monster.max_health
+                        * float(hunger_data.get("heal_ratio_per_buff", 0.0))
+                    )
                 )
 
                 active_monster.increase_action_gauge(
-                    0.08
+                    float(hunger_data.get("action_gauge_per_buff", 0.0))
                 )
 
             result["healing"] = int(
@@ -848,11 +852,11 @@ func execute_active_skill(
                     "silence"
                 )
 
-    if (
-        active_monster.monster_id == "drake_aether"
-        and active_monster.resonance >= 1
-        and not active_monster.has_oblivion()
-    ):
+    var grace: Dictionary = active_monster.get_passive_by_handler(
+        "divine_grace"
+    )
+    if not grace.is_empty() and not active_monster.has_oblivion():
+        var grace_data: Dictionary = grace.get("handler_data", {})
         var divine_grace_total := 0
 
         for target_result in result.get(
@@ -874,7 +878,7 @@ func execute_active_skill(
 
             var heal_amount: int = int(
                 target.max_health
-                * 0.05
+                * float(grace_data.get("heal_ratio_per_buff", 0.0))
                 * applied_buffs
             )
             var actual_heal: int = target.heal(
@@ -901,9 +905,10 @@ func execute_active_skill(
         caster_feedback.append("APOTHEOSIS - EXTRA TURN!")
 
     if (
-        active_monster.monster_id == "dryad_storm"
-        and active_monster.resonance >= 5
-        and not active_monster.has_oblivion()
+        not active_monster.has_oblivion()
+        and not active_monster.get_passive_by_handler(
+            "natures_grace"
+        ).get("handler_data", {}).get("overgrowth", {}).is_empty()
     ):
         for target_result in result.get(
             "target_results",
@@ -923,11 +928,11 @@ func execute_active_skill(
                 caster_feedback
             )
 
-    if (
-        active_monster.monster_id == "griffon_igneous"
-        and active_monster.resonance >= 2
-        and not active_monster.has_oblivion()
-    ):
+    var instinct: Dictionary = active_monster.get_passive_by_handler(
+        "apply_self_buff"
+    )
+    if not instinct.is_empty() and not active_monster.has_oblivion():
+        var instinct_data: Dictionary = instinct.get("handler_data", {})
         var applied_stun := false
 
         for target_result in result.get(
@@ -948,8 +953,8 @@ func execute_active_skill(
         if applied_stun:
             var speed_up = (
                 StatusEffectFactoryScript.create_status_effect(
-                    "speed_up",
-                    2,
+                    str(instinct_data.get("effect_id", "")),
+                    int(instinct_data.get("turns", 0)),
                     active_monster
                 )
             )
@@ -1234,9 +1239,10 @@ func _apply_overgrowth_shield(
     if (
         caster == null
         or target == null
-        or caster.monster_id != "dryad_storm"
-        or caster.resonance < 5
         or caster.has_oblivion()
+        or caster.get_passive_by_handler(
+            "natures_grace"
+        ).get("handler_data", {}).get("overgrowth", {}).is_empty()
     ):
         return
 
@@ -1248,9 +1254,12 @@ func _apply_overgrowth_shield(
     if overheal <= 0:
         return
 
+    var overgrowth: Dictionary = caster.get_passive_by_handler(
+        "natures_grace"
+    ).get("handler_data", {}).get("overgrowth", {})
     var shield_value: int = mini(
-        int(overheal * 0.50),
-        int(target.max_health * 0.10)
+        int(overheal * float(overgrowth.get("overheal_conversion", 0.0))),
+        int(target.max_health * float(overgrowth.get("max_shield_ratio", 0.0)))
     )
 
     if shield_value <= 0:
@@ -1259,7 +1268,7 @@ func _apply_overgrowth_shield(
     var shield = (
         StatusEffectFactoryScript.create_status_effect(
             "shield",
-            2,
+            int(overgrowth.get("shield_turns", 0)),
             caster
         )
     )
@@ -1489,17 +1498,19 @@ func _resolve_receive_hit_passives(
             target_result.get("hits_landed", 0)
         )
 
+        var authority: Dictionary = defender.get_passive_by_handler(
+            "celestial_authority"
+        )
         if (
-            defender.monster_id != "drake_aether"
+            authority.is_empty()
             or defender.has_oblivion()
             or hit_count <= 0
         ):
             continue
 
-        var authority_chance: float = (
-            0.50
-            if defender.resonance >= 2
-            else 0.30
+        var authority_data: Dictionary = authority.get("handler_data", {})
+        var authority_chance: float = float(
+            authority_data.get("chance", 0.0)
         )
 
         for _hit_index in range(hit_count):
@@ -1524,7 +1535,7 @@ func _resolve_receive_hit_passives(
             var attack_break = (
                 StatusEffectFactoryScript.create_status_effect(
                     "attack_break",
-                    2,
+                    int(authority_data.get("turns", 0)),
                     defender
                 )
             )
@@ -1542,7 +1553,9 @@ func _resolve_receive_hit_passives(
                         "CELESTIAL AUTHORITY - ATK DOWN!"
                     )
 
-                if defender.resonance >= 2:
+                if authority_data.has(
+                    "action_gauge_to_most_buffed_ally"
+                ):
                     var defender_team: Array = (
                         allies
                         if defender in allies
@@ -1560,7 +1573,9 @@ func _resolve_receive_hit_passives(
                                 gauge_target = ally
 
                         gauge_target.increase_action_gauge(
-                            0.20
+                            float(authority_data[
+                                "action_gauge_to_most_buffed_ally"
+                            ])
                         )
 
 
