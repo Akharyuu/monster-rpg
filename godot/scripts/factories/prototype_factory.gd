@@ -197,7 +197,7 @@ static func _attach_skill_descriptions(monster) -> void:
         },
 
         "searing_gale": {
-            "summary": "Sweeps across all enemies with two searing strikes.",
+            "summary": "Unleashes a scorching gale that tears through all enemies in two waves.",
             "effects": [
                 {
                     "kind": "control",
