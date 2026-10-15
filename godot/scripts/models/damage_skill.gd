@@ -51,6 +51,10 @@ var reset_skill_slot_if_burn_stacks: int = 0
 var reset_skill_required_burn_stacks: int = 0
 var action_gauge_gain_if_target_low_hp_threshold: float = 0.0
 var action_gauge_gain_if_target_low_hp_amount: float = 0.0
+var action_gauge_threshold: float = -1.0
+var action_gauge_bonus_reduction: float = 0.0
+var bonus_stat: String = ""
+var bonus_stat_scaling: float = 0.0
 
 
 func _init(
@@ -312,13 +316,25 @@ func damage_calc(
     ):
         defense_ignore_ratio = execute_defense_ignore_ratio
 
+    var bonus_raw_damage := 0.0
+
+    if (
+        not bonus_stat.is_empty()
+        and bonus_stat_scaling > 0.0
+    ):
+        bonus_raw_damage = (
+            attacker.get_effective_stat(bonus_stat)
+            * bonus_stat_scaling
+        )
+
     var base_damage: float = base_damage_calc(
         attacker,
         defender,
         hit_multiplier,
         bonus_damage,
         ignore_defense,
-        defense_ignore_ratio
+        defense_ignore_ratio,
+        bonus_raw_damage
     )
 
     var critical := false
@@ -672,6 +688,9 @@ func execute_on_target(
             if defender.max_health > 0
             else 0.0
         )
+        var target_action_gauge_before_hit: float = (
+            defender.action_gauge
+        )
 
         var hit_multiplier := 1.0
 
@@ -789,10 +808,23 @@ func execute_on_target(
             action_gauge_reduction_per_hit > 0.0
             and randf() <= action_gauge_reduction_chance
         ):
+            var gauge_reduction: float = (
+                action_gauge_reduction_per_hit
+            )
+
+            if (
+                action_gauge_threshold >= 0.0
+                and target_action_gauge_before_hit
+                > action_gauge_threshold
+            ):
+                gauge_reduction += (
+                    action_gauge_bonus_reduction
+                )
+
             defender.action_gauge = maxf(
                 0.0,
                 defender.action_gauge
-                - action_gauge_reduction_per_hit
+                - gauge_reduction
             )
 
         if defender.is_alive():
