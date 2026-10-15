@@ -109,28 +109,28 @@ Combat handler implementations remain independent in Python and GDScript.
 
 ## Automatic validation (Python and Godot)
 
-The GitHub Actions workflow in \`.github/workflows/validate.yml\` runs on pushes
-to \`main\` and pull requests. It runs pytest, then installs **Godot 4.7.2**,
+The GitHub Actions workflow in `.github/workflows/validate.yml` runs on pushes
+to `main` and pull requests. It runs pytest, then installs **Godot 4.7.2**,
 imports/compiles the project headlessly, and executes the runtime smoke test.
 
 Run the same checks locally from the repository root:
 
-\`\`\`powershell
+```powershell
 python -m pytest -q
 python scripts/check_godot.py
-\`\`\`
+```
 
 If the Godot executable is not on your PATH (common on Windows), use the
 console build's full path instead:
 
-\`\`\`powershell
+```powershell
 python scripts/check_godot.py --godot "C:\path\to\Godot_v4.7.2-stable_win64_console.exe"
-\`\`\`
+```
 
-You can also set the \`GODOT_BIN\` environment variable. The runner fails if
+You can also set the `GODOT_BIN` environment variable. The runner fails if
 Godot cannot be found; it never silently skips the engine checks.
 
-The Godot smoke script (\`godot/tests/headless_smoke.gd\`) instantiates all
+The Godot smoke script (`godot/tests/headless_smoke.gd`) instantiates all
 24 playable monsters, including all R0–R5 variants of the 12 Resonance
 monsters: **84 instances** in total. It validates skill IDs, passive IDs,
 skill tooltips, and Resonance ranks using the shared JSON. The runner also
