@@ -66,6 +66,17 @@ script = ExtResource("3")
 offset_left = 35.0
 offset_top = 515.0
 offset_right = 195.0
+offset_bottom = 558.0
+text = "PASSIVE"
+focus_mode = 0
+mouse_default_cursor_shape = 0
+
+[node name="Passive Button 2" type="Button" parent="."]
+layout_mode = 0
+script = ExtResource("3")
+offset_left = 35.0
+offset_top = 562.0
+offset_right = 195.0
 offset_bottom = 605.0
 text = "PASSIVE"
 focus_mode = 0
