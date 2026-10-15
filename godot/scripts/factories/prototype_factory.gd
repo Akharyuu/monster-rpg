@@ -960,17 +960,6 @@ static func _attach_passive_description(monster) -> void:
             ]
         },
 
-        "dullahan_storm": {
-            "name": "The Hunt",
-            "summary": "Steals momentum from the enemy closest to taking a turn.",
-            "effects": [
-                {
-                    "kind": "special",
-                    "text": "After this monster's turn, steals up to [b]20% Action Gauge[/b] from the living enemy with the highest Action Gauge."
-                }
-            ]
-        },
-
         "dullahan_abyssal": {
             "name": "Chilling Presence",
             "summary": "Extends the enemy team's debuffs after every turn.",
@@ -981,7 +970,7 @@ static func _attach_passive_description(monster) -> void:
                 },
                 {
                     "kind": "special",
-                    "text": "[color=#d9a6ff]Stun[/color] and [color=#d9a6ff]Freeze[/color] cannot be extended."
+                    "text": "[color=#ff7777]Stun[/color] and [color=#ff7777]Freeze[/color] cannot be extended."
                 }
             ]
         },
@@ -1025,6 +1014,38 @@ static func _attach_passive_description(monster) -> void:
         monster.monster_id,
         {}
     )
+
+    if monster.monster_id == "dullahan_abyssal":
+        if monster.resonance >= 3:
+            monster.passive_tooltip = {
+                "name": "Chilling Presence: Suffocation",
+                "summary": "Deepens the enemy team's existing debuffs after every turn.",
+                "effects": [
+                    {
+                        "kind": "special",
+                        "text": "After this monster's turn, extends up to [b]2 random extendable debuffs[/b] on each living enemy by [b]1 turn[/b]."
+                    },
+                    {
+                        "kind": "special",
+                        "text": "[color=#ff7777]Stun[/color] and [color=#ff7777]Freeze[/color] cannot be extended."
+                    }
+                ]
+            }
+
+    if (
+        monster.monster_id == "dullahan_storm"
+        and monster.resonance >= 2
+    ):
+        monster.passive_tooltip = {
+            "name": "The Hunt",
+            "summary": "Steals momentum from the enemy closest to taking a turn.",
+            "effects": [
+                {
+                    "kind": "special",
+                    "text": "After this monster's turn, steals up to [b]20% Action Gauge[/b] from the living enemy with the highest Action Gauge."
+                }
+            ]
+        }
 
     if monster.monster_id == "drake_void":
         var bottomless_data: Dictionary = passive_data.get(
