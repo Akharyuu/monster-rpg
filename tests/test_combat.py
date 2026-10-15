@@ -6290,6 +6290,24 @@ def test_aether_soul_recall_is_a_separate_selected_revive(resonance):
     assert not aether.can_use_soul_recall()
 
 
+def test_aether_soul_recall_is_ready_without_a_dead_ally():
+    aether = create_monster("dullahan_aether")
+    aether.resonance = 2
+    update_resonance_kit(aether)
+
+    living_ally = create_monster("slime_igneous")
+    aether._combat_team = [aether, living_ally]
+    aether.add_combat_resource("soul_charges", 5, 5)
+
+    # Players can select the action with 5 charges. Only fallen,
+    # non-Banished teammates become legal targets.
+    assert aether.can_use_soul_recall()
+    assert not aether.can_use_soul_recall(living_ally)
+    assert not aether.use_soul_recall(living_ally)
+    assert aether.get_combat_resource("soul_charges") == 5
+
+
+
 def test_aether_soul_recall_rejects_banished_targets_and_enemies():
     aether = create_monster("dullahan_aether")
     aether.resonance = 2
