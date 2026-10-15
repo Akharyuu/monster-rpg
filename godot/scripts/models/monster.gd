@@ -45,6 +45,7 @@ var banished: bool = false
 var combat_opponents: Array = []
 var death_named_by = null
 var internal_cooldowns: Dictionary = {}
+var deathless_triggered_this_skill: bool = false
 var passive_tooltip: Dictionary = {}
 var passive_tooltips: Array = []
 
@@ -223,7 +224,7 @@ func get_effective_stat(stat: String) -> float:
     ):
         value += speed * (
             0.30
-            if resonance >= 3
+            if resonance >= 1
             else 0.20
         )
 
@@ -359,15 +360,35 @@ func receive_damage(
         if shield.value <= 0:
             buffs.erase(shield)
 
-    var actual_damage: int = mini(
-        remaining_damage,
-        health
+    # Deathless Rider preserves the last HP for the entire incoming
+    # skill, including every hit of a multi-hit attack.
+    var can_trigger_deathless: bool = (
+        source != null
+        and monster_id == "dullahan_void"
+        and resonance >= 4
+        and is_headless()
+        and not has_oblivion()
+        and get_internal_cooldown("deathless_rider") == 0
     )
 
-    health = maxi(
-        0,
-        health - remaining_damage
-    )
+    var actual_damage: int = 0
+
+    if (
+        remaining_damage > 0
+        and (
+            deathless_triggered_this_skill
+            or (
+                can_trigger_deathless
+                and remaining_damage >= health
+            )
+        )
+    ):
+        deathless_triggered_this_skill = true
+        actual_damage = maxi(0, health - 1)
+        health = 1
+    else:
+        actual_damage = mini(remaining_damage, health)
+        health = maxi(0, health - remaining_damage)
 
     if actual_damage > 0:
         var new_debuffs: Array = []
@@ -404,6 +425,17 @@ func receive_damage(
     return actual_damage
 
 
+func finalize_deathless_rider() -> bool:
+    if not deathless_triggered_this_skill:
+        return false
+
+    deathless_triggered_this_skill = false
+    clear_named_target()
+    debuffs.clear()
+    set_internal_cooldown("deathless_rider", 6)
+    return true
+
+
 func _clear_combat_state_on_death() -> void:
     # Preserve who Named this monster so Death March can react
     # after normal death cleanup has removed linked combat states.
@@ -427,6 +459,7 @@ func _clear_combat_state_on_death() -> void:
     debuffs.clear()
     combat_resources.clear()
     special_states.clear()
+    deathless_triggered_this_skill = false
 
     named_target = null
     named_by = null
