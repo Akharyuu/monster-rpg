@@ -6209,55 +6209,40 @@ def test_stampede_forces_lowest_gauge_ally_turn_without_consuming_gauge():
 
 
 
-def test_aether_soul_recall_requires_charges_and_revives_most_recent():
+@pytest.mark.parametrize("resonance", [2, 5])
+def test_aether_soul_recall_is_a_separate_selected_revive(resonance):
+    aether = create_monster("dullahan_aether")
+    aether.resonance = resonance
+    update_resonance_kit(aether)
 
-    aether = create_monster(
-        "dullahan_aether"
-    )
-
-    aether.resonance = 2
-    update_resonance_kit(
-        aether
-    )
-
-    older_dead = create_monster(
-        "slime_igneous"
-    )
-
-    recent_dead = create_monster(
-        "slime_abyssal"
-    )
-
-    enemy = create_monster(
-        "slime_storm"
-    )
+    older_dead = create_monster("slime_igneous")
+    recent_dead = create_monster("slime_abyssal")
+    enemy = create_monster("slime_storm")
 
     older_dead.health = 0
     older_dead.death_order = 1
     older_dead._death_recorded = True
+    older_dead.action_gauge = 0.70
 
     recent_dead.health = 0
     recent_dead.death_order = 2
     recent_dead._death_recorded = True
 
-    team = [
-        aether,
-        older_dead,
-        recent_dead
-    ]
-
-    opponents = [
-        enemy
-    ]
+    team = [aether, older_dead, recent_dead]
+    opponents = [enemy]
 
     aether._combat_team = team
     aether._combat_opponents = opponents
 
-    skill = aether.get_skill(
-        3
-    )
+    skill = aether.get_skill(3)
 
-    # Zero charges: S3 still attacks but cannot revive.
+    # Three charges cannot be exchanged for a revive.
+    aether.add_combat_resource("soul_charges", 3, 5)
+    assert not aether.can_use_soul_recall()
+    assert not aether.use_soul_recall(recent_dead)
+    assert aether.get_combat_resource("soul_charges") == 3
+
+    # Beyond the Veil remains offensive, even with dead allies.
     aether.use_skill(
         opponents,
         skill,
@@ -6270,36 +6255,69 @@ def test_aether_soul_recall_requires_charges_and_revives_most_recent():
     assert not older_dead.is_alive
     assert not recent_dead.is_alive
 
-    skill.current_cooldown = 0
+    # At five charges the player may choose WHICH ally to revive.
+    aether.add_combat_resource("soul_charges", 5, 5)
+    assert aether.can_use_soul_recall()
+    assert aether.can_use_soul_recall(older_dead)
+    assert aether.use_soul_recall(older_dead)
 
-    aether.add_combat_resource(
-        "soul_charges",
-        3,
-        5
+    assert older_dead.is_alive
+    assert not recent_dead.is_alive
+    assert older_dead.health == int(older_dead.max_health * 0.70)
+    assert older_dead.action_gauge == pytest.approx(0.30)
+    assert older_dead.death_order is None
+    assert older_dead._death_recorded is False
+    assert aether.get_combat_resource("soul_charges") == 0
+    assert not aether.can_use_soul_recall()
+
+
+def test_aether_soul_recall_rejects_banished_targets_and_enemies():
+    aether = create_monster("dullahan_aether")
+    aether.resonance = 2
+    update_resonance_kit(aether)
+
+    dead_ally = create_monster("slime_igneous")
+    dead_ally.health = 0
+    dead_ally.banished = True
+
+    enemy = create_monster("slime_storm")
+    enemy.health = 0
+
+    aether._combat_team = [aether, dead_ally]
+    aether._combat_opponents = [enemy]
+    aether.add_combat_resource("soul_charges", 5, 5)
+
+    assert not aether.can_use_soul_recall(dead_ally)
+    assert not aether.use_soul_recall(dead_ally)
+    assert not aether.can_use_soul_recall(enemy)
+    assert not aether.use_soul_recall(enemy)
+    assert aether.get_combat_resource("soul_charges") == 5
+
+
+def test_aether_soul_recall_requires_resonance_two_and_no_oblivion():
+    aether = create_monster("dullahan_aether")
+    dead_ally = create_monster("slime_igneous")
+    dead_ally.health = 0
+    aether._combat_team = [aether, dead_ally]
+    aether.add_combat_resource("soul_charges", 5, 5)
+
+    aether.resonance = 1
+    update_resonance_kit(aether)
+    assert not aether.use_soul_recall(dead_ally)
+
+    aether.resonance = 2
+    update_resonance_kit(aether)
+    aether.apply_status_effect(
+        create_status_effect(
+            effect_id="oblivion",
+            duration=2,
+            source=dead_ally
+        )
     )
 
-    aether.use_skill(
-        opponents,
-        skill,
-        combat_context={
-            "team": team,
-            "opponents": opponents
-        }
-    )
-
-    assert not older_dead.is_alive
-    assert recent_dead.is_alive
-
-    assert recent_dead.health == int(
-        recent_dead.max_health
-        * 0.50
-    )
-
-    assert recent_dead.action_gauge == pytest.approx(
-        0.30
-    )
-
-
+    assert not aether.can_use_soul_recall(dead_ally)
+    assert not aether.use_soul_recall(dead_ally)
+    assert aether.get_combat_resource("soul_charges") == 5
 
 def test_deaths_gaze_named_ignores_immunity_but_vulnerability_does_not(
     monkeypatch
