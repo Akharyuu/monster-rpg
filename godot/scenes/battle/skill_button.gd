@@ -328,7 +328,7 @@ func _effect_color(kind: String) -> Color:
         "damage":
             return Color(1.0, 0.67, 0.30)
         "control":
-            return Color(0.64, 0.78, 1.0)
+            return Color(1.0, 0.42, 0.42)
         "special":
             return Color(0.82, 0.63, 1.0)
         "heal":
