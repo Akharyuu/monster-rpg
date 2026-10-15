@@ -221,7 +221,7 @@ static func _attach_skill_descriptions(monster) -> void:
             "effects": [
                 {
                     "kind": "heal",
-                    "text": "After attacking, heals the living ally with the lowest HP ratio for [b]8% of the caster's Max HP[/b]. Bonus HP from equipment contributes at reduced effectiveness."
+                    "text": "After attacking, heals the living ally with the lowest HP ratio for [b]8% of the caster's Max HP[/b]."
                 }
             ]
         },
@@ -231,7 +231,7 @@ static func _attach_skill_descriptions(monster) -> void:
             "effects": [
                 {
                     "kind": "heal",
-                    "text": "Heals all living allies for [b]25% of the caster's Max HP[/b]. Bonus HP from equipment contributes at reduced effectiveness."
+                    "text": "Heals all living allies for [b]25% of the caster's Max HP[/b]."
                 }
             ]
         },
