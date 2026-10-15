@@ -624,15 +624,15 @@ class Monster:
 
         from ..combat.combat_events import revive_monster
 
-        # A revived monster begins at 30% AG, regardless of the
-        # Action Gauge it retained when it died.
+        # A revived monster begins at full Action Gauge, regardless
+        # of the Action Gauge it retained when it died.
         previous_gauge = target.action_gauge
         target.reset_action_gauge()
 
         if not revive_monster(
             target,
-            health_ratio=0.70,
-            action_gauge=0.30
+            health_ratio=0.50,
+            action_gauge=1.00
         ):
             target.action_gauge = previous_gauge
             return False
