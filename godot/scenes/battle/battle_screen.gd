@@ -40,10 +40,10 @@ var action_in_progress := true
 func _ready() -> void:
     allies = [
         PrototypeFactoryScript.create_level_one_monster(
-            "dullahan_abyssal"
+            "dullahan_storm"
         ),
         PrototypeFactoryScript.create_level_one_monster(
-            "dullahan_igneous"
+            "dullahan_abyssal"
         )
     ]
 
@@ -211,6 +211,17 @@ func request_player_skill(slot: int) -> void:
         execute_player_skill(
             skill,
             battle_controller.get_living(allies)
+        )
+        return
+
+    if skill.target_type == "self":
+        action_in_progress = true
+        turn_label.text = "Self-targeting skill"
+        await get_tree().create_timer(0.2).timeout
+
+        execute_player_skill(
+            skill,
+            [battle_controller.active_monster]
         )
         return
 
