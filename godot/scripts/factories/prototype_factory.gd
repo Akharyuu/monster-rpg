@@ -123,6 +123,7 @@ static func _assign_shared_passives(monster) -> bool:
     var resonances: Dictionary = _get_shared_resonances()
     var record: Dictionary = roster.get(monster.monster_id, {})
     var active: Dictionary = {}
+    var ordered_ids: Array[String] = []
 
     for passive_id in record.get("passives", []):
         var id: String = str(passive_id)
@@ -130,6 +131,7 @@ static func _assign_shared_passives(monster) -> bool:
             push_error("Missing base passive: %s" % id)
             return false
         active[id] = definitions[id]
+        ordered_ids.append(id)
 
     var levels: Dictionary = resonances.get(monster.monster_id, {})
     for level in range(1, monster.resonance + 1):
@@ -141,16 +143,23 @@ static func _assign_shared_passives(monster) -> bool:
                     push_error("Invalid added passive: %s" % added_id)
                     return false
                 active[added_id] = definitions[added_id]
+                ordered_ids.append(added_id)
             elif operation == "replace_passive":
                 var old_id: String = str(action["old"])
                 var new_id: String = str(action["new"])
                 if not active.has(old_id) or not definitions.has(new_id):
                     push_error("Invalid passive replacement: %s" % new_id)
                     return false
+                var index: int = ordered_ids.find(old_id)
+                if index < 0:
+                    push_error("Missing ordered passive: %s" % old_id)
+                    return false
+                ordered_ids[index] = new_id
                 active.erase(old_id)
                 active[new_id] = definitions[new_id]
 
     monster.passive_definitions = active
+    monster.passive_ids = ordered_ids
 
     # The on-hit passive execution stays in the existing combat engine.
     monster.on_hit_effects = []
@@ -759,492 +768,34 @@ static func _attach_skill_descriptions(monster) -> void:
 
 
 static func _attach_passive_description(monster) -> void:
-    # Base passive presentation comes from the canonical passive record.
-    # Resonance-specific compositions below are kept intact for now.
+    # Both base and Resonance tooltips now come from passive_data.json.
+    # Preserve the original slot order when passives are replaced at R1-R5.
+    monster.passive_tooltips = []
     monster.passive_tooltip = {}
-    var monster_record: Dictionary = _get_shared_monsters().get(
-        monster.monster_id, {}
-    )
-    var base_passives: Array = monster_record.get("passives", [])
-    if not base_passives.is_empty():
-        var passive_id: String = str(base_passives[0])
-        var passive_record: Dictionary = _get_shared_passives().get(
+
+    for passive_id in monster.passive_ids:
+        var record: Dictionary = monster.passive_definitions.get(
             passive_id, {}
         )
-        var tooltip: Dictionary = passive_record.get("tooltip", {})
-        monster.passive_tooltip = tooltip.duplicate(true)
+        var tooltip: Dictionary = record.get("tooltip", {})
+        if tooltip.is_empty():
+            push_error("Missing passive tooltip: %s" % passive_id)
+            continue
 
-    if monster.monster_id == "dullahan_aether":
-        var soul_vessel_data: Dictionary = {
-            "name": (
-                "Soul Vessel: Requiem"
-                if monster.resonance >= 4
-                else (
-                    "Soul Vessel: Last Rites"
-                    if monster.resonance >= 1
-                    else "Soul Vessel"
-                )
-            ),
-            "summary": "Collects Soul Charges and converts them into offensive or restorative power.",
-            "effects": [
-                {
-                    "kind": "special",
-                    "text": "Gains [b]1 Soul Charge[/b] after using a damage skill, up to [b]5[/b]."
-                },
-                {
-                    "kind": "special",
-                    "text": (
-                        "Gains [b]2 Soul Charges[/b] whenever any monster dies."
-                        if monster.resonance >= 4
-                        else "Gains [b]1 Soul Charge[/b] whenever any monster dies."
-                    )
-                }
-            ]
-        }
-
-        if monster.resonance >= 1:
-            soul_vessel_data["effects"].append(
-                {
-                    "kind": "special",
-                    "text": "[b]Severing Blade[/b] grants [b]1 additional Soul Charge[/b] when used against a target below [b]50% HP[/b]."
-                }
-            )
-
-        if monster.resonance >= 2:
-            soul_vessel_data["effects"].append(
-                {
-                    "kind": "special",
-                    "text": "At [b]5 Soul Charges[/b], unlocks [color=#d9a6ff]Soul Recall[/color]."
-                }
-            )
-
-        monster.passive_tooltip = soul_vessel_data
-        monster.passive_tooltips = [
-            soul_vessel_data
-        ]
-
-    if monster.monster_id == "dullahan_void":
-        var headless_data: Dictionary = {
-            "name": (
-                "Deathless Rider"
-                if monster.resonance >= 4
-                else (
-                    "Headless Rider: Unbound"
-                    if monster.resonance >= 1
-                    else "Headless Rider"
-                )
-            ),
-            "summary": (
-                "Defies lethal blows while hunting a Named foe."
-                if monster.resonance >= 4
-                else "Empowers the Dullahan while it has a Named target."
-            ),
-            "effects": [
-                {
-                    "kind": "special",
-                    "text": (
-                        "While [color=#d9a6ff]Headless[/color], gains [b]+30% Speed[/b]."
-                        if monster.resonance >= 1
-                        else "While [color=#d9a6ff]Headless[/color], gains [b]+20% Speed[/b]."
-                    )
-                },
-                {
-                    "kind": "special",
-                    "text": "While [color=#d9a6ff]Headless[/color], cannot be Silenced unless affected by [color=#ff7777]Oblivion[/color]."
-                }
-            ]
-        }
-
-        if monster.resonance >= 4:
-            headless_data["effects"].append(
-                {
-                    "kind": "special",
-                    "text": "While [color=#d9a6ff]Headless[/color], survives lethal damage with [b]1 HP[/b]. After the attack, cleanses all debuffs and loses [color=#d9a6ff]Headless[/color]. [b]6-turn cooldown[/b]."
-                }
-            )
-
-        if monster.resonance >= 4:
-            headless_data["internal_cooldown_id"] = (
-                "deathless_rider"
-            )
-
-        monster.passive_tooltip = headless_data
-        monster.passive_tooltips = [
-            headless_data
-        ]
-
-        if monster.resonance >= 5:
-            monster.passive_tooltips.append(
-                {
-                    "name": "Death's Gaze: Death March",
-                    "summary": "Carries the death sentence forward when a Named enemy falls.",
-                    "effects": [
-                        {
-                            "kind": "special",
-                            "text": "When the [color=#d9a6ff]Named[/color] target dies, the living enemy with the lowest HP ratio becomes [color=#d9a6ff]Named[/color] for [b]2 turns[/b]."
-                        },
-                        {
-                            "kind": "debuff",
-                            "text": "Applies [color=#ff7777]Vulnerability[/color] to the new target for [b]3 turns[/b]."
-                        }
-                    ]
-                }
-            )
-
-    if monster.monster_id == "dullahan_abyssal":
-        if monster.resonance >= 3:
-            monster.passive_tooltip = {
-                "name": "Chilling Presence: Suffocation",
-                "summary": "Deepens the enemy team's existing debuffs after every turn.",
-                "effects": [
-                    {
-                        "kind": "special",
-                        "text": "After this monster's turn, extends up to [b]2 random extendable debuffs[/b] on each living enemy by [b]1 turn[/b]."
-                    },
-                    {
-                        "kind": "special",
-                        "text": "[color=#ff7777]Stun[/color] and [color=#ff7777]Freeze[/color] cannot be extended."
-                    }
-                ]
-            }
-
-    if (
-        monster.monster_id == "dullahan_storm"
-        and monster.resonance >= 2
-    ):
-        monster.passive_tooltip = {
-            "name": "The Hunt",
-            "summary": "Steals momentum from the enemy closest to taking a turn.",
-            "effects": [
-                {
-                    "kind": "special",
-                    "text": "After this monster's turn, steals up to [b]20% Action Gauge[/b] from the living enemy with the highest Action Gauge."
-                }
-            ]
-        }
-
-    if monster.monster_id == "drake_void":
-        # The base Bottomless Hunger tooltip is loaded from
-        # passive_data.json above, not from a local passive_data map.
-        var bottomless_data: Dictionary = (
-            monster.passive_tooltip.duplicate(true)
+        var visible: Dictionary = tooltip.duplicate(true)
+        # A rank may unlock extra tooltip effects without upgrading
+        # the passive ID (Soul Vessel at R2 is one such case).
+        var rank_additions: Dictionary = record.get(
+            "tooltip_rank_additions", {}
         )
+        for rank in range(1, monster.resonance + 1):
+            for effect in rank_additions.get(str(rank), []):
+                visible["effects"].append(effect.duplicate(true))
 
-        monster.passive_tooltips = []
-        if not bottomless_data.is_empty():
-            monster.passive_tooltips.append(
-                bottomless_data
-            )
-            monster.passive_tooltip = bottomless_data
+        monster.passive_tooltips.append(visible)
 
-        if monster.resonance >= 2:
-            var voidborn_data: Dictionary = {
-                "name": (
-                    "Voidborn: Transcendence"
-                    if monster.resonance >= 3
-                    else "Voidborn"
-                ),
-                "summary": "Feeds on stripped power until the Void Drake erupts into a protected state.",
-                "effects": [
-                    {
-                        "kind": "special",
-                        "text": "Each enemy buff removed grants [b]1 Voidborn stack[/b], up to [b]5[/b]."
-                    },
-                    {
-                        "kind": "buff",
-                        "text": (
-                            "At [b]5 Voidborn stacks[/b], consumes all stacks to cleanse all debuffs and grant [color=#70c8ff]Invincibility[/color] for [b]2 turns[/b]."
-                            if monster.resonance >= 3
-                            else "At [b]5 Voidborn stacks[/b], consumes all stacks and grants [color=#70c8ff]Invincibility[/color] for [b]2 turns[/b]."
-                        )
-                    }
-                ]
-            }
-
-            monster.passive_tooltips.append(
-                voidborn_data
-            )
-
-    if (
-        monster.monster_id == "dullahan_igneous"
-        and monster.resonance >= 2
-    ):
-        monster.passive_tooltip = {
-            "name": (
-                "Final Omen: Fulfilled"
-                if monster.resonance >= 4
-                else "Final Omen"
-            ),
-            "summary": "Preys on wounded enemies that try to recover.",
-            "effects": [
-                {
-                    "kind": "buff",
-                    "text": "When an enemy below [b]50% HP[/b] is healed, gains [color=#70c8ff]Attack Up[/color] for [b]1 turn[/b]."
-                }
-            ]
-        }
-
-        if monster.resonance >= 4:
-            monster.passive_tooltip["effects"].append(
-                {
-                    "kind": "special",
-                    "text": "Enemies below [b]50% HP[/b] receive reduced healing."
-                }
-            )
-
-    if monster.monster_id == "drake_storm":
-        var thunderheart_data: Dictionary = {
-            "name": (
-                "Thunderheart: Overclocked"
-                if monster.resonance >= 3
-                else "Thunderheart"
-            ),
-            "summary": "Converts bonus Speed into offensive power.",
-            "effects": [
-                {
-                    "kind": "damage",
-                    "text": "Damage increases according to the monster's bonus Speed."
-                }
-            ]
-        }
-
-        if monster.resonance >= 3:
-            thunderheart_data["effects"].append(
-                {
-                    "kind": "special",
-                    "text": "Bonus Speed also increases Crit Rate."
-                }
-            )
-
-        monster.passive_tooltips = [
-            thunderheart_data
-        ]
-        monster.passive_tooltip = thunderheart_data
-
-        if monster.resonance >= 1:
-            var short_circuit_data: Dictionary = {
-                "name": (
-                    "Short Circuit: Chain Reaction"
-                    if monster.resonance >= 4
-                    else "Short Circuit"
-                ),
-                "summary": "Turns Speed Up into a chance to disrupt enemies.",
-                "effects": [
-                    {
-                        "kind": "debuff",
-                        "text": "While affected by [color=#70c8ff]Speed Up[/color], S1 and S2 hits have a [b]10% chance[/b] to apply [color=#ff7777]Stun[/color] for [b]1 turn[/b]."
-                    }
-                ]
-            }
-
-            if monster.resonance >= 4:
-                short_circuit_data["effects"].append(
-                    {
-                        "kind": "special",
-                        "text": "Successfully applying Stun reduces [b]Stormbreak[/b]'s cooldown by [b]1 turn[/b]."
-                    }
-                )
-
-            monster.passive_tooltips.append(
-                short_circuit_data
-            )
-
-    if monster.monster_id == "drake_aether":
-        var authority_data: Dictionary = {
-            "name": (
-                "Celestial Authority: Ascendance"
-                if monster.resonance >= 2
-                else "Celestial Authority"
-            ),
-            "summary": "Punishes enemies that strike the Aether Drake.",
-            "effects": [
-                {
-                    "kind": "debuff",
-                    "text": (
-                        "When hit, has a [b]50% chance[/b] to apply [color=#ff7777]Attack Break[/color] to the attacker for [b]2 turns[/b]."
-                        if monster.resonance >= 2
-                        else "When hit, has a [b]30% chance[/b] to apply [color=#ff7777]Attack Break[/color] to the attacker for [b]2 turns[/b]."
-                    )
-                }
-            ]
-        }
-
-        if monster.resonance >= 2:
-            authority_data["effects"].append(
-                {
-                    "kind": "special",
-                    "text": "On success, grants [b]20% Action Gauge[/b] to the living ally with the most buffs."
-                }
-            )
-
-        monster.passive_tooltips = [
-            authority_data
-        ]
-        monster.passive_tooltip = authority_data
-
-        if monster.resonance >= 1:
-            var divine_grace_data: Dictionary = {
-                "name": (
-                    "Divine Grace: Enlightenment"
-                    if monster.resonance >= 4
-                    else "Divine Grace"
-                ),
-                "summary": "Blesses allies whenever this monster grants them buffs.",
-                "effects": [
-                    {
-                        "kind": "heal",
-                        "text": "Each buff applied by this monster heals the target for [b]5% Max HP[/b]."
-                    }
-                ]
-            }
-
-            if monster.resonance >= 4:
-                divine_grace_data["effects"].append(
-                    {
-                        "kind": "special",
-                        "text": "Also grants the caster [b]+25% Accuracy[/b]."
-                    }
-                )
-
-            monster.passive_tooltips.append(
-                divine_grace_data
-            )
-
-    if monster.monster_id == "drake_igneous":
-        if monster.resonance >= 4:
-            monster.passive_tooltip = {
-                "name": "Cinderblood: Molten Core",
-                "summary": "Ignites enemies more aggressively and feeds the Drake's momentum.",
-                "effects": [
-                    {
-                        "kind": "debuff",
-                        "text": "Each landed hit has a [b]65% chance[/b] to apply [color=#ff7777]Burn[/color] for [b]2 turns[/b]."
-                    },
-                    {
-                        "kind": "special",
-                        "text": "The first Burn applied by each skill grants [b]10% Action Gauge[/b]."
-                    }
-                ]
-            }
-        elif monster.resonance >= 1:
-            monster.passive_tooltip = {
-                "name": "Cinderblood: Ignite",
-                "summary": "Each landed hit can ignite the target.",
-                "effects": [
-                    {
-                        "kind": "debuff",
-                        "text": "Each landed hit has a [b]50% chance[/b] to apply [color=#ff7777]Burn[/color] for [b]2 turns[/b]."
-                    }
-                ]
-            }
-
-    if monster.monster_id == "drake_abyssal":
-        var frozen_scales_data: Dictionary = {
-            "name": (
-                "Frozen Scales: Everfrost"
-                if monster.resonance >= 3
-                else "Frozen Scales"
-            ),
-            "summary": "Builds Frozen Scales through successful Freezes, then consumes them to fortify the caster.",
-            "effects": [
-                {
-                    "kind": "special",
-                    "text": "Each enemy Frozen by [b]Glacial Collapse[/b] grants [b]1 Frozen Scale[/b], up to [b]3[/b]."
-                },
-                {
-                    "kind": "buff",
-                    "text": "Before casting Glacial Collapse at [b]3/3[/b], consumes all scales and grants [color=#70c8ff]Defense Up[/color] and [color=#70c8ff]Immunity[/color] for [b]2 turns[/b]."
-                }
-            ]
-        }
-
-        if monster.resonance >= 3:
-            frozen_scales_data["effects"].append(
-                {
-                    "kind": "special",
-                    "text": "Reaching [b]3 Frozen Scales[/b] resets [b]Glacial Collapse[/b]."
-                }
-            )
-
-        monster.passive_tooltips = [
-            frozen_scales_data
-        ]
-        monster.passive_tooltip = frozen_scales_data
-
-        if monster.resonance >= 2:
-            var frostborne_data: Dictionary = {
-                "name": (
-                    "Frostborne: Everlasting Winter"
-                    if monster.resonance >= 4
-                    else "Frostborne"
-                ),
-                "summary": "Prevents the Drake's frozen targets from being freed by damage.",
-                "effects": [
-                    {
-                        "kind": "special",
-                        "text": (
-                            "[color=#ff7777]Freeze[/color] applied by this monster cannot be broken by any source of damage."
-                            if monster.resonance >= 4
-                            else "Damage dealt by this monster does not break [color=#ff7777]Freeze[/color]."
-                        )
-                    }
-                ]
-            }
-
-            monster.passive_tooltips.append(
-                frostborne_data
-            )
-
-    if (
-        monster.monster_id == "dryad_storm"
-        and monster.resonance >= 1
-    ):
-        monster.passive_tooltip = {
-            "name": (
-                "Nature's Grace: Overgrowth"
-                if monster.resonance >= 5
-                else "Nature's Grace"
-            ),
-            "summary": "Strengthens direct healing on wounded allies.",
-            "effects": [
-                {
-                    "kind": "heal",
-                    "text": "Direct healing is increased by [b]20%[/b] when the target is below [b]50% HP[/b]."
-                }
-            ]
-        }
-
-        if monster.resonance >= 5:
-            monster.passive_tooltip["effects"].append(
-                {
-                    "kind": "buff",
-                    "text": "Overhealing is partially converted into a [color=#70c8ff]Shield[/color], up to [b]10% of the target's Max HP[/b]."
-                }
-            )
-
-    if (
-        monster.monster_id == "griffon_igneous"
-        and monster.resonance >= 2
-    ):
-        monster.passive_tooltip = {
-            "name": "Hawk Instinct",
-            "summary": "Accelerates the Griffon whenever it successfully stuns an enemy.",
-            "effects": [
-                {
-                    "kind": "buff",
-                    "text": "When this monster applies [color=#ff7777]Stun[/color], gains [color=#70c8ff]Speed Up[/color] for [b]2 turns[/b]."
-                }
-            ]
-        }
-
-
-    if (
-        monster.passive_tooltips.is_empty()
-        and not monster.passive_tooltip.is_empty()
-    ):
-        monster.passive_tooltips = [
-            monster.passive_tooltip
-        ]
+    if not monster.passive_tooltips.is_empty():
+        monster.passive_tooltip = monster.passive_tooltips[0]
 
 
 static func _scaled(value: float) -> int:

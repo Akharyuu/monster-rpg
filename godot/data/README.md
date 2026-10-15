@@ -93,8 +93,13 @@ the Godot front end. Do not create separate per-engine copies.
   references to resolve them.
 - Rich BBCode markup, effect ordering, and the existing UI fallback
   behavior are preserved. Combat execution still uses separate fields.
-- Resonance-dependent passive tooltip compositions remain in GDScript
-  until they can be represented without losing special UI behavior.
+- All 34 passive variants now include their display descriptions and
+  BBCode effects in `passive_data.json`. Godot renders the active passive
+  IDs in stable original slot order.
+- The Soul Vessel tooltip can gain its R2 Soul Recall explanation through
+  `tooltip_rank_additions` without duplicating a passive record.
+- The Godot headless smoke checks passive button order, names, and tooltip
+  content for all 84 constructible Resonance configurations.
 
 ## Migration status
 
@@ -103,8 +108,8 @@ and passive references, and canonical skill definitions. Godot consumes shared
 core skill parameters and selected handler data.
 
 **Still to migrate:** remaining engine-specific passive/skill execution
-branches, dynamic Resonance-dependent passive tooltip composition, and
-localization. All skill and base-passive tooltip records are now shared.
+branches and localization. Skill and all Resonance-dependent passive
+tooltip records now live in the shared JSON.
 Combat handler implementations remain independent in Python and GDScript.
 
 ## Automatic validation (Python and Godot)

@@ -49,6 +49,7 @@ var deathless_triggered_this_skill: bool = false
 var passive_tooltip: Dictionary = {}
 var passive_tooltips: Array = []
 var passive_definitions: Dictionary = {}
+var passive_ids: Array[String] = []
 
 
 func get_passive_by_handler(handler_id: String) -> Dictionary:

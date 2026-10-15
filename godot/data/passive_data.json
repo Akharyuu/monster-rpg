@@ -7,6 +7,16 @@
       "handler_data": {
         "hp_threshold": 0.5,
         "healing_multiplier": 1.2
+      },
+      "tooltip": {
+        "name": "Nature's Grace",
+        "summary": "Strengthens direct healing on wounded allies.",
+        "effects": [
+          {
+            "kind": "heal",
+            "text": "Direct healing is increased by [b]20%[/b] when the target is below [b]50% HP[/b]."
+          }
+        ]
       }
     },
     "natures_grace_overgrowth": {
@@ -20,6 +30,20 @@
           "max_shield_ratio": 0.1,
           "shield_turns": 2
         }
+      },
+      "tooltip": {
+        "name": "Nature's Grace: Overgrowth",
+        "summary": "Strengthens direct healing on wounded allies.",
+        "effects": [
+          {
+            "kind": "heal",
+            "text": "Direct healing is increased by [b]20%[/b] when the target is below [b]50% HP[/b]."
+          },
+          {
+            "kind": "buff",
+            "text": "Overhealing is partially converted into a [color=#70c8ff]Shield[/color], up to [b]10% of the target's Max HP[/b]."
+          }
+        ]
       }
     },
     "hawk_instinct": {
@@ -30,6 +54,16 @@
         "effect_id": "speed_up",
         "chance": 1,
         "turns": 2
+      },
+      "tooltip": {
+        "name": "Hawk Instinct",
+        "summary": "Accelerates the Griffon whenever it successfully stuns an enemy.",
+        "effects": [
+          {
+            "kind": "buff",
+            "text": "When this monster applies [color=#ff7777]Stun[/color], gains [color=#70c8ff]Speed Up[/color] for [b]2 turns[/b]."
+          }
+        ]
       }
     },
     "cinderblood": {
@@ -58,7 +92,17 @@
       "chance": 0.5,
       "stacks": 1,
       "turns": 2,
-      "action_gauge": 0
+      "action_gauge": 0,
+      "tooltip": {
+        "name": "Cinderblood: Ignite",
+        "summary": "Each landed hit can ignite the target.",
+        "effects": [
+          {
+            "kind": "debuff",
+            "text": "Each landed hit has a [b]50% chance[/b] to apply [color=#ff7777]Burn[/color] for [b]2 turns[/b]."
+          }
+        ]
+      }
     },
     "cinderblood_molten_core": {
       "name": "Cinderblood: Molten Core",
@@ -71,7 +115,21 @@
       "stacks": 1,
       "turns": 2,
       "action_gauge": 0.1,
-      "action_gauge_once_per_skill": true
+      "action_gauge_once_per_skill": true,
+      "tooltip": {
+        "name": "Cinderblood: Molten Core",
+        "summary": "Ignites enemies more aggressively and feeds the Drake's momentum.",
+        "effects": [
+          {
+            "kind": "debuff",
+            "text": "Each landed hit has a [b]65% chance[/b] to apply [color=#ff7777]Burn[/color] for [b]2 turns[/b]."
+          },
+          {
+            "kind": "special",
+            "text": "The first Burn applied by each skill grants [b]10% Action Gauge[/b]."
+          }
+        ]
+      }
     },
     "frozen_scales": {
       "name": "Frozen Scales",
@@ -126,13 +184,41 @@
           "effect_id": "immunity",
           "turns": 2
         }
-      ]
+      ],
+      "tooltip": {
+        "name": "Frozen Scales: Everfrost",
+        "summary": "Builds Frozen Scales through successful Freezes, then consumes them to fortify the caster.",
+        "effects": [
+          {
+            "kind": "special",
+            "text": "Each enemy Frozen by [b]Glacial Collapse[/b] grants [b]1 Frozen Scale[/b], up to [b]3[/b]."
+          },
+          {
+            "kind": "buff",
+            "text": "Before casting Glacial Collapse at [b]3/3[/b], consumes all scales and grants [color=#70c8ff]Defense Up[/color] and [color=#70c8ff]Immunity[/color] for [b]2 turns[/b]."
+          },
+          {
+            "kind": "special",
+            "text": "Reaching [b]3 Frozen Scales[/b] resets [b]Glacial Collapse[/b]."
+          }
+        ]
+      }
     },
     "frostborne": {
       "name": "Frostborne",
       "traits": [
         "preserve_freeze_on_hit"
-      ]
+      ],
+      "tooltip": {
+        "name": "Frostborne",
+        "summary": "Prevents the Drake's frozen targets from being freed by damage.",
+        "effects": [
+          {
+            "kind": "special",
+            "text": "Damage dealt by this monster does not break [color=#ff7777]Freeze[/color]."
+          }
+        ]
+      }
     },
     "frostborne_shattered_fury": {
       "name": "Frostborne: Shattered Fury",
@@ -151,14 +237,38 @@
           "turns": 1
         }
       ],
-      "action_gauge": 0.15
+      "action_gauge": 0.15,
+      "tooltip": {
+        "name": "Frostborne: Shattered Fury",
+        "summary": "Turns broken Freeze into a furious counterattack.",
+        "effects": [
+          {
+            "kind": "buff",
+            "text": "When Freeze is broken by damage, gains [color=#70c8ff]Attack Up[/color] and [color=#70c8ff]Crit Rate Up[/color] for [b]1 turn[/b]."
+          },
+          {
+            "kind": "special",
+            "text": "Gains [b]15% Action Gauge[/b]."
+          }
+        ]
+      }
     },
     "frostborne_everlasting_winter": {
       "name": "Frostborne: Everlasting Winter",
       "traits": [
         "preserve_freeze_on_hit",
         "preserve_applied_freeze_on_damage"
-      ]
+      ],
+      "tooltip": {
+        "name": "Frostborne: Everlasting Winter",
+        "summary": "Prevents the Drake's frozen targets from being freed by damage.",
+        "effects": [
+          {
+            "kind": "special",
+            "text": "[color=#ff7777]Freeze[/color] applied by this monster cannot be broken by any source of damage."
+          }
+        ]
+      }
     },
     "thunderheart": {
       "name": "Thunderheart",
@@ -172,7 +282,7 @@
         "effects": [
           {
             "kind": "damage",
-            "text": "Damage increases by [b]0.3%[/b] for every point of Speed above the base value."
+            "text": "Damage increases according to the monster's bonus Speed."
           }
         ]
       }
@@ -184,6 +294,20 @@
         "damage_per_bonus_speed": 0.003,
         "speed_per_crit": 5,
         "max_crit_rate_bonus": 30
+      },
+      "tooltip": {
+        "name": "Thunderheart: Overclocked",
+        "summary": "Converts bonus Speed into offensive power.",
+        "effects": [
+          {
+            "kind": "damage",
+            "text": "Damage increases according to the monster's bonus Speed."
+          },
+          {
+            "kind": "special",
+            "text": "Bonus Speed also increases Crit Rate."
+          }
+        ]
       }
     },
     "short_circuit": {
@@ -199,6 +323,16 @@
         ],
         "chance": 0.1,
         "turns": 1
+      },
+      "tooltip": {
+        "name": "Short Circuit",
+        "summary": "Turns Speed Up into a chance to disrupt enemies.",
+        "effects": [
+          {
+            "kind": "debuff",
+            "text": "While affected by [color=#70c8ff]Speed Up[/color], S1 and S2 hits have a [b]10% chance[/b] to apply [color=#ff7777]Stun[/color] for [b]1 turn[/b]."
+          }
+        ]
       }
     },
     "short_circuit_chain_reaction": {
@@ -223,6 +357,20 @@
             "amount": 1
           }
         }
+      },
+      "tooltip": {
+        "name": "Short Circuit: Chain Reaction",
+        "summary": "Turns Speed Up into a chance to disrupt enemies.",
+        "effects": [
+          {
+            "kind": "debuff",
+            "text": "While affected by [color=#70c8ff]Speed Up[/color], S1 and S2 hits have a [b]10% chance[/b] to apply [color=#ff7777]Stun[/color] for [b]1 turn[/b]."
+          },
+          {
+            "kind": "special",
+            "text": "Successfully applying Stun reduces [b]Stormbreak[/b]'s cooldown by [b]1 turn[/b]."
+          }
+        ]
       }
     },
     "celestial_authority": {
@@ -235,7 +383,7 @@
       },
       "tooltip": {
         "name": "Celestial Authority",
-        "summary": "Turns enemy aggression into control over the flow of battle.",
+        "summary": "Punishes enemies that strike the Aether Drake.",
         "effects": [
           {
             "kind": "debuff",
@@ -252,6 +400,20 @@
         "chance": 0.5,
         "turns": 2,
         "action_gauge_to_most_buffed_ally": 0.2
+      },
+      "tooltip": {
+        "name": "Celestial Authority: Ascendance",
+        "summary": "Punishes enemies that strike the Aether Drake.",
+        "effects": [
+          {
+            "kind": "debuff",
+            "text": "When hit, has a [b]50% chance[/b] to apply [color=#ff7777]Attack Break[/color] to the attacker for [b]2 turns[/b]."
+          },
+          {
+            "kind": "special",
+            "text": "On success, grants [b]20% Action Gauge[/b] to the living ally with the most buffs."
+          }
+        ]
       }
     },
     "divine_grace": {
@@ -260,6 +422,16 @@
       "handler": "divine_grace",
       "handler_data": {
         "heal_ratio_per_buff": 0.05
+      },
+      "tooltip": {
+        "name": "Divine Grace",
+        "summary": "Blesses allies whenever this monster grants them buffs.",
+        "effects": [
+          {
+            "kind": "heal",
+            "text": "Each buff applied by this monster heals the target for [b]5% Max HP[/b]."
+          }
+        ]
       }
     },
     "divine_grace_enlightenment": {
@@ -269,6 +441,20 @@
       "handler_data": {
         "heal_ratio_per_buff": 0.05,
         "accuracy_bonus": 25
+      },
+      "tooltip": {
+        "name": "Divine Grace: Enlightenment",
+        "summary": "Blesses allies whenever this monster grants them buffs.",
+        "effects": [
+          {
+            "kind": "heal",
+            "text": "Each buff applied by this monster heals the target for [b]5% Max HP[/b]."
+          },
+          {
+            "kind": "special",
+            "text": "Also grants the caster [b]+25% Accuracy[/b]."
+          }
+        ]
       }
     },
     "bottomless_hunger": {
@@ -303,6 +489,20 @@
         "invincibility_turns": 2,
         "extra_activation_invincibility_turns": 1,
         "extra_activation_damage_bonus": 0.2
+      },
+      "tooltip": {
+        "name": "Voidborn",
+        "summary": "Feeds on stripped power until the Void Drake erupts into a protected state.",
+        "effects": [
+          {
+            "kind": "special",
+            "text": "Each enemy buff removed grants [b]1 Voidborn stack[/b], up to [b]5[/b]."
+          },
+          {
+            "kind": "buff",
+            "text": "At [b]5 Voidborn stacks[/b], consumes all stacks and grants [color=#70c8ff]Invincibility[/color] for [b]2 turns[/b]."
+          }
+        ]
       }
     },
     "voidborn_transcendence": {
@@ -315,6 +515,20 @@
         "extra_activation_invincibility_turns": 1,
         "extra_activation_damage_bonus": 0.2,
         "full_cleanse_on_activation": true
+      },
+      "tooltip": {
+        "name": "Voidborn: Transcendence",
+        "summary": "Feeds on stripped power until the Void Drake erupts into a protected state.",
+        "effects": [
+          {
+            "kind": "special",
+            "text": "Each enemy buff removed grants [b]1 Voidborn stack[/b], up to [b]5[/b]."
+          },
+          {
+            "kind": "buff",
+            "text": "At [b]5 Voidborn stacks[/b], consumes all stacks to cleanse all debuffs and grant [color=#70c8ff]Invincibility[/color] for [b]2 turns[/b]."
+          }
+        ]
       }
     },
     "final_omen": {
@@ -324,6 +538,16 @@
       "handler_data": {
         "hp_threshold": 0.5,
         "attack_up_turns": 1
+      },
+      "tooltip": {
+        "name": "Final Omen",
+        "summary": "Preys on wounded enemies that try to recover.",
+        "effects": [
+          {
+            "kind": "buff",
+            "text": "When an enemy below [b]50% HP[/b] is healed, gains [color=#70c8ff]Attack Up[/color] for [b]1 turn[/b]."
+          }
+        ]
       }
     },
     "final_omen_fulfilled": {
@@ -334,6 +558,20 @@
         "hp_threshold": 0.5,
         "attack_up_turns": 1,
         "healing_received_multiplier": 0.7
+      },
+      "tooltip": {
+        "name": "Final Omen: Fulfilled",
+        "summary": "Preys on wounded enemies that try to recover.",
+        "effects": [
+          {
+            "kind": "buff",
+            "text": "When an enemy below [b]50% HP[/b] is healed, gains [color=#70c8ff]Attack Up[/color] for [b]1 turn[/b]."
+          },
+          {
+            "kind": "special",
+            "text": "Enemies below [b]50% HP[/b] receive reduced healing."
+          }
+        ]
       }
     },
     "chilling_presence": {
@@ -364,6 +602,20 @@
       "handler": "chilling_presence",
       "handler_data": {
         "debuffs_per_enemy": 2
+      },
+      "tooltip": {
+        "name": "Chilling Presence: Suffocation",
+        "summary": "Deepens the enemy team's existing debuffs after every turn.",
+        "effects": [
+          {
+            "kind": "special",
+            "text": "After this monster's turn, extends up to [b]2 random extendable debuffs[/b] on each living enemy by [b]1 turn[/b]."
+          },
+          {
+            "kind": "special",
+            "text": "[color=#ff7777]Stun[/color] and [color=#ff7777]Freeze[/color] cannot be extended."
+          }
+        ]
       }
     },
     "the_hunt": {
@@ -372,6 +624,16 @@
       "handler": "the_hunt",
       "handler_data": {
         "action_gauge_steal": 0.2
+      },
+      "tooltip": {
+        "name": "The Hunt",
+        "summary": "Steals momentum from the enemy closest to taking a turn.",
+        "effects": [
+          {
+            "kind": "special",
+            "text": "After this monster's turn, steals up to [b]20% Action Gauge[/b] from the living enemy with the highest Action Gauge."
+          }
+        ]
       }
     },
     "soul_vessel": {
@@ -394,7 +656,7 @@
       },
       "tooltip": {
         "name": "Soul Vessel",
-        "summary": "Collects Soul Charges through combat and empowers soul-based attacks.",
+        "summary": "Collects Soul Charges and converts them into offensive or restorative power.",
         "effects": [
           {
             "kind": "special",
@@ -403,10 +665,6 @@
           {
             "kind": "special",
             "text": "Gains [b]1 Soul Charge[/b] whenever any monster dies."
-          },
-          {
-            "kind": "special",
-            "text": "[b]Beyond the Veil[/b] consumes all stored Soul Charges before attacking."
           }
         ]
       }
@@ -432,6 +690,32 @@
           "severing_blade"
         ],
         "last_rites_threshold": 0.5
+      },
+      "tooltip": {
+        "name": "Soul Vessel: Last Rites",
+        "summary": "Collects Soul Charges and converts them into offensive or restorative power.",
+        "effects": [
+          {
+            "kind": "special",
+            "text": "Gains [b]1 Soul Charge[/b] after using a damage skill, up to [b]5[/b]."
+          },
+          {
+            "kind": "special",
+            "text": "Gains [b]1 Soul Charge[/b] whenever any monster dies."
+          },
+          {
+            "kind": "special",
+            "text": "[b]Severing Blade[/b] grants [b]1 additional Soul Charge[/b] when used against a target below [b]50% HP[/b]."
+          }
+        ]
+      },
+      "tooltip_rank_additions": {
+        "2": [
+          {
+            "kind": "special",
+            "text": "At [b]5 Soul Charges[/b], unlocks [color=#d9a6ff]Soul Recall[/color]."
+          }
+        ]
       }
     },
     "soul_vessel_requiem": {
@@ -455,6 +739,28 @@
           "severing_blade"
         ],
         "last_rites_threshold": 0.5
+      },
+      "tooltip": {
+        "name": "Soul Vessel: Requiem",
+        "summary": "Collects Soul Charges and converts them into offensive or restorative power.",
+        "effects": [
+          {
+            "kind": "special",
+            "text": "Gains [b]1 Soul Charge[/b] after using a damage skill, up to [b]5[/b]."
+          },
+          {
+            "kind": "special",
+            "text": "Gains [b]2 Soul Charges[/b] whenever any monster dies."
+          },
+          {
+            "kind": "special",
+            "text": "[b]Severing Blade[/b] grants [b]1 additional Soul Charge[/b] when used against a target below [b]50% HP[/b]."
+          },
+          {
+            "kind": "special",
+            "text": "At [b]5 Soul Charges[/b], unlocks [color=#d9a6ff]Soul Recall[/color]."
+          }
+        ]
       }
     },
     "headless_rider": {
@@ -483,6 +789,20 @@
       "handler": "headless_rider",
       "handler_data": {
         "speed_bonus": 0.3
+      },
+      "tooltip": {
+        "name": "Headless Rider: Unbound",
+        "summary": "Empowers the Dullahan while it has a Named target.",
+        "effects": [
+          {
+            "kind": "special",
+            "text": "While [color=#d9a6ff]Headless[/color], gains [b]+30% Speed[/b]."
+          },
+          {
+            "kind": "special",
+            "text": "While [color=#d9a6ff]Headless[/color], cannot be Silenced unless affected by [color=#ff7777]Oblivion[/color]."
+          }
+        ]
       }
     },
     "deathless_rider": {
@@ -491,6 +811,25 @@
       "handler_data": {
         "speed_bonus": 0.3,
         "internal_cooldown": 6
+      },
+      "tooltip": {
+        "name": "Deathless Rider",
+        "summary": "Defies lethal blows while hunting a Named foe.",
+        "effects": [
+          {
+            "kind": "special",
+            "text": "While [color=#d9a6ff]Headless[/color], gains [b]+30% Speed[/b]."
+          },
+          {
+            "kind": "special",
+            "text": "While [color=#d9a6ff]Headless[/color], cannot be Silenced unless affected by [color=#ff7777]Oblivion[/color]."
+          },
+          {
+            "kind": "special",
+            "text": "While [color=#d9a6ff]Headless[/color], survives lethal damage with [b]1 HP[/b]. After the attack, cleanses all debuffs and loses [color=#d9a6ff]Headless[/color]. [b]6-turn cooldown[/b]."
+          }
+        ],
+        "internal_cooldown_id": "deathless_rider"
       }
     },
     "death_march": {
@@ -500,6 +839,20 @@
       "handler_data": {
         "named_turns": 2,
         "vulnerability_turns": 3
+      },
+      "tooltip": {
+        "name": "Death's Gaze: Death March",
+        "summary": "Carries the death sentence forward when a Named enemy falls.",
+        "effects": [
+          {
+            "kind": "special",
+            "text": "When the [color=#d9a6ff]Named[/color] target dies, the living enemy with the lowest HP ratio becomes [color=#d9a6ff]Named[/color] for [b]2 turns[/b]."
+          },
+          {
+            "kind": "debuff",
+            "text": "Applies [color=#ff7777]Vulnerability[/color] to the new target for [b]3 turns[/b]."
+          }
+        ]
       }
     }
   }

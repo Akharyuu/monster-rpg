@@ -133,6 +133,41 @@ func _run_smoke() -> void:
                             ]
                         )
 
+            # Visual button order is stable even when an R-level
+            # replaces the first passive and adds a second one.
+            if monster.passive_ids != expected_passives:
+                failures.append(
+                    "%s R%d: passive order mismatch" % [monster_id, rank]
+                )
+            if monster.passive_tooltips.size() != expected_passives.size():
+                failures.append(
+                    "%s R%d: passive tooltip count mismatch"
+                    % [monster_id, rank]
+                )
+            else:
+                for slot in range(expected_passives.size()):
+                    var tooltip: Dictionary = monster.passive_tooltips[slot]
+                    var id: String = str(expected_passives[slot])
+                    var definition: Dictionary = monster.passive_definitions.get(
+                        id, {}
+                    )
+                    var expected_name: String = str(definition.get("name", ""))
+                    if str(tooltip.get("name", "")) != expected_name:
+                        failures.append(
+                            "%s R%d: passive tooltip name mismatch (%s)"
+                            % [monster_id, rank, id]
+                        )
+                    if str(tooltip.get("summary", "")).is_empty():
+                        failures.append(
+                            "%s R%d: empty passive tooltip (%s)"
+                            % [monster_id, rank, id]
+                        )
+                    if not (tooltip.get("effects", null) is Array):
+                        failures.append(
+                            "%s R%d: invalid passive tooltip effects (%s)"
+                            % [monster_id, rank, id]
+                        )
+
             if monster.passive_definitions.size() != expected_passives.size():
                 failures.append(
                     "%s R%d: passive count mismatch" % [monster_id, rank]

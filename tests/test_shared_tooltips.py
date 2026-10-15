@@ -63,12 +63,12 @@ def test_godot_tooltips_use_canonical_records_without_manual_maps():
     assert "skill.description = skill.tooltip_summary" in skill_code
     assert "var tooltip_data := {" not in source
 
-    assert '_get_shared_monsters().get(' in passive_code
-    assert '_get_shared_passives().get(' in passive_code
-    assert 'passive_record.get("tooltip", {})' in passive_code
-    assert "monster.passive_tooltip = tooltip.duplicate(true)" in passive_code
+    assert "for passive_id in monster.passive_ids:" in passive_code
+    assert 'record.get("tooltip", {})' in passive_code
+    assert 'record.get("tooltip_rank_additions", {})' in passive_code
+    assert "monster.passive_tooltip = monster.passive_tooltips[0]" in passive_code
     assert "var passive_data := {" not in source
-    assert 'if monster.monster_id == "dullahan_aether":' in passive_code
+    assert "if monster.monster_id ==" not in passive_code
 
 
 def test_existing_combat_fields_stay_separate_from_tooltips():
@@ -102,9 +102,71 @@ def test_void_drake_tooltip_uses_shared_base_passive():
     # migrated to JSON; no dynamic tooltip may reference it.
     assert "passive_data.get(" not in passive_block
     assert 'if monster.monster_id == "drake_void":' in passive_block
-    assert "monster.passive_tooltip.duplicate(true)" in passive_block
+    assert "for passive_id in monster.passive_ids:" in passive_block
     assert 'monster.passive_tooltips.append(' in passive_block
 
     base_id = MONSTER_DATA["drake_void"]["passives"][0]
     assert base_id == "bottomless_hunger"
     assert PASSIVE_DATA[base_id]["tooltip"]["name"] == "Bottomless Hunger"
+
+
+def test_all_passive_variants_have_canonical_tooltips():
+    doc = json.loads(PASSIVES.read_text(encoding="utf-8"))
+    records = doc["passives"]
+    assert len(records) == 34
+    for passive_id, record in records.items():
+        assert PASSIVE_DATA[passive_id]["tooltip"] == record["tooltip"]
+        tooltip = record["tooltip"]
+        assert tooltip["name"] == record["name"], passive_id
+        _valid_tooltip(tooltip)
+        for rank, additions in record.get("tooltip_rank_additions", {}).items():
+            assert rank in {"1", "2", "3", "4", "5"}
+            assert additions
+            for effect in additions:
+                assert effect["kind"] in EFFECT_KINDS
+                assert isinstance(effect["text"], str) and effect["text"]
+
+
+def test_dynamic_passive_descriptions_no_longer_embed_monster_branches():
+    source = FACTORY.read_text(encoding="utf-8")
+    dynamic = source.split(
+        "static func _attach_passive_description(monster) -> void:"
+    )[1].split("static func _scaled(")[0]
+    assert "for passive_id in monster.passive_ids:" in dynamic
+    assert 'record.get("tooltip", {})' in dynamic
+    assert 'record.get("tooltip_rank_additions", {})' in dynamic
+    assert 'rank_additions.get(str(rank), [])' in dynamic
+    assert "monster.passive_tooltips.append(visible)" in dynamic
+    assert "monster.passive_tooltip = monster.passive_tooltips[0]" in dynamic
+    assert "if monster.monster_id ==" not in dynamic
+    assert "passive_data.get(" not in dynamic
+
+    resolver = source.split(
+        "static func _assign_shared_passives(monster) -> bool:"
+    )[1].split("static func _sync_skill_from_shared_data(")[0]
+    assert "ordered_ids[index] = new_id" in resolver
+    assert "monster.passive_ids = ordered_ids" in resolver
+
+
+def test_soul_vessel_recall_and_deathless_cooldown_tooltips_are_preserved():
+    soul = PASSIVE_DATA["soul_vessel_last_rites"]
+    assert soul["tooltip"]["name"] == "Soul Vessel: Last Rites"
+    assert len(soul["tooltip"]["effects"]) == 3
+    recall = soul["tooltip_rank_additions"]["2"]
+    assert len(recall) == 1
+    assert "Soul Recall" in recall[0]["text"]
+    assert "Soul Recall" in PASSIVE_DATA["soul_vessel_requiem"]["tooltip"][
+        "effects"
+    ][-1]["text"]
+
+    deathless = PASSIVE_DATA["deathless_rider"]["tooltip"]
+    assert deathless["internal_cooldown_id"] == "deathless_rider"
+
+
+def test_godot_smoke_checks_passive_tooltip_order_and_rank():
+    script = (
+        ROOT / "godot" / "tests" / "headless_smoke.gd"
+    ).read_text(encoding="utf-8")
+    assert "monster.passive_ids != expected_passives" in script
+    assert "monster.passive_tooltips.size() != expected_passives.size()" in script
+    assert "passive tooltip name mismatch" in script
