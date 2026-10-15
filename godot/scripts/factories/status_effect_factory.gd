@@ -150,7 +150,8 @@ static func create_status_effect(
                 stacks,
                 1,
                 source,
-                "multiplicative"
+                "multiplicative",
+                false
             )
 
         "freeze":
@@ -164,7 +165,8 @@ static func create_status_effect(
                 stacks,
                 1,
                 source,
-                "multiplicative"
+                "multiplicative",
+                false
             )
 
         "silence":
