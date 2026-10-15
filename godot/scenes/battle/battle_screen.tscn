@@ -60,6 +60,17 @@ text = "Preparing battle..."
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 18
 
+[node name="Passive Button" type="Button" parent="."]
+layout_mode = 0
+script = ExtResource("3")
+offset_left = 35.0
+offset_top = 515.0
+offset_right = 195.0
+offset_bottom = 605.0
+text = "PASSIVE"
+focus_mode = 0
+mouse_default_cursor_shape = 0
+
 [node name="Skill 1 Button" type="Button" parent="."]
 layout_mode = 0
 script = ExtResource("3")
