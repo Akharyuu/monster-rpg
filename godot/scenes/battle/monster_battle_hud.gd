@@ -32,8 +32,11 @@ const ENEMY_FRONT_IDLE_ANIMATIONS := {
 }
 
 # Local layout coordinates of the compact 138 x 185 monster HUD.
-const SPRITE_PREVIEW_SIZE := Vector2(240.0, 232.0)
-const SPRITE_PREVIEW_POSITION := Vector2(-51.0, -39.0)
+const ALLY_PREVIEW_SIZE := Vector2(240.0, 232.0)
+const ALLY_PREVIEW_POSITION := Vector2(-51.0, -39.0)
+
+const ENEMY_FRONT_PREVIEW_SIZE := Vector2(300.0, 290.0)
+const ENEMY_FRONT_PREVIEW_POSITION := Vector2(-82.0, -66.0)
 
 
 var bound_monster
@@ -77,6 +80,11 @@ func bind_monster(monster, enemy_side: bool) -> void:
     refresh(false)
 
 
+func _apply_sprite_layout(preview_size: Vector2, preview_position: Vector2) -> void:
+    monster_sprite.size = preview_size
+    monster_sprite.position = preview_position
+
+
 func _configure_monster_sprite() -> void:
     _idle_atlas_texture = null
     _idle_frames.clear()
@@ -112,8 +120,10 @@ func _configure_monster_sprite() -> void:
         return
 
     monster_sprite.texture = texture
-    monster_sprite.position = SPRITE_PREVIEW_POSITION
-    monster_sprite.size = SPRITE_PREVIEW_SIZE
+    _apply_sprite_layout(
+        ALLY_PREVIEW_SIZE,
+        ALLY_PREVIEW_POSITION
+    )
     monster_sprite.visible = true
     sprite_placeholder.visible = false
 
@@ -185,8 +195,10 @@ func _configure_idle_animation() -> bool:
     _idle_atlas_texture.atlas = sheet
     _idle_atlas_texture.region = _idle_frames[0]["region"]
     monster_sprite.texture = _idle_atlas_texture
-    monster_sprite.position = SPRITE_PREVIEW_POSITION
-    monster_sprite.size = SPRITE_PREVIEW_SIZE
+    _apply_sprite_layout(
+        ENEMY_FRONT_PREVIEW_SIZE,
+        ENEMY_FRONT_PREVIEW_POSITION
+    )
     monster_sprite.visible = true
     sprite_placeholder.visible = false
     return true
