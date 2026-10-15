@@ -268,6 +268,16 @@ func _run_combat_regressions() -> Array[String]:
         ):
             errors.append("Soul Recall did not revive and spend charges")
 
+    # RefCounted monsters retain team references through combat_opponents.
+    # Break those cycles before the headless engine exits.
+    for participant in [
+        attacker, defender, dryad, ally, foe, dullahan, fallen
+    ]:
+        if participant != null:
+            participant.combat_opponents = []
+    battle.active_monster = null
+    battle.setup([], [])
+
     if errors.is_empty():
         print("GODOT_COMBAT_OK: damage, healing and Soul Recall")
     return errors
