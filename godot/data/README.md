@@ -107,6 +107,34 @@ branches, dynamic Resonance-dependent passive tooltip composition, and
 localization. All skill and base-passive tooltip records are now shared.
 Combat handler implementations remain independent in Python and GDScript.
 
-Run `python -m pytest -q` after editing JSON. Open the battle scene in Godot
-to check parsing and battle setup as well. Data/schema changes should be
-accompanied by Python contract tests and by Godot validation.
+## Automatic validation (Python and Godot)
+
+The GitHub Actions workflow in \`.github/workflows/validate.yml\` runs on pushes
+to \`main\` and pull requests. It runs pytest, then installs **Godot 4.7.2**,
+imports/compiles the project headlessly, and executes the runtime smoke test.
+
+Run the same checks locally from the repository root:
+
+\`\`\`powershell
+python -m pytest -q
+python scripts/check_godot.py
+\`\`\`
+
+If the Godot executable is not on your PATH (common on Windows), use the
+console build's full path instead:
+
+\`\`\`powershell
+python scripts/check_godot.py --godot "C:\path\to\Godot_v4.7.2-stable_win64_console.exe"
+\`\`\`
+
+You can also set the \`GODOT_BIN\` environment variable. The runner fails if
+Godot cannot be found; it never silently skips the engine checks.
+
+The Godot smoke script (\`godot/tests/headless_smoke.gd\`) instantiates all
+24 playable monsters, including all R0–R5 variants of the 12 Resonance
+monsters: **84 instances** in total. It validates skill IDs, passive IDs,
+skill tooltips, and Resonance ranks using the shared JSON. The runner also
+detects Godot parser errors even if the process exits with code 0.
+
+These are fast structural/runtime smoke checks, not a replacement for
+interactive battle QA in the Godot editor.
