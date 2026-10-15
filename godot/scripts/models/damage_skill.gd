@@ -1058,3 +1058,7 @@ func execute(
         attacker,
         [defender]
     )
+
+
+func get_tooltip_hit_count() -> int:
+    return hits
