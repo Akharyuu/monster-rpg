@@ -153,6 +153,20 @@ static func create_status_effect(
                 "multiplicative"
             )
 
+        "invincibility":
+            return StatusEffectScript.new(
+                "invincibility",
+                "Invincibility",
+                null,
+                "buff",
+                null,
+                duration,
+                stacks,
+                1,
+                source,
+                "multiplicative"
+            )
+
         "regrowth":
             return StatusEffectScript.new(
                 "regrowth",
