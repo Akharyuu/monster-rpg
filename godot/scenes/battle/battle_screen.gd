@@ -41,11 +41,11 @@ func _ready() -> void:
     allies = [
         PrototypeFactoryScript.create_level_one_monster(
             "dryad_storm",
-            0
+            1
         ),
         PrototypeFactoryScript.create_level_one_monster(
             "dryad_storm",
-            1
+            3
         )
     ]
 
