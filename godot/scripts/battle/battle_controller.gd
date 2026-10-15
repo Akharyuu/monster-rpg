@@ -196,34 +196,62 @@ func _resolve_after_turn_passives() -> void:
     if active_monster.has_oblivion():
         return
 
-    if active_monster.monster_id != "dullahan_abyssal":
-        return
-
     var opponents: Array = (
         enemies
         if active_monster in allies
         else allies
     )
 
-    for enemy in opponents:
-        if not enemy.is_alive():
-            continue
+    if active_monster.monster_id == "dullahan_abyssal":
+        for enemy in opponents:
+            if not enemy.is_alive():
+                continue
 
-        var eligible: Array = []
+            var eligible: Array = []
 
-        for debuff in enemy.debuffs:
-            if debuff.extendable:
-                eligible.append(debuff)
+            for debuff in enemy.debuffs:
+                if debuff.extendable:
+                    eligible.append(debuff)
 
-        if eligible.is_empty():
-            continue
+            if eligible.is_empty():
+                continue
 
-        var chosen = eligible[
-            randi_range(0, eligible.size() - 1)
-        ]
+            var chosen = eligible[
+                randi_range(0, eligible.size() - 1)
+            ]
 
-        chosen.remaining_turns += 1
-        chosen.duration += 1
+            chosen.remaining_turns += 1
+            chosen.duration += 1
+
+        return
+
+    if active_monster.monster_id == "dullahan_storm":
+        var living_opponents: Array = []
+
+        for enemy in opponents:
+            if enemy.is_alive():
+                living_opponents.append(enemy)
+
+        if living_opponents.is_empty():
+            return
+
+        var target = living_opponents[0]
+
+        for enemy in living_opponents:
+            if enemy.action_gauge > target.action_gauge:
+                target = enemy
+
+        var stolen: float = minf(
+            0.20,
+            target.action_gauge
+        )
+
+        target.action_gauge = maxf(
+            0.0,
+            target.action_gauge - stolen
+        )
+
+        active_monster.increase_action_gauge(stolen)
 
 
 func clear_active_monster() -> void:
@@ -331,6 +359,59 @@ func execute_active_skill(
         active_monster,
         targets
     )
+
+    if (
+        active_monster.monster_id == "dullahan_storm"
+        and skill.skill_id == "headlong_charge"
+    ):
+        var attack_up = (
+            StatusEffectFactoryScript.create_status_effect(
+                "attack_up",
+                2,
+                active_monster
+            )
+        )
+
+        var speed_up = (
+            StatusEffectFactoryScript.create_status_effect(
+                "speed_up",
+                2,
+                active_monster
+            )
+        )
+
+        active_monster.apply_status_effect(attack_up)
+        active_monster.apply_status_effect(speed_up)
+
+        var team: Array = (
+            allies
+            if active_monster in allies
+            else enemies
+        )
+
+        var living_allies: Array = []
+
+        for ally in team:
+            if ally.is_alive() and ally != active_monster:
+                living_allies.append(ally)
+
+        var gauge_target = active_monster
+
+        if not living_allies.is_empty():
+            gauge_target = living_allies[0]
+
+            for ally in living_allies:
+                if ally.action_gauge < gauge_target.action_gauge:
+                    gauge_target = ally
+
+        gauge_target.increase_action_gauge(0.20)
+
+        caster_feedback.append("ATK UP!")
+        caster_feedback.append("SPD UP!")
+        caster_feedback.append(
+            "HEADLONG CHARGE - %s +20%% AG"
+            % gauge_target.monster_name
+        )
 
     if (
         active_monster.monster_id == "drake_void"
