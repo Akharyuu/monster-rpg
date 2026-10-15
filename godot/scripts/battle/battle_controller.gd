@@ -360,10 +360,10 @@ func execute_active_skill(
         targets
     )
 
-    if (
-        active_monster.monster_id == "dryad_storm"
-        and skill.skill_id == "vine_barrage"
-    ):
+    if skill.skill_id in [
+        "vine_barrage",
+        "nurturing_lash"
+    ]:
         var team: Array = (
             allies
             if active_monster in allies
@@ -391,9 +391,15 @@ func execute_active_skill(
                 if ally_ratio < target_ratio:
                     heal_target = ally
 
+            var healing_ratio: float = (
+                0.08
+                if skill.skill_id == "vine_barrage"
+                else 0.05
+            )
+
             var intended_heal: int = int(
                 active_monster.get_healing_hp()
-                * 0.08
+                * healing_ratio
                 * active_monster.get_direct_heal_multiplier(
                     heal_target
                 )
@@ -408,8 +414,9 @@ func execute_active_skill(
             ) + actual_heal
 
             caster_feedback.append(
-                "VINE BARRAGE - %s +%d HP"
+                "%s - %s +%d HP"
                 % [
+                    skill.skill_name.to_upper(),
                     heal_target.monster_name,
                     actual_heal
                 ]
