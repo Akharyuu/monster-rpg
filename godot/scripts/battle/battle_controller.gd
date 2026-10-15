@@ -180,11 +180,50 @@ func end_active_turn() -> void:
     if active_monster == null:
         return
 
+    _resolve_after_turn_passives()
+
     active_monster.reduce_status_effect_turns(
         active_turn_effects
     )
 
     active_monster.reduce_special_state_turns()
+
+
+func _resolve_after_turn_passives() -> void:
+    if active_monster == null:
+        return
+
+    if active_monster.has_oblivion():
+        return
+
+    if active_monster.monster_id != "dullahan_abyssal":
+        return
+
+    var opponents: Array = (
+        enemies
+        if active_monster in allies
+        else allies
+    )
+
+    for enemy in opponents:
+        if not enemy.is_alive():
+            continue
+
+        var eligible: Array = []
+
+        for debuff in enemy.debuffs:
+            if debuff.extendable:
+                eligible.append(debuff)
+
+        if eligible.is_empty():
+            continue
+
+        var chosen = eligible[
+            randi_range(0, eligible.size() - 1)
+        ]
+
+        chosen.remaining_turns += 1
+        chosen.duration += 1
 
 
 func clear_active_monster() -> void:
