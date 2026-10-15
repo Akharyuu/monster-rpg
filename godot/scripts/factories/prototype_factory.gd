@@ -6,6 +6,87 @@ const DamageSkillScript = preload("res://scripts/models/damage_skill.gd")
 const SupportSkillScript = preload("res://scripts/models/support_skill.gd")
 
 const LEVEL_ONE_MULTIPLIER := 0.35
+const SHARED_MONSTER_DATA_PATH := "res://data/monster_data.json"
+
+static var _shared_monsters: Dictionary = {}
+
+
+static func _get_shared_monsters() -> Dictionary:
+    if not _shared_monsters.is_empty():
+        return _shared_monsters
+
+    var raw_json: String = FileAccess.get_file_as_string(
+        SHARED_MONSTER_DATA_PATH
+    )
+    var parsed: Variant = JSON.parse_string(raw_json)
+
+    if not (parsed is Dictionary):
+        push_error("Invalid shared monster JSON")
+        return {}
+
+    if int(parsed.get("schema_version", -1)) != 1:
+        push_error("Unsupported monster data schema version")
+        return {}
+
+    var records: Variant = parsed.get("monsters", {})
+
+    if not (records is Dictionary):
+        push_error("Missing monsters in shared JSON")
+        return {}
+
+    _shared_monsters = records
+    return _shared_monsters
+
+
+static func _make_monster_from_data(
+    monster_id: String,
+    skills: Array
+):
+    var definitions: Dictionary = _get_shared_monsters()
+
+    if not definitions.has(monster_id):
+        push_error("Missing shared monster id: %s" % monster_id)
+        return null
+
+    var entry: Dictionary = definitions[monster_id]
+    var base_skill_ids: Array = entry.get("skills", [])
+
+    if base_skill_ids.size() != skills.size():
+        push_error("Shared skill count mismatch for %s" % monster_id)
+        return null
+
+    for index in range(skills.size()):
+        if skills[index].skill_id != str(base_skill_ids[index]):
+            push_error(
+                "Shared skill ID mismatch for %s at slot %d"
+                % [monster_id, index + 1]
+            )
+            return null
+
+    # Some canonical names are intentionally placeholders. Until
+    # they are named, derive the display name from attribute/family.
+    var display_name: String = str(entry["name"])
+
+    if display_name == "???":
+        display_name = "%s %s" % [
+            str(entry["attribute"]).capitalize(),
+            str(entry["family"])
+        ]
+
+    return MonsterScript.new(
+        monster_id,
+        display_name,
+        str(entry["family"]),
+        str(entry["attribute"]),
+        int(entry["rarity"]),
+        _scaled(float(entry["max_health"])),
+        _scaled(float(entry["attack"])),
+        _scaled(float(entry["defense"])),
+        _scaled(float(entry["speed"])),
+        skills,
+        LEVEL_ONE_MULTIPLIER
+    )
+
 
 
 static func create_level_one_monster(
@@ -2346,18 +2427,9 @@ static func _create_igneous_drake():
         )
     ]
 
-    var monster = MonsterScript.new(
+    var monster = _make_monster_from_data(
         "drake_igneous",
-        "Kaelgor",
-        "Drake",
-        "igneous",
-        5,
-        _scaled(12125),
-        _scaled(963),
-        _scaled(707),
-        _scaled(224),
-        skills,
-        LEVEL_ONE_MULTIPLIER
+        skills
     )
 
     # Cinderblood (base): each landed hit has a 35% chance to attempt
@@ -2441,18 +2513,9 @@ static func _create_abyssal_drake():
         )
     ]
 
-    var monster = MonsterScript.new(
+    var monster = _make_monster_from_data(
         "drake_abyssal",
-        "Vharak",
-        "Drake",
-        "abyssal",
-        5,
-        _scaled(14075),
-        _scaled(693),
-        _scaled(921),
-        _scaled(216),
-        skills,
-        LEVEL_ONE_MULTIPLIER
+        skills
     )
 
     monster.combat_resources["frozen_scales"] = 0
@@ -2547,42 +2610,15 @@ static func _create_thornet(attribute: String):
             ]
 
     var monster_id: String = "thornet_%s" % attribute
-    var display_name: String = "%s Thornet" % attribute.capitalize()
-
-    var hp: int = 6150
-    var attack: int = 675
-    var defense: int = 352
-    var speed: int = 166
-
-    match attribute:
-        "abyssal":
-            hp = 6400
-            attack = 585
-            defense = 382
-            speed = 174
-        "storm":
-            hp = 5850
-            attack = 640
-            defense = 338
-            speed = 181
 
     var skills: Array = [
         needle_rush,
         second_skill
     ]
 
-    return MonsterScript.new(
+    return _make_monster_from_data(
         monster_id,
-        display_name,
-        "Thornet",
-        attribute,
-        2,
-        _scaled(hp),
-        _scaled(attack),
-        _scaled(defense),
-        _scaled(speed),
-        skills,
-        LEVEL_ONE_MULTIPLIER
+        skills
     )
 
 
@@ -2604,41 +2640,14 @@ static func _create_wisp(attribute: String):
     will_o_glow.action_gauge_reduction_chance = 0.60
 
     var monster_id: String = "wisp_%s" % attribute
-    var display_name: String = "%s Wisp" % attribute.capitalize()
-
-    var hp: int = 5500
-    var attack: int = 465
-    var defense: int = 292
-    var speed: int = 158
-
-    match attribute:
-        "abyssal":
-            hp = 5750
-            attack = 425
-            defense = 318
-            speed = 154
-        "storm":
-            hp = 5250
-            attack = 445
-            defense = 278
-            speed = 166
 
     var skills: Array = [
         will_o_glow
     ]
 
-    return MonsterScript.new(
+    return _make_monster_from_data(
         monster_id,
-        display_name,
-        "Wisp",
-        attribute,
-        1,
-        _scaled(hp),
-        _scaled(attack),
-        _scaled(defense),
-        _scaled(speed),
-        skills,
-        LEVEL_ONE_MULTIPLIER
+        skills
     )
 
 
@@ -2655,41 +2664,14 @@ static func _create_sprout(attribute: String):
     )
 
     var monster_id: String = "sprout_%s" % attribute
-    var display_name: String = "%s Sprout" % attribute.capitalize()
-
-    var hp: int = 6900
-    var attack: int = 410
-    var defense: int = 470
-    var speed: int = 142
-
-    match attribute:
-        "abyssal":
-            hp = 7400
-            attack = 350
-            defense = 535
-            speed = 134
-        "storm":
-            hp = 6600
-            attack = 380
-            defense = 455
-            speed = 154
 
     var skills: Array = [
         nurturing_lash
     ]
 
-    return MonsterScript.new(
+    return _make_monster_from_data(
         monster_id,
-        display_name,
-        "Sprout",
-        attribute,
-        1,
-        _scaled(hp),
-        _scaled(attack),
-        _scaled(defense),
-        _scaled(speed),
-        skills,
-        LEVEL_ONE_MULTIPLIER
+        skills
     )
 
 
@@ -2739,18 +2721,9 @@ static func _create_igneous_griffon():
         meteor_dive
     ]
 
-    return MonsterScript.new(
+    return _make_monster_from_data(
         "griffon_igneous",
-        "Igneous Griffon",
-        "Griffon",
-        "igneous",
-        4,
-        _scaled(8900),
-        _scaled(890),
-        _scaled(595),
-        _scaled(232),
-        skills,
-        LEVEL_ONE_MULTIPLIER
+        skills
     )
 
 
@@ -2780,18 +2753,9 @@ static func _create_storm_dryad():
         breath_of_the_grove
     ]
 
-    return MonsterScript.new(
+    return _make_monster_from_data(
         "dryad_storm",
-        "Storm Dryad",
-        "Dryad",
-        "storm",
-        3,
-        _scaled(11150),
-        _scaled(545),
-        _scaled(760),
-        _scaled(204),
-        skills,
-        LEVEL_ONE_MULTIPLIER
+        skills
     )
 
 
@@ -2843,18 +2807,9 @@ static func _create_storm_dullahan():
         headlong_charge
     ]
 
-    return MonsterScript.new(
+    return _make_monster_from_data(
         "dullahan_storm",
-        "Storm Dullahan",
-        "Dullahan",
-        "storm",
-        4,
-        _scaled(9800),
-        _scaled(700),
-        _scaled(650),
-        _scaled(236),
-        skills,
-        LEVEL_ONE_MULTIPLIER
+        skills
     )
 
 
@@ -2906,18 +2861,9 @@ static func _create_abyssal_dullahan():
         spectral_shackles
     ]
 
-    return MonsterScript.new(
+    return _make_monster_from_data(
         "dullahan_abyssal",
-        "Abyssal Dullahan",
-        "Dullahan",
-        "abyssal",
-        4,
-        _scaled(10800),
-        _scaled(650),
-        _scaled(790),
-        _scaled(212),
-        skills,
-        LEVEL_ONE_MULTIPLIER
+        skills
     )
 
 
@@ -2971,18 +2917,9 @@ static func _create_igneous_dullahan():
         death_sentence
     ]
 
-    return MonsterScript.new(
+    return _make_monster_from_data(
         "dullahan_igneous",
-        "Igneous Dullahan",
-        "Dullahan",
-        "igneous",
-        4,
-        _scaled(9200),
-        _scaled(915),
-        _scaled(610),
-        _scaled(218),
-        skills,
-        LEVEL_ONE_MULTIPLIER
+        skills
     )
 
 
@@ -3041,18 +2978,9 @@ static func _create_aether_dullahan():
         beyond_the_veil
     ]
 
-    var monster = MonsterScript.new(
+    var monster = _make_monster_from_data(
         "dullahan_aether",
-        "Aether Dullahan",
-        "Dullahan",
-        "aether",
-        5,
-        _scaled(11200),
-        _scaled(900),
-        _scaled(720),
-        _scaled(222),
-        skills,
-        LEVEL_ONE_MULTIPLIER
+        skills
     )
 
     monster.combat_resources["soul_charges"] = 0
@@ -3120,18 +3048,9 @@ static func _create_void_dullahan():
         deaths_gaze
     ]
 
-    return MonsterScript.new(
+    return _make_monster_from_data(
         "dullahan_void",
-        "Void Dullahan",
-        "Dullahan",
-        "void",
-        5,
-        _scaled(10500),
-        _scaled(1015),
-        _scaled(650),
-        _scaled(228),
-        skills,
-        LEVEL_ONE_MULTIPLIER
+        skills
     )
 
 
@@ -3201,18 +3120,9 @@ static func _create_void_drake():
         )
     ]
 
-    var monster = MonsterScript.new(
+    var monster = _make_monster_from_data(
         "drake_void",
-        "Void Drake",
-        "Drake",
-        "void",
-        5,
-        _scaled(10750),
-        _scaled(995),
-        _scaled(670),
-        _scaled(230),
-        skills,
-        LEVEL_ONE_MULTIPLIER
+        skills
     )
 
     return monster
@@ -3281,18 +3191,9 @@ static func _create_storm_drake():
         )
     ]
 
-    return MonsterScript.new(
+    return _make_monster_from_data(
         "drake_storm",
-        "Storm Drake",
-        "Drake",
-        "storm",
-        5,
-        _scaled(9875),
-        _scaled(1047),
-        _scaled(653),
-        _scaled(236),
-        skills,
-        LEVEL_ONE_MULTIPLIER
+        skills
     )
 
 
@@ -3351,18 +3252,9 @@ static func _create_aether_drake():
         )
     ]
 
-    return MonsterScript.new(
+    return _make_monster_from_data(
         "drake_aether",
-        "Aether Drake",
-        "Drake",
-        "aether",
-        5,
-        _scaled(12850),
-        _scaled(725),
-        _scaled(815),
-        _scaled(230),
-        skills,
-        LEVEL_ONE_MULTIPLIER
+        skills
     )
 
 
@@ -3380,18 +3272,9 @@ static func _create_storm_slime():
         )
     ]
 
-    return MonsterScript.new(
+    return _make_monster_from_data(
         "slime_storm",
-        "Storm Slime",
-        "Slime",
-        "storm",
-        1,
-        _scaled(7200),
-        _scaled(455),
-        _scaled(320),
-        _scaled(150),
-        skills,
-        LEVEL_ONE_MULTIPLIER
+        skills
     )
 
 
@@ -3409,18 +3292,9 @@ static func _create_abyssal_slime():
         )
     ]
 
-    return MonsterScript.new(
+    return _make_monster_from_data(
         "slime_abyssal",
-        "Abyssal Slime",
-        "Slime",
-        "abyssal",
-        1,
-        _scaled(8300),
-        _scaled(420),
-        _scaled(390),
-        _scaled(130),
-        skills,
-        LEVEL_ONE_MULTIPLIER
+        skills
     )
 
 
@@ -3438,16 +3312,7 @@ static func _create_igneous_slime():
         )
     ]
 
-    return MonsterScript.new(
+    return _make_monster_from_data(
         "slime_igneous",
-        "Igneous Slime",
-        "Slime",
-        "igneous",
-        1,
-        _scaled(7600),
-        _scaled(485),
-        _scaled(330),
-        _scaled(138),
-        skills,
-        LEVEL_ONE_MULTIPLIER
+        skills
     )
