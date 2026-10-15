@@ -15,6 +15,7 @@ var effects: Array
 var damage_for_burn_stacks: Dictionary = {}
 var consume_burn_and_heal: Dictionary = {}
 var action_gauge_reduction_per_hit: float = 0.0
+var action_gauge_reduction_chance: float = 1.0
 var hit_distribution: String = ""
 var repeated_target_damage: Dictionary = {}
 var resolve_hits_by_round: bool = false
@@ -36,6 +37,7 @@ var soul_charges_consumed: int = 0
 var max_missing_health_bonus: float = 0.0
 var execute_health_threshold: float = 0.0
 var execute_defense_ignore_ratio: float = 0.0
+var speed_damage_scaling: float = 0.0
 
 
 func _init(
@@ -229,6 +231,13 @@ func damage_calc(
         bonus_damage *= (
             1.0
             + soul_charges * damage_per_soul_charge
+        )
+
+    if speed_damage_scaling > 0.0:
+        bonus_damage *= (
+            1.0
+            + attacker.get_effective_stat("speed")
+            * speed_damage_scaling
         )
 
     if max_missing_health_bonus > 0.0:
@@ -569,7 +578,10 @@ func execute_on_target(
             effects_applied
         )
 
-        if action_gauge_reduction_per_hit > 0.0:
+        if (
+            action_gauge_reduction_per_hit > 0.0
+            and randf() <= action_gauge_reduction_chance
+        ):
             defender.action_gauge = maxf(
                 0.0,
                 defender.action_gauge
