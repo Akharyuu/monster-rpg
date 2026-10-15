@@ -12,6 +12,7 @@ var stacks: int
 var max_stacks: int
 var source
 var modifier_mode: String
+var extendable: bool
 
 
 func _init(
@@ -24,7 +25,8 @@ func _init(
     p_stacks: int = 1,
     p_max_stacks: int = 1,
     p_source = null,
-    p_modifier_mode: String = "multiplicative"
+    p_modifier_mode: String = "multiplicative",
+    p_extendable: bool = true
 ) -> void:
     effect_id = p_effect_id
     effect_name = p_name
@@ -37,6 +39,7 @@ func _init(
     max_stacks = p_max_stacks
     source = p_source
     modifier_mode = p_modifier_mode
+    extendable = p_extendable
 
 
 func is_active() -> bool:
