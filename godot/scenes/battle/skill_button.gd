@@ -21,7 +21,7 @@ func set_skill_icon(path: String) -> void:
 	icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
 	alignment = HORIZONTAL_ALIGNMENT_CENTER
-	add_theme_constant_override("icon_max_width", 64)
+	add_theme_constant_override("icon_max_width", 72)
 
 
 func clear_skill_icon() -> void:
