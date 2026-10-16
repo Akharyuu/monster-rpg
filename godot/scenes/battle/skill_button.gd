@@ -44,19 +44,21 @@ func _ensure_icon_preview() -> void:
 
 	_icon_preview = TextureRect.new()
 	_icon_preview.name = "Skill Icon Preview"
-	# Intentionally larger than the 72px button content. Adjacent
-	# buttons are 82px apart, leaving 2px between 80px icons.
-	_icon_preview.set_anchors_and_offsets_preset(
-		Control.PRESET_CENTER
-	)
-	_icon_preview.custom_minimum_size = Vector2.ZERO
-	_icon_preview.position = Vector2(-4.0, -4.0)
-	_icon_preview.size = Vector2(80.0, 80.0)
-	_icon_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_icon_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_icon_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_icon_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	# STRETCH_SCALE actually scales the artwork to the control's rectangle;
+	# KEEP_ASPECT_CENTERED only centers the original-size texture.
+	_icon_preview.stretch_mode = TextureRect.STRETCH_SCALE
 	add_child(_icon_preview)
-
+	# Apply anchors after parenting, so the coordinates are relative to
+	# the actual 72x72 button rather than the scene origin.
+	_icon_preview.set_anchors_and_offsets_preset(
+		Control.PRESET_FULL_RECT
+	)
+	_icon_preview.offset_left = 0.0
+	_icon_preview.offset_top = 0.0
+	_icon_preview.offset_right = 0.0
+	_icon_preview.offset_bottom = 0.0
 
 
 
