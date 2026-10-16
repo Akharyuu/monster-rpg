@@ -121,41 +121,43 @@ func _ready() -> void:
 # The teams face each other diagonally across the battlefield.
 # Every size has its own arc: 1-3 units do NOT inherit the first N
 # positions of the four-unit formation.
+# Both formations sit lower on the forest path. The allied team shifts
+# right while the enemy team moves left; the gaps grow toward ally 4.
 const ALLY_ARCS := {
-	1: [Vector2(285, 372)],
+	1: [Vector2(310, 414)],
 	2: [
-		Vector2(112, 342),
-		Vector2(383, 412)
+		Vector2(137, 384),
+		Vector2(408, 454)
 	],
 	3: [
-		Vector2(56, 322),
-		Vector2(240, 382),
-		Vector2(449, 412)
+		Vector2(81, 364),
+		Vector2(265, 424),
+		Vector2(492, 454)
 	],
 	4: [
-		Vector2(32, 362),
-		Vector2(179, 412),
-		Vector2(331, 412),
-		Vector2(498, 397)
+		Vector2(57, 404),
+		Vector2(204, 454),
+		Vector2(374, 454),
+		Vector2(559, 439)
 	]
 }
 
 const ENEMY_ARCS := {
-	1: [Vector2(890, 142)],
+	1: [Vector2(855, 184)],
 	2: [
-		Vector2(732, 142),
-		Vector2(988, 167)
+		Vector2(697, 184),
+		Vector2(953, 209)
 	],
 	3: [
-		Vector2(661, 117),
-		Vector2(840, 82),
-		Vector2(1029, 142)
+		Vector2(626, 159),
+		Vector2(805, 124),
+		Vector2(994, 184)
 	],
 	4: [
-		Vector2(637, 100),
-		Vector2(789, 82),
-		Vector2(946, 82),
-		Vector2(1098, 132)
+		Vector2(602, 142),
+		Vector2(754, 124),
+		Vector2(911, 124),
+		Vector2(1063, 174)
 	]
 }
 
