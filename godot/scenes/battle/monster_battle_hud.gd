@@ -17,24 +17,16 @@ signal target_pressed
 @onready var sprite_placeholder = $"Sprite Placeholder"
 @onready var monster_sprite: TextureRect = $"Monster Sprite"
 
-# Static artwork for the allied team (back view until its idle is ready).
+# Pixel-art previews are static during this visual prototype.
 const ALLY_SPRITES := {
-    "drake_igneous": "res://assets/monster_sprites/drake_igneous.png"
+    "drake_igneous": "res://assets/monster_sprites/drake_igneous_back.png"
+}
+const ENEMY_SPRITES := {
+    "drake_igneous": "res://assets/monster_sprites/drake_igneous_front.png"
 }
 
-# Atlas metadata and image are optional local assets. When missing, the
-# existing static sprite (or the placeholder) is used instead.
-const ENEMY_FRONT_IDLE_ANIMATIONS := {
-    "drake_igneous": {
-        "image": "res://assets/monster_sprites/drake_igneous_idle_front.png",
-        "metadata": "res://assets/monster_sprites/drake_igneous_idle_front.json"
-    }
-}
-
-# Local layout coordinates of the compact 138 x 185 monster HUD.
 const ALLY_PREVIEW_SIZE := Vector2(240.0, 232.0)
 const ALLY_PREVIEW_POSITION := Vector2(-51.0, -39.0)
-
 const ENEMY_FRONT_PREVIEW_SIZE := Vector2(225.0, 218.0)
 const ENEMY_FRONT_PREVIEW_POSITION := Vector2(-44.5, -30.0)
 
@@ -42,10 +34,6 @@ const ENEMY_FRONT_PREVIEW_POSITION := Vector2(-44.5, -30.0)
 var bound_monster
 var is_enemy := false
 var target_mode: String = "none"
-var _idle_atlas_texture: AtlasTexture
-var _idle_frames: Array = []
-var _idle_frame_index: int = 0
-var _idle_elapsed_ms: float = 0.0
 
 
 
@@ -86,11 +74,6 @@ func _apply_sprite_layout(preview_size: Vector2, preview_position: Vector2) -> v
 
 
 func _configure_monster_sprite() -> void:
-    _idle_atlas_texture = null
-    _idle_frames.clear()
-    _idle_frame_index = 0
-    _idle_elapsed_ms = 0.0
-
     monster_sprite.visible = false
     monster_sprite.texture = null
     sprite_placeholder.visible = true
@@ -98,126 +81,37 @@ func _configure_monster_sprite() -> void:
     if bound_monster == null:
         return
 
-    # The front-view idle belongs to the enemy side only.
-    if is_enemy:
-        _configure_idle_animation()
-        return
-
-    # Allies retain the static back-side placeholder artwork.
+    var sprite_map: Dictionary = (
+        ENEMY_SPRITES if is_enemy else ALLY_SPRITES
+    )
     var sprite_path: String = str(
-        ALLY_SPRITES.get(str(bound_monster.monster_id), "")
+        sprite_map.get(str(bound_monster.monster_id), "")
     )
     if sprite_path.is_empty():
         return
 
     if not ResourceLoader.exists(sprite_path, "Texture2D"):
-        push_warning("Ally artwork not found: %s" % sprite_path)
+        push_warning("Monster artwork not found: %s" % sprite_path)
         return
 
     var texture: Texture2D = load(sprite_path) as Texture2D
     if texture == null:
-        push_warning("Cannot load ally artwork: %s" % sprite_path)
+        push_warning("Cannot load monster artwork: %s" % sprite_path)
         return
 
     monster_sprite.texture = texture
-    _apply_sprite_layout(
-        ALLY_PREVIEW_SIZE,
-        ALLY_PREVIEW_POSITION
-    )
-    monster_sprite.visible = true
-    sprite_placeholder.visible = false
-
-
-# Read Ludo's frame rectangles and per-frame durations directly from JSON.
-# This avoids assuming a fixed FPS or sprite sheet column count.
-func _configure_idle_animation() -> bool:
-    var monster_id: String = str(bound_monster.monster_id)
-    if not ENEMY_FRONT_IDLE_ANIMATIONS.has(monster_id):
-        return false
-
-    var paths: Dictionary = ENEMY_FRONT_IDLE_ANIMATIONS[monster_id]
-    var image_path: String = str(paths["image"])
-    var metadata_path: String = str(paths["metadata"])
-
-    if not ResourceLoader.exists(image_path, "Texture2D"):
-        return false
-    if not FileAccess.file_exists(metadata_path):
-        return false
-
-    var sheet: Texture2D = load(image_path) as Texture2D
-    if sheet == null:
-        return false
-
-    var json_text: String = FileAccess.get_file_as_string(
-        metadata_path
-    )
-    var document: Variant = JSON.parse_string(json_text)
-    if not (document is Dictionary):
-        push_warning("Invalid idle animation JSON: %s" % metadata_path)
-        return false
-
-    var definitions: Variant = document.get("frames", {})
-    if not (definitions is Dictionary) or definitions.is_empty():
-        push_warning("Idle animation has no frames: %s" % metadata_path)
-        return false
-
-    var keys: Array = definitions.keys()
-    keys.sort()
-    var parsed_frames: Array = []
-    for frame_key in keys:
-        var item: Dictionary = definitions[frame_key]
-        var rect: Dictionary = item.get("frame", {})
-        var frame_region := Rect2(
-            float(rect.get("x", 0)),
-            float(rect.get("y", 0)),
-            float(rect.get("w", 0)),
-            float(rect.get("h", 0))
+    if is_enemy:
+        _apply_sprite_layout(
+            ENEMY_FRONT_PREVIEW_SIZE,
+            ENEMY_FRONT_PREVIEW_POSITION
         )
-        if (
-            frame_region.size.x <= 0
-            or frame_region.size.y <= 0
-            or frame_region.end.x > sheet.get_width()
-            or frame_region.end.y > sheet.get_height()
-        ):
-            push_warning(
-                "Idle animation frame outside image: %s" % frame_key
-            )
-            return false
-        parsed_frames.append({
-            "region": frame_region,
-            "duration_ms": maxf(
-                1.0, float(item.get("duration", 91))
-            )
-        })
-
-    _idle_frames = parsed_frames
-    _idle_atlas_texture = AtlasTexture.new()
-    _idle_atlas_texture.atlas = sheet
-    _idle_atlas_texture.region = _idle_frames[0]["region"]
-    monster_sprite.texture = _idle_atlas_texture
-    _apply_sprite_layout(
-        ENEMY_FRONT_PREVIEW_SIZE,
-        ENEMY_FRONT_PREVIEW_POSITION
-    )
+    else:
+        _apply_sprite_layout(
+            ALLY_PREVIEW_SIZE,
+            ALLY_PREVIEW_POSITION
+        )
     monster_sprite.visible = true
     sprite_placeholder.visible = false
-    return true
-
-
-func _process(delta: float) -> void:
-    if _idle_atlas_texture == null or _idle_frames.is_empty():
-        return
-
-    _idle_elapsed_ms += delta * 1000.0
-    var current: Dictionary = _idle_frames[_idle_frame_index]
-    while _idle_elapsed_ms >= float(current["duration_ms"]):
-        _idle_elapsed_ms -= float(current["duration_ms"])
-        _idle_frame_index = (
-            _idle_frame_index + 1
-        ) % _idle_frames.size()
-        current = _idle_frames[_idle_frame_index]
-
-    _idle_atlas_texture.region = current["region"]
 
 
 func refresh(is_active: bool) -> void:
