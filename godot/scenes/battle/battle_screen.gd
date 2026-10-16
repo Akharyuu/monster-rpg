@@ -20,6 +20,8 @@ const StatusEffectFactoryScript = preload(
 @onready var skill_3_button = $"Skill 3 Button"
 @onready var turn_label = $"Turn Label"
 @onready var options_overlay: ColorRect = $"Options Overlay"
+@onready var battle_background: TextureRect = $"Background"
+@onready var background_upper_layer: TextureRect = $"Background Upper Layer"
 
 @onready var ally_huds: Array = [
 	$"Ally HUD 1", $"Ally HUD 2",
@@ -42,6 +44,7 @@ var action_in_progress := true
 
 
 func _ready() -> void:
+	_update_background_layers()
 	# Visual 4v4 comparison: allied Kaelgors use the static back-side art;
 	# enemy Kaelgors play the front-view idle animation.
 	allies = [
@@ -116,6 +119,41 @@ func _ready() -> void:
 
 	await get_tree().process_frame
 	start_next_turn()
+
+
+# A matching *_upper_layer.png is optional for any battle background.
+# Keep the exact same stretch settings and rectangle as the base layer.
+func _update_background_layers() -> void:
+	background_upper_layer.visible = false
+	background_upper_layer.texture = null
+
+	if battle_background.texture == null:
+		return
+
+	var source_path: String = battle_background.texture.resource_path
+	if source_path.is_empty():
+		return
+
+	var extension_index: int = source_path.rfind(".")
+	if extension_index < 0:
+		return
+
+	var overlay_path: String = (
+		source_path.substr(0, extension_index)
+		+ "_upper_layer"
+		+ source_path.substr(extension_index)
+	)
+
+	if not ResourceLoader.exists(overlay_path, "Texture2D"):
+		return
+
+	var overlay_texture: Texture2D = load(overlay_path) as Texture2D
+	if overlay_texture == null:
+		push_warning("Failed to load background upper layer: %s" % overlay_path)
+		return
+
+	background_upper_layer.texture = overlay_texture
+	background_upper_layer.visible = true
 
 
 # The teams face each other diagonally across the battlefield.

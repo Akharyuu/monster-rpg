@@ -33,6 +33,7 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="Turn Indicator" type="Panel" parent="."]
+z_index = 10
 visible = false
 layout_mode = 0
 offset_left = 10.0
@@ -42,6 +43,7 @@ offset_bottom = 140.0
 mouse_filter = 2
 
 [node name="Target Highlight" type="Panel" parent="."]
+z_index = 10
 visible = false
 layout_mode = 0
 offset_left = 10.0
@@ -83,6 +85,7 @@ offset_bottom = 21.0
 mouse_filter = 2
 
 [node name="Battle States" type="HBoxContainer" parent="."]
+z_index = 10
 layout_mode = 0
 offset_left = 8.0
 offset_top = 123.0
@@ -92,6 +95,7 @@ mouse_filter = 2
 theme_override_constants/separation = 2
 
 [node name="Status" type="HBoxContainer" parent="."]
+z_index = 10
 layout_mode = 0
 offset_left = 8.0
 offset_top = 140.0
@@ -101,6 +105,7 @@ mouse_filter = 2
 theme_override_constants/separation = 2
 
 [node name="HP" type="ProgressBar" parent="."]
+z_index = 10
 layout_mode = 0
 offset_left = 13.0
 offset_top = -36.0
@@ -109,6 +114,7 @@ offset_bottom = -26.0
 show_percentage = false
 
 [node name="AG" type="ProgressBar" parent="."]
+z_index = 10
 layout_mode = 0
 offset_left = 13.0
 offset_top = -23.0
@@ -118,6 +124,7 @@ max_value = 100.0
 show_percentage = false
 
 [node name="Target Prompt" type="Label" parent="."]
+z_index = 10
 visible = false
 layout_mode = 0
 offset_left = 33.0
@@ -132,6 +139,7 @@ theme_override_colors/font_color = Color(1, 0.82, 0.4, 1)
 theme_override_font_sizes/font_size = 12
 
 [node name="Target Button" type="Button" parent="."]
+z_index = 10
 visible = false
 layout_mode = 0
 offset_left = 7.0
