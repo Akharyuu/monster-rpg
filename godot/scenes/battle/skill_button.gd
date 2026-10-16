@@ -16,16 +16,42 @@ func set_skill_icon(path: String) -> void:
 		clear_skill_icon()
 		return
 
-	icon = texture
-	expand_icon = true
-	icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
-	alignment = HORIZONTAL_ALIGNMENT_CENTER
-	add_theme_constant_override("icon_max_width", 72)
+	# Draw the art independently of Button's content margins.
+	# The button retains input handling, states and custom tooltips.
+	icon = null
+	_ensure_icon_preview()
+	_icon_preview.texture = texture
+	_icon_preview.visible = true
 
 
 func clear_skill_icon() -> void:
 	icon = null
+	if is_instance_valid(_icon_preview):
+		_icon_preview.texture = null
+		_icon_preview.visible = false
+
+
+var _icon_preview: TextureRect
+
+
+func _ensure_icon_preview() -> void:
+	if is_instance_valid(_icon_preview):
+		return
+
+	_icon_preview = TextureRect.new()
+	_icon_preview.name = "Skill Icon Preview"
+	_icon_preview.set_anchors_and_offsets_preset(
+		Control.PRESET_FULL_RECT
+	)
+	_icon_preview.offset_left = 1.0
+	_icon_preview.offset_top = 1.0
+	_icon_preview.offset_right = -1.0
+	_icon_preview.offset_bottom = -1.0
+	_icon_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_icon_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_icon_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_icon_preview)
+
 
 
 
