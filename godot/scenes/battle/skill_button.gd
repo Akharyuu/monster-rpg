@@ -31,6 +31,10 @@ func clear_skill_icon() -> void:
 		_icon_preview.visible = false
 
 
+func has_skill_icon() -> bool:
+	return is_instance_valid(_icon_preview) and _icon_preview.visible and _icon_preview.texture != null
+
+
 var _icon_preview: TextureRect
 
 
@@ -40,13 +44,14 @@ func _ensure_icon_preview() -> void:
 
 	_icon_preview = TextureRect.new()
 	_icon_preview.name = "Skill Icon Preview"
+	# Intentionally larger than the 72px button content. Adjacent
+	# buttons are 82px apart, leaving 2px between 80px icons.
 	_icon_preview.set_anchors_and_offsets_preset(
-		Control.PRESET_FULL_RECT
+		Control.PRESET_CENTER
 	)
-	_icon_preview.offset_left = 1.0
-	_icon_preview.offset_top = 1.0
-	_icon_preview.offset_right = -1.0
-	_icon_preview.offset_bottom = -1.0
+	_icon_preview.custom_minimum_size = Vector2.ZERO
+	_icon_preview.position = Vector2(-4.0, -4.0)
+	_icon_preview.size = Vector2(80.0, 80.0)
 	_icon_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_icon_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_icon_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE

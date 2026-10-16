@@ -840,10 +840,10 @@ func update_skill_buttons() -> void:
 		button.text = "S%d" % (index + 1)
 		button.set_tooltip_skill(skill)
 		_update_skill_icon(button, str(active.monster_id), str(skill.skill_id))
-		if button.icon != null:
+		if button.has_skill_icon():
 			button.text = ""
 
-		if skill.current_cooldown > 0 and button.icon == null:
+		if skill.current_cooldown > 0 and not button.has_skill_icon():
 			button.text += "\nCD %d" % (
 				skill.current_cooldown
 			)
