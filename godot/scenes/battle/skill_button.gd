@@ -4,6 +4,9 @@ extends Button
 var tooltip_skill = null
 var tooltip_passive: Dictionary = {}
 
+# Cache the cropped, display-ready textures across every SkillButton instance.
+static var _display_icon_cache: Dictionary = {}
+
 # Texture is loaded once and automatically replaces the text label.
 # Missing optional artwork preserves the existing button appearance.
 func set_skill_icon(path: String) -> void:
@@ -11,17 +14,93 @@ func set_skill_icon(path: String) -> void:
 		clear_skill_icon()
 		return
 
-	var texture: Texture2D = load(path) as Texture2D
+	var texture: Texture2D = null
+	if _display_icon_cache.has(path):
+		texture = _display_icon_cache[path] as Texture2D
+	else:
+		var original: Texture2D = load(path) as Texture2D
+		if original != null:
+			texture = _trim_icon_matte(original)
+			_display_icon_cache[path] = texture
+
 	if texture == null:
 		clear_skill_icon()
 		return
 
-	# Draw the art independently of Button's content margins.
-	# The button retains input handling, states and custom tooltips.
+	# Use a full-size child TextureRect, unaffected by the Button's
+	# built-in icon padding. The cropped artwork fills its 72px slot.
 	icon = null
 	_ensure_icon_preview()
 	_icon_preview.texture = texture
 	_icon_preview.visible = true
+
+
+# Many generated 128x128 icons include a flat dark matte around the
+# painted frame. Scaling the full PNG to 72px retains that inset and
+# makes the skill look smaller. Crop only the uniform edge color (or
+# transparency), WITHOUT changing the PNG or the button dimensions.
+# For example, draconic_claw's artwork occupies about x=8..119,
+# y=9..119 of the original 128x128 texture.
+static func _trim_icon_matte(source: Texture2D) -> Texture2D:
+	var picture: Image = source.get_image()
+	if picture == null or picture.is_empty():
+		return source
+
+	var width: int = picture.get_width()
+	var height: int = picture.get_height()
+	if width < 16 or height < 16:
+		return source
+
+	var matte: Color = picture.get_pixel(0, 0)
+	var left: int = width
+	var top: int = height
+	var right: int = -1
+	var bottom: int = -1
+
+	for y in range(height):
+		for x in range(width):
+			var pixel: Color = picture.get_pixel(x, y)
+			if pixel.a <= 0.03:
+				continue
+
+			# Ignore an opaque, nearly uniform border matching the
+			# first corner. Nonuniform or edge-to-edge artwork stays
+			# intact because its non-matte pixels reach the edges.
+			if (
+				matte.a > 0.97
+				and absf(pixel.r - matte.r) <= 0.08
+				and absf(pixel.g - matte.g) <= 0.08
+				and absf(pixel.b - matte.b) <= 0.08
+			):
+				continue
+
+			left = mini(left, x)
+			top = mini(top, y)
+			right = maxi(right, x)
+			bottom = maxi(bottom, y)
+
+	if right < left or bottom < top:
+		return source
+
+	# Avoid surprising zoom on textures with only a tiny central detail.
+	var cropped_width: int = right - left + 1
+	var cropped_height: int = bottom - top + 1
+	if (
+		cropped_width < width / 2
+		or cropped_height < height / 2
+	):
+		return source
+
+	if left == 0 and top == 0 and right == width - 1 and bottom == height - 1:
+		return source
+
+	var atlas := AtlasTexture.new()
+	atlas.atlas = source
+	atlas.region = Rect2(
+		float(left), float(top),
+		float(cropped_width), float(cropped_height)
+	)
+	return atlas
 
 
 func clear_skill_icon() -> void:
