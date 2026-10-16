@@ -35,8 +35,8 @@ const ENEMY_FRONT_IDLE_ANIMATIONS := {
 const ALLY_PREVIEW_SIZE := Vector2(240.0, 232.0)
 const ALLY_PREVIEW_POSITION := Vector2(-51.0, -39.0)
 
-const ENEMY_FRONT_PREVIEW_SIZE := Vector2(300.0, 290.0)
-const ENEMY_FRONT_PREVIEW_POSITION := Vector2(-82.0, -66.0)
+const ENEMY_FRONT_PREVIEW_SIZE := Vector2(225.0, 218.0)
+const ENEMY_FRONT_PREVIEW_POSITION := Vector2(-44.5, -30.0)
 
 
 var bound_monster
