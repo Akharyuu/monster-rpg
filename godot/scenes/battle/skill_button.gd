@@ -134,10 +134,12 @@ func _ensure_icon_preview() -> void:
 	_icon_preview.set_anchors_and_offsets_preset(
 		Control.PRESET_FULL_RECT
 	)
-	_icon_preview.offset_left = 0.0
-	_icon_preview.offset_top = 0.0
-	_icon_preview.offset_right = 0.0
-	_icon_preview.offset_bottom = 0.0
+	# 80x80 artwork, centered on its 72x72 button (4px overhang).
+	# The next skill button starts 82px away, avoiding icon overlap.
+	_icon_preview.offset_left = -4.0
+	_icon_preview.offset_top = -4.0
+	_icon_preview.offset_right = 4.0
+	_icon_preview.offset_bottom = 4.0
 
 
 
