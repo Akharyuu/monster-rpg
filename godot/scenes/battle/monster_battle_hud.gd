@@ -25,10 +25,11 @@ const ENEMY_SPRITES := {
     "drake_igneous": "res://assets/monster_sprites/drake_igneous_front.png"
 }
 
-const ALLY_PREVIEW_SIZE := Vector2(240.0, 232.0)
-const ALLY_PREVIEW_POSITION := Vector2(-51.0, -39.0)
-const ENEMY_FRONT_PREVIEW_SIZE := Vector2(225.0, 218.0)
-const ENEMY_FRONT_PREVIEW_POSITION := Vector2(-44.5, -30.0)
+# 125% display scale, with each sprite's original center preserved.
+const ALLY_PREVIEW_SIZE := Vector2(300.0, 290.0)
+const ALLY_PREVIEW_POSITION := Vector2(-81.0, -68.0)
+const ENEMY_FRONT_PREVIEW_SIZE := Vector2(281.25, 272.5)
+const ENEMY_FRONT_PREVIEW_POSITION := Vector2(-72.625, -57.25)
 
 
 var bound_monster
