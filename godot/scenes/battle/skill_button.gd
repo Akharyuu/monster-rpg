@@ -4,6 +4,30 @@ extends Button
 var tooltip_skill = null
 var tooltip_passive: Dictionary = {}
 
+# Texture is loaded once and automatically replaces the text label.
+# Missing optional artwork preserves the existing button appearance.
+func set_skill_icon(path: String) -> void:
+	if not ResourceLoader.exists(path, "Texture2D"):
+		clear_skill_icon()
+		return
+
+	var texture: Texture2D = load(path) as Texture2D
+	if texture == null:
+		clear_skill_icon()
+		return
+
+	icon = texture
+	expand_icon = true
+	icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
+	alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_theme_constant_override("icon_max_width", 64)
+
+
+func clear_skill_icon() -> void:
+	icon = null
+
+
 
 func _ready() -> void:
 	var tooltip_theme := Theme.new()

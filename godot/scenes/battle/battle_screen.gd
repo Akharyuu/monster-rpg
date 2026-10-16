@@ -796,6 +796,15 @@ func _set_action_button_state(
 	)
 
 
+# Icons are optional and keyed by monster_id and canonical skill_id.
+# Missing artwork keeps the regular text button unchanged.
+func _update_skill_icon(button: SkillButton, monster_id: String, skill_id: String) -> void:
+	var icon_path: String = "res://assets/skill_icons/%s/%s.png" % [
+		monster_id, skill_id
+	]
+	button.set_skill_icon(icon_path)
+
+
 func update_skill_buttons() -> void:
 	_update_passive_button()
 
@@ -814,6 +823,7 @@ func update_skill_buttons() -> void:
 		):
 			button.text = "-"
 			button.set_tooltip_skill(null)
+			button.clear_skill_icon()
 			_set_action_button_state(button, true)
 			continue
 
@@ -823,13 +833,17 @@ func update_skill_buttons() -> void:
 		if skill == null:
 			button.text = "-"
 			button.set_tooltip_skill(null)
+			button.clear_skill_icon()
 			_set_action_button_state(button, true)
 			continue
 
 		button.text = "S%d" % (index + 1)
 		button.set_tooltip_skill(skill)
+		_update_skill_icon(button, str(active.monster_id), str(skill.skill_id))
+		if button.icon != null:
+			button.text = ""
 
-		if skill.current_cooldown > 0:
+		if skill.current_cooldown > 0 and button.icon == null:
 			button.text += "\nCD %d" % (
 				skill.current_cooldown
 			)
