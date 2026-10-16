@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://1b7womotibvh"
-path="res://.godot/imported/drake_igneous.png-5ca4cbc9d8c6f20dce71d5805da529f4.ctex"
+uid="uid://b7bt3mnuh7c1i"
+path="res://.godot/imported/Forest_evening.png-da389120217a4c99d349d8d7250e1ef5.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/monster_sprites/drake_igneous.png"
-dest_files=["res://.godot/imported/drake_igneous.png-5ca4cbc9d8c6f20dce71d5805da529f4.ctex"]
+source_file="res://assets/battle_backgrounds/Forest_evening.png"
+dest_files=["res://.godot/imported/Forest_evening.png-da389120217a4c99d349d8d7250e1ef5.ctex"]
 
 [params]
 
