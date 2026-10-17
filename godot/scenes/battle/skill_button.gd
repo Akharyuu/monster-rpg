@@ -27,8 +27,8 @@ func set_skill_icon(path: String) -> void:
 		clear_skill_icon()
 		return
 
-	# Use a full-size child TextureRect, unaffected by the Button's
-	# built-in icon padding. The cropped artwork fills its 72px slot.
+	# Use a full-size child TextureRect, unaffected by Button padding.
+	# The cropped icon now renders at 120x120 over the 108x108 button.
 	icon = null
 	_ensure_icon_preview()
 	_icon_preview.texture = texture
@@ -129,17 +129,16 @@ func _ensure_icon_preview() -> void:
 	# KEEP_ASPECT_CENTERED only centers the original-size texture.
 	_icon_preview.stretch_mode = TextureRect.STRETCH_SCALE
 	add_child(_icon_preview)
-	# Apply anchors after parenting, so the coordinates are relative to
-	# the actual 72x72 button rather than the scene origin.
+	# Anchor only after parenting; this is relative to the button.
 	_icon_preview.set_anchors_and_offsets_preset(
 		Control.PRESET_FULL_RECT
 	)
-	# 80x80 artwork, centered on its 72x72 button (4px overhang).
-	# The next skill button starts 82px away, avoiding icon overlap.
-	_icon_preview.offset_left = -4.0
-	_icon_preview.offset_top = -4.0
-	_icon_preview.offset_right = 4.0
-	_icon_preview.offset_bottom = 4.0
+	# 50% larger: 80x80 -> 120x120, centered on a 108x108 button.
+	# The 124px spacing between buttons leaves a 4px artwork gap.
+	_icon_preview.offset_left = -6.0
+	_icon_preview.offset_top = -6.0
+	_icon_preview.offset_right = 6.0
+	_icon_preview.offset_bottom = 6.0
 
 
 
