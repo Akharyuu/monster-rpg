@@ -4,6 +4,17 @@ extends Button
 var tooltip_skill = null
 var tooltip_passive: Dictionary = {}
 
+# Action skills and informational passives have deliberately distinct visual
+# language. Target selection comes from battle state, never just mouse hover.
+var _hud_role: String = "active"
+var _target_selected: bool = false
+var _hovered: bool = false
+var _cooldown_remaining: int = 0
+var _fx_clock: float = 0.0
+var _fx_layer: Control
+var _cooldown_scrim: ColorRect
+var _cooldown_label: Label
+
 # Cache the cropped, display-ready textures across every SkillButton instance.
 static var _display_icon_cache: Dictionary = {}
 
@@ -33,6 +44,7 @@ func set_skill_icon(path: String) -> void:
 	_ensure_icon_preview()
 	_icon_preview.texture = texture
 	_icon_preview.visible = true
+	_refresh_cooldown_overlay()
 
 
 # Many generated 128x128 icons include a flat dark matte around the
@@ -108,6 +120,7 @@ func clear_skill_icon() -> void:
 	if is_instance_valid(_icon_preview):
 		_icon_preview.texture = null
 		_icon_preview.visible = false
+	_refresh_cooldown_overlay()
 
 
 func has_skill_icon() -> bool:
@@ -142,7 +155,233 @@ func _ensure_icon_preview() -> void:
 
 
 
+# UI contract: role controls the always-visible passive signature.
+# Target selection and hover use a different, warm action glow.
+func set_hud_role(role: String) -> void:
+	if _hud_role == role:
+		return
+	_hud_role = role
+	if is_instance_valid(_fx_layer):
+		_fx_layer.queue_redraw()
+
+
+func set_target_selected(selected: bool) -> void:
+	if _target_selected == selected:
+		return
+	_target_selected = selected
+	if is_instance_valid(_fx_layer):
+		_fx_layer.queue_redraw()
+
+
+# Active and internal-passive cooldowns use exactly the same readable counter.
+# Text-only fallback buttons retain the S2/P1 + CD text instead.
+func set_cooldown_turns(turns: int) -> void:
+	var normalized: int = maxi(0, turns)
+	if _cooldown_remaining == normalized:
+		return
+	_cooldown_remaining = normalized
+	_refresh_cooldown_overlay()
+	if is_instance_valid(_fx_layer):
+		_fx_layer.queue_redraw()
+
+
+func _refresh_cooldown_overlay() -> void:
+	if not is_instance_valid(_cooldown_scrim):
+		return
+	var display: bool = _cooldown_remaining > 0 and has_skill_icon()
+	_cooldown_scrim.visible = display
+	_cooldown_label.visible = display
+	if display:
+		_cooldown_label.text = str(_cooldown_remaining)
+
+
+func _build_visual_layers() -> void:
+	# Artwork must be the first child. All overlays deliberately draw
+	# over the texture, with no additional mouse or tooltip handling.
+	_ensure_icon_preview()
+
+	_fx_layer = Control.new()
+	_fx_layer.name = "HUD Aura"
+	_fx_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_fx_layer.z_index = 1
+	add_child(_fx_layer)
+	_fx_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_fx_layer.offset_left = -4.5
+	_fx_layer.offset_top = -4.5
+	_fx_layer.offset_right = 4.5
+	_fx_layer.offset_bottom = 4.5
+	_fx_layer.draw.connect(_draw_hud_aura)
+
+	_cooldown_scrim = ColorRect.new()
+	_cooldown_scrim.name = "Cooldown Shade"
+	_cooldown_scrim.color = Color(0.025, 0.035, 0.065, 0.72)
+	_cooldown_scrim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_cooldown_scrim.z_index = 2
+	add_child(_cooldown_scrim)
+	_cooldown_scrim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_cooldown_scrim.offset_left = -4.5
+	_cooldown_scrim.offset_top = -4.5
+	_cooldown_scrim.offset_right = 4.5
+	_cooldown_scrim.offset_bottom = 4.5
+	_cooldown_scrim.visible = false
+
+	_cooldown_label = Label.new()
+	_cooldown_label.name = "Cooldown Counter"
+	_cooldown_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_cooldown_label.z_index = 3
+	_cooldown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_cooldown_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_cooldown_label.add_theme_font_size_override("font_size", 36)
+	_cooldown_label.add_theme_color_override(
+		"font_color", Color(1.0, 0.96, 0.87)
+	)
+	_cooldown_label.add_theme_color_override(
+		"font_outline_color", Color(0.04, 0.055, 0.10, 1.0)
+	)
+	_cooldown_label.add_theme_constant_override("outline_size", 5)
+	add_child(_cooldown_label)
+	_cooldown_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_cooldown_label.visible = false
+
+
+func _on_hud_mouse_entered() -> void:
+	_hovered = true
+	if is_instance_valid(_fx_layer):
+		_fx_layer.queue_redraw()
+
+
+func _on_hud_mouse_exited() -> void:
+	_hovered = false
+	if is_instance_valid(_fx_layer):
+		_fx_layer.queue_redraw()
+
+
+func _process(delta: float) -> void:
+	if not visible or not is_instance_valid(_fx_layer):
+		return
+	var animated: bool = (
+		(_hud_role == "passive" and _cooldown_remaining == 0)
+		or _target_selected
+		or (_hovered and not disabled and _cooldown_remaining == 0)
+	)
+	if not animated:
+		return
+	_fx_clock = fposmod(_fx_clock + delta, 10000.0)
+	_fx_layer.queue_redraw()
+
+
+# An independent 2D draw layer prevents the skill artwork from obscuring
+# the feedback. Only two small motes orbit a passive: this is the
+# "Runic Constellation" signature, intentionally unlike an action glow.
+func _draw_hud_aura() -> void:
+	var bounds := Rect2(
+		Vector2(3.0, 3.0),
+		_fx_layer.size - Vector2(6.0, 6.0)
+	)
+	if bounds.size.x <= 0.0 or bounds.size.y <= 0.0:
+		return
+
+	if _hud_role == "passive":
+		var muted: float = 0.32 if _cooldown_remaining > 0 else 1.0
+		var breath: float = 0.72 + 0.20 * sin(_fx_clock * 1.8)
+		_fx_layer.draw_rect(
+			bounds, Color(0.67, 0.43, 0.99, 0.74 * muted), false, 2.0
+		)
+		_draw_rune_corners(
+			bounds, Color(0.76, 0.57, 1.0, breath * muted)
+		)
+		if _cooldown_remaining == 0:
+			_draw_orbit_mote(
+				bounds, fposmod(_fx_clock * 0.13, 1.0),
+				Color(0.87, 0.73, 1.0, 0.96)
+			)
+			_draw_orbit_mote(
+				bounds, fposmod(_fx_clock * 0.13 + 0.5, 1.0),
+				Color(0.45, 0.84, 1.0, 0.90)
+			)
+		return
+
+	if not _target_selected and (not _hovered or disabled):
+		return
+	if _cooldown_remaining > 0:
+		return
+
+	var strength: float = 0.73 + 0.21 * sin(_fx_clock * 4.8)
+	var tint: Color = (
+		Color(0.60, 0.95, 1.0, 1.0)
+		if _target_selected
+		else Color(1.0, 0.78, 0.39, 1.0)
+	)
+	# Two soft outlines + a crisp inner line: a readable glow on both
+	# a bright forest and the dark bottom-right gameplay background.
+	for index in range(3):
+		var margin: float = float(index) * 1.6
+		var outer := Rect2(
+			bounds.position - Vector2(margin, margin),
+			bounds.size + Vector2(margin, margin) * 2.0
+		)
+		_fx_layer.draw_rect(
+			outer,
+			Color(tint.r, tint.g, tint.b, strength * (0.35 - index * 0.09)),
+			false, 2.0
+		)
+	_draw_rune_corners(
+		bounds, Color(tint.r, tint.g, tint.b, strength)
+	)
+	if _target_selected:
+		_draw_orbit_mote(
+			bounds, fposmod(_fx_clock * 0.28, 1.0),
+			Color(0.94, 1.0, 1.0, strength)
+		)
+
+
+func _draw_rune_corners(bounds: Rect2, color: Color) -> void:
+	var x1: float = bounds.position.x
+	var y1: float = bounds.position.y
+	var x2: float = bounds.end.x
+	var y2: float = bounds.end.y
+	var arm: float = 10.0
+	for corner in [
+		[Vector2(x1, y1), Vector2(1.0, 1.0)],
+		[Vector2(x2, y1), Vector2(-1.0, 1.0)],
+		[Vector2(x1, y2), Vector2(1.0, -1.0)],
+		[Vector2(x2, y2), Vector2(-1.0, -1.0)]
+	]:
+		var p: Vector2 = corner[0]
+		var direction: Vector2 = corner[1]
+		_fx_layer.draw_line(
+			p, p + Vector2(direction.x * arm, 0.0), color, 2.5
+		)
+		_fx_layer.draw_line(
+			p, p + Vector2(0.0, direction.y * arm), color, 2.5
+		)
+
+
+func _draw_orbit_mote(bounds: Rect2, phase: float, color: Color) -> void:
+	var distance: float = phase * 2.0 * (
+		bounds.size.x + bounds.size.y
+	)
+	var point: Vector2 = bounds.position
+	if distance < bounds.size.x:
+		point.x += distance
+	else:
+		distance -= bounds.size.x
+		if distance < bounds.size.y:
+			point = Vector2(bounds.end.x, bounds.position.y + distance)
+		else:
+			distance -= bounds.size.y
+			if distance < bounds.size.x:
+				point = Vector2(bounds.end.x - distance, bounds.end.y)
+			else:
+				distance -= bounds.size.x
+				point = Vector2(bounds.position.x, bounds.end.y - distance)
+	_fx_layer.draw_circle(point, 3.0, color)
+
+
 func _ready() -> void:
+	_build_visual_layers()
+	mouse_entered.connect(_on_hud_mouse_entered)
+	mouse_exited.connect(_on_hud_mouse_exited)
 	var tooltip_theme := Theme.new()
 	var empty_tooltip_style := StyleBoxEmpty.new()
 

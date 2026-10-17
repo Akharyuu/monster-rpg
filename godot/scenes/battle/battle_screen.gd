@@ -397,6 +397,7 @@ func request_player_skill(slot: int) -> void:
 	action_in_progress = true
 	pending_skill_slot = slot
 	set_target_selection(true)
+	update_skill_buttons()
 	turn_label.text = "Choose an enemy target"
 
 
@@ -815,12 +816,16 @@ func update_skill_buttons() -> void:
 	]
 
 	for index in range(buttons.size()):
-		var button = buttons[index]
+		var button: SkillButton = buttons[index]
+		button.set_hud_role("active")
+		button.set_target_selected(pending_skill_slot == index + 1)
+		button.set_cooldown_turns(0)
 
 		if (
 			battle_controller.active_monster == null
 			or battle_controller.active_monster not in allies
 		):
+			button.visible = false
 			button.text = "-"
 			button.set_tooltip_skill(null)
 			button.clear_skill_icon()
@@ -831,15 +836,18 @@ func update_skill_buttons() -> void:
 		var skill = active.get_skill(index + 1)
 
 		if skill == null:
+			button.visible = false
 			button.text = "-"
 			button.set_tooltip_skill(null)
 			button.clear_skill_icon()
 			_set_action_button_state(button, true)
 			continue
 
+		button.visible = true
 		button.text = "S%d" % (index + 1)
 		button.set_tooltip_skill(skill)
 		_update_skill_icon(button, str(active.monster_id), str(skill.skill_id))
+		button.set_cooldown_turns(skill.current_cooldown)
 		if button.has_skill_icon():
 			button.text = ""
 
@@ -862,11 +870,40 @@ func update_skill_buttons() -> void:
 			or blocked_by_silence
 			or not skill.is_available()
 		)
+		if pending_skill_slot == index + 1:
+			# Keep a selected skill bright even while input is locked
+			# awaiting a target click.
+			button.modulate = Color.WHITE
+
+	_layout_action_buttons()
 
 
-func _layout_passive_buttons(_visible_count: int) -> void:
-	# Fixed compact scene coordinates keep tooltips/actions in place.
-	pass
+# Fill from the options button LEFTWARD, using only the actions
+# actually present in the current monster's kit. Skills always precede
+# informational passives and special passive-slot actions.
+func _layout_action_buttons() -> void:
+	var ordered: Array[Control] = []
+	for button in [
+		skill_1_button, skill_2_button, skill_3_button,
+		passive_button, passive_button_2, passive_button_3
+	]:
+		if button.visible:
+			ordered.append(button)
+
+	const GAP: float = 10.0
+	const OPTIONS_GAP: float = 12.0
+	const BUTTON_Y: float = 619.0
+
+	var right_edge: float = $"Options Button".position.x - OPTIONS_GAP
+	for index in range(ordered.size() - 1, -1, -1):
+		var button: Control = ordered[index]
+		button.position = Vector2(
+			right_edge - button.size.x, BUTTON_Y
+		)
+		right_edge = button.position.x - GAP
+
+
+
 
 
 func _update_passive_button() -> void:
@@ -877,6 +914,9 @@ func _update_passive_button() -> void:
 	]
 
 	for button in buttons:
+		button.set_hud_role("passive")
+		button.set_target_selected(false)
+		button.set_cooldown_turns(0)
 		button.text = "PASSIVE"
 		button.set_tooltip_passive({})
 		button.clear_skill_icon()
@@ -934,6 +974,7 @@ func _update_passive_button() -> void:
 		)
 		tooltip_data["cooldown_remaining"] = remaining_cd
 		button.set_tooltip_passive(tooltip_data)
+		button.set_cooldown_turns(remaining_cd)
 
 		# Passive artwork shares the same optional PNG lookup and renderer
 		# as active skills. Without artwork, the P1/CD text remains.
@@ -1004,6 +1045,9 @@ func _update_passive_button() -> void:
 		}
 
 		action_button.visible = true
+		action_button.set_hud_role("active")
+		action_button.set_target_selected(selected)
+		action_button.set_cooldown_turns(0)
 		action_button.set_tooltip_passive(action_data)
 		action_button.mouse_default_cursor_shape = (
 			Control.CURSOR_POINTING_HAND
@@ -1042,8 +1086,6 @@ func _update_passive_button() -> void:
 			)
 
 		visible_count += 1
-
-	_layout_passive_buttons(visible_count)
 
 
 func _on_soul_recall_button_2_pressed() -> void:
@@ -1145,9 +1187,9 @@ func preview_aoe_targets() -> void:
 
 
 func disable_skill_buttons() -> void:
-	_set_action_button_state(skill_1_button, true)
-	_set_action_button_state(skill_2_button, true)
-	_set_action_button_state(skill_3_button, true)
+	for button in [skill_1_button, skill_2_button, skill_3_button]:
+		button.set_target_selected(false)
+		_set_action_button_state(button, true)
 
 
 func finish_battle(player_won: bool) -> void:
