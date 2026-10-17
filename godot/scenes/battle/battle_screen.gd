@@ -879,6 +879,7 @@ func _update_passive_button() -> void:
 	for button in buttons:
 		button.text = "PASSIVE"
 		button.set_tooltip_passive({})
+		button.clear_skill_icon()
 		button.visible = false
 		_set_action_button_state(button, false, false)
 
@@ -907,6 +908,11 @@ func _update_passive_button() -> void:
 	for index in range(visible_count):
 		var button = buttons[index]
 		var passive_data: Dictionary = passive_list[index]
+		# Tooltip names are presentation text and may change by language.
+		# Canonical passive IDs follow the same stable naming convention as skills.
+		var passive_id: String = ""
+		if index < active.passive_ids.size():
+			passive_id = str(active.passive_ids[index])
 		var cooldown_id: String = str(
 			passive_data.get("internal_cooldown_id", "")
 		)
@@ -928,6 +934,15 @@ func _update_passive_button() -> void:
 		)
 		tooltip_data["cooldown_remaining"] = remaining_cd
 		button.set_tooltip_passive(tooltip_data)
+
+		# Passive artwork shares the same optional PNG lookup and renderer
+		# as active skills. Without artwork, the P1/CD text remains.
+		if not passive_id.is_empty():
+			_update_skill_icon(
+				button, str(active.monster_id), passive_id
+			)
+			if button.has_skill_icon():
+				button.text = ""
 
 		var suppressed: bool = active.has_oblivion()
 		var recharging: bool = remaining_cd > 0
@@ -999,6 +1014,11 @@ func _update_passive_button() -> void:
 		# Soul Charges are already displayed in the monster HUD.
 		# Availability is conveyed by the button's visual state.
 		action_button.text = "RECALL"
+		_update_skill_icon(
+			action_button, str(active.monster_id), "soul_recall"
+		)
+		if action_button.has_skill_icon():
+			action_button.text = ""
 
 		if selected:
 			action_button.set_visual_state("active_selected")

@@ -238,3 +238,23 @@ def test_short_circuit_uses_passive_json_parameters():
     assert basic["chance"] == upgraded["chance"] == 0.1
     assert "on_success" not in basic
     assert upgraded["on_success"]["reduce_skill_cooldown"]["amount"] == 1
+
+
+def test_godot_passives_use_optional_icons_with_canonical_ids():
+    """Passive buttons must have the same optional art lookup as skills."""
+    scene = (
+        ROOT / "godot" / "scenes" / "battle" / "battle_screen.gd"
+    ).read_text(encoding="utf-8")
+    passive_section = scene.split(
+        "func _update_passive_button() -> void:", 1
+    )[1].split("func _on_soul_recall_button_2_pressed()", 1)[0]
+
+    assert "button.clear_skill_icon()" in passive_section
+    assert "active.passive_ids[index]" in passive_section
+    assert "_update_skill_icon(" in passive_section
+    assert "if button.has_skill_icon():" in passive_section
+    assert 'action_button, str(active.monster_id), "soul_recall"' in passive_section
+
+    # Active skills and passives must share the same filename convention.
+    assert '"res://assets/skill_icons/%s/%s.png"' in scene
+    assert 'button.set_skill_icon(icon_path)' in scene
