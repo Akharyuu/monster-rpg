@@ -169,6 +169,15 @@ func set_target_mode(mode: String) -> void:
             and bound_monster.is_alive()
             and is_enemy
         )
+    elif target_mode == "team":
+        # The parent scene assigns this mode only to the selected side.
+        can_target = bound_monster != null and bound_monster.is_alive()
+    elif target_mode in ["single_ally", "self"]:
+        can_target = (
+            bound_monster != null
+            and bound_monster.is_alive()
+            and not is_enemy
+        )
     elif target_mode == "dead_ally":
         can_target = (
             bound_monster != null
@@ -182,11 +191,14 @@ func set_target_mode(mode: String) -> void:
     target_prompt.visible = can_target
     target_highlight.visible = can_target
 
-    target_prompt.text = (
-        "REVIVE"
-        if target_mode == "dead_ally"
-        else "TARGET"
-    )
+    if target_mode == "dead_ally":
+        target_prompt.text = "REVIVE"
+    elif target_mode == "team":
+        target_prompt.text = "TEAM"
+    elif target_mode == "self":
+        target_prompt.text = "SELF"
+    else:
+        target_prompt.text = "TARGET"
 
     _update_target_style()
 
@@ -194,7 +206,7 @@ func set_target_mode(mode: String) -> void:
 func _update_target_style() -> void:
     var style := StyleBoxFlat.new()
 
-    if target_mode == "aoe":
+    if target_mode in ["aoe", "team"]:
         style.bg_color = Color(0.78, 0.30, 0.12, 0.12)
         style.border_color = Color(1.0, 0.58, 0.20, 1.0)
     else:

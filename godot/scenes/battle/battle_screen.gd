@@ -234,8 +234,7 @@ func start_next_turn() -> void:
 	action_in_progress = true
 	pending_skill_slot = 0
 	pending_special_action = ""
-	set_target_selection(false)
-	set_revive_target_selection(false)
+	_clear_target_modes()
 
 	var context: Dictionary = (
 		battle_controller.begin_next_turn()
@@ -328,6 +327,8 @@ func start_next_turn() -> void:
 		enemy_turn()
 
 
+# Target selection is a reversible preparation state: no cooldown,
+# resources or turn are consumed until the player confirms a target.
 func request_player_skill(slot: int) -> void:
 	if (
 		battle_finished
@@ -337,137 +338,200 @@ func request_player_skill(slot: int) -> void:
 	):
 		return
 
-	var skill = battle_controller.active_monster.get_skill(slot)
+	var caster = battle_controller.active_monster
+	var skill = caster.get_skill(slot)
 
-	if (
-		battle_controller.active_monster.is_silenced()
-		and slot != 1
-	):
-		turn_label.text = "Silence: only S1 can be used"
+	# Click the already-selected skill to cancel without spending a turn.
+	if pending_skill_slot == slot and pending_special_action.is_empty():
+		_cancel_pending_targeting()
 		return
 
+	if caster.is_silenced() and slot != 1:
+		turn_label.text = "Silence: only S1 can be used"
+		return
 	if skill == null or not skill.is_available():
 		return
 
-	if skill.target_type == "all_enemies":
-		action_in_progress = true
-		await preview_aoe_targets()
-		execute_player_skill(
-			skill,
-			battle_controller.get_living(enemies)
-		)
+	var target_type: String = str(skill.target_type)
+	if target_type not in [
+		"single_enemy", "single_ally", "all_enemies",
+		"random_enemies", "all_allies", "self"
+	]:
+		push_warning("Unsupported selectable target type: %s" % target_type)
 		return
 
-	if skill.target_type == "random_enemies":
-		action_in_progress = true
-		set_aoe_preview(true)
-		turn_label.text = "10 hits will strike random enemies"
-
-		await get_tree().create_timer(0.35).timeout
-		set_aoe_preview(false)
-
-		execute_player_skill(
-			skill,
-			battle_controller.get_living(enemies)
-		)
-		return
-
-	if skill.target_type == "all_allies":
-		action_in_progress = true
-		turn_label.text = "All allies will be affected"
-		await get_tree().create_timer(0.25).timeout
-
-		execute_player_skill(
-			skill,
-			battle_controller.get_living(allies)
-		)
-		return
-
-	if skill.target_type == "self":
-		action_in_progress = true
-		turn_label.text = "Self-targeting skill"
-		await get_tree().create_timer(0.2).timeout
-
-		execute_player_skill(
-			skill,
-			[battle_controller.active_monster]
-		)
-		return
-
-	action_in_progress = true
-	pending_skill_slot = slot
-	set_target_selection(true)
-	update_skill_buttons()
-	turn_label.text = "Choose an enemy target"
-
-
-func _on_ally_target_pressed(index: int) -> void:
-	if pending_special_action != "soul_recall":
-		return
-
-	if index < 0 or index >= allies.size():
-		return
-
-	var target = allies[index]
-
-	if target.is_alive() or target.banished:
-		return
-
+	# Changing skills replaces the preview immediately, including the
+	# legal side/team. Soul Recall can be replaced in the same way.
 	pending_special_action = ""
-	set_revive_target_selection(false)
-	disable_skill_buttons()
+	pending_skill_slot = slot
+	_show_skill_target_choices(target_type)
+	update_skill_buttons()
+	turn_label.text = _target_selection_message(target_type)
 
-	var result: Dictionary = (
-		battle_controller.execute_soul_recall(
-			target
+
+func _cancel_pending_targeting() -> void:
+	pending_skill_slot = 0
+	pending_special_action = ""
+	_clear_target_modes()
+	update_skill_buttons()
+	if battle_controller.active_monster != null:
+		turn_label.text = "YOUR TURN - %s" % (
+			battle_controller.active_monster.monster_name
 		)
-	)
-
-	if not result.get("success", false):
-		action_in_progress = false
-		update_skill_buttons()
-		return
-
-	update_battle_ui()
-	await play_caster_feedback(result)
-
-	turn_label.text = "%s revives %s" % [
-		battle_controller.active_monster.monster_name,
-		target.monster_name
-	]
-
-	battle_controller.end_active_turn()
-	update_battle_ui()
-
-	await get_tree().create_timer(0.6).timeout
-
-	battle_controller.clear_active_monster()
-	start_next_turn()
 
 
-func _on_enemy_target_pressed(index: int) -> void:
-	if pending_skill_slot <= 0:
-		return
+func _clear_target_modes() -> void:
+	for hud in enemy_huds:
+		hud.set_target_mode("none")
+	for hud in ally_huds:
+		hud.set_target_mode("none")
 
-	if index < 0 or index >= enemies.size():
-		return
 
-	var target = enemies[index]
+# A team target is confirmed by clicking ANY highlighted living member.
+# This confirms the side, not an individual recipient. Random targeting
+# still happens inside the skill execution logic, AFTER confirmation.
+func _show_skill_target_choices(target_type: String) -> void:
+	_clear_target_modes()
+	match target_type:
+		"single_enemy":
+			for hud in enemy_huds:
+				hud.set_target_mode("single")
+		"all_enemies", "random_enemies":
+			for hud in enemy_huds:
+				hud.set_target_mode("team")
+		"all_allies":
+			for hud in ally_huds:
+				hud.set_target_mode("team")
+		"single_ally":
+			for hud in ally_huds:
+				hud.set_target_mode("single_ally")
+		"self":
+			var caster_hud = get_hud_for_monster(
+				battle_controller.active_monster
+			)
+			if caster_hud != null:
+				caster_hud.set_target_mode("self")
 
-	if not target.is_alive():
+
+func _target_selection_message(target_type: String) -> String:
+	match target_type:
+		"single_enemy":
+			return "Choose an enemy - click the skill again to cancel"
+		"single_ally":
+			return "Choose an ally - click the skill again to cancel"
+		"all_enemies":
+			return "Confirm enemy team - click any highlighted enemy"
+		"random_enemies":
+			return "Confirm enemy team - random hits after confirmation"
+		"all_allies":
+			return "Confirm allied team - click any highlighted ally"
+		"self":
+			return "Confirm on caster - click your highlighted monster"
+		_:
+			return "Choose a target"
+
+
+# Called ONLY after a legal target (or team) has been clicked. From this
+# point onward, input is locked until the action fully resolves.
+func _confirm_pending_skill(targets: Array) -> void:
+	if (
+		action_in_progress
+		or pending_skill_slot <= 0
+		or targets.is_empty()
+		or battle_controller.active_monster == null
+	):
 		return
 
 	var skill = battle_controller.active_monster.get_skill(
 		pending_skill_slot
 	)
+	if skill == null or not skill.is_available():
+		_cancel_pending_targeting()
+		return
 
+	action_in_progress = true
 	pending_skill_slot = 0
-	set_target_selection(false)
+	_clear_target_modes()
+	execute_player_skill(skill, targets)
 
-	execute_player_skill(
-		skill,
-		[target]
-	)
+
+func _on_ally_target_pressed(index: int) -> void:
+	if index < 0 or index >= allies.size() or battle_finished:
+		return
+
+	var target = allies[index]
+
+	if pending_special_action == "soul_recall":
+		if action_in_progress or target.is_alive() or target.banished:
+			return
+
+		# Soul Recall uses the same click-to-confirm lifecycle as skills.
+		action_in_progress = true
+		pending_special_action = ""
+		_clear_target_modes()
+		disable_skill_buttons()
+
+		var result: Dictionary = (
+			battle_controller.execute_soul_recall(target)
+		)
+		if not result.get("success", false):
+			action_in_progress = false
+			update_skill_buttons()
+			return
+
+		update_battle_ui()
+		await play_caster_feedback(result)
+		turn_label.text = "%s revives %s" % [
+			battle_controller.active_monster.monster_name,
+			target.monster_name
+		]
+
+		battle_controller.end_active_turn()
+		update_battle_ui()
+		await get_tree().create_timer(0.6).timeout
+		battle_controller.clear_active_monster()
+		start_next_turn()
+		return
+
+	if pending_skill_slot <= 0 or action_in_progress or not target.is_alive():
+		return
+
+	var skill = battle_controller.active_monster.get_skill(pending_skill_slot)
+	if skill == null:
+		return
+
+	match str(skill.target_type):
+		"all_allies":
+			_confirm_pending_skill(battle_controller.get_living(allies))
+		"single_ally":
+			_confirm_pending_skill([target])
+		"self":
+			if target == battle_controller.active_monster:
+				_confirm_pending_skill([target])
+
+
+func _on_enemy_target_pressed(index: int) -> void:
+	if (
+		pending_skill_slot <= 0
+		or action_in_progress
+		or index < 0
+		or index >= enemies.size()
+	):
+		return
+
+	var target = enemies[index]
+	if not target.is_alive():
+		return
+
+	var skill = battle_controller.active_monster.get_skill(pending_skill_slot)
+	if skill == null:
+		return
+
+	match str(skill.target_type):
+		"single_enemy":
+			_confirm_pending_skill([target])
+		"all_enemies", "random_enemies":
+			_confirm_pending_skill(battle_controller.get_living(enemies))
 
 
 func execute_player_skill(
@@ -475,7 +539,7 @@ func execute_player_skill(
 	targets: Array
 ) -> void:
 	disable_skill_buttons()
-	set_target_selection(false)
+	_clear_target_modes()
 
 	var attacker = battle_controller.active_monster
 	var attacker_hud = get_hud_for_monster(attacker)
@@ -1071,6 +1135,7 @@ func _update_passive_button() -> void:
 			action_button.set_visual_state(
 				"active_locked" if blocked else "active_ready"
 			)
+			# No action is consumed merely by selecting Soul Recall.
 			# Keep tooltip hover available when blocked.
 			_set_action_button_state(
 				action_button,
@@ -1119,11 +1184,7 @@ func _on_soul_recall_pressed(button_index: int) -> void:
 	# The action can be selected even without a fallen ally. Clicking
 	# it again cancels targeting, leaving other skills usable.
 	if pending_special_action == "soul_recall":
-		pending_special_action = ""
-		set_revive_target_selection(false)
-		action_in_progress = false
-		update_skill_buttons()
-		turn_label.text = "Soul Recall selection cancelled"
+		_cancel_pending_targeting()
 		return
 
 	if (
@@ -1135,10 +1196,11 @@ func _on_soul_recall_pressed(button_index: int) -> void:
 	):
 		return
 
-	action_in_progress = true
+	# Preparation only: other skills stay usable until a fallen ally is
+	# clicked, and pressing Soul Recall again cancels the choice.
 	pending_skill_slot = 0
 	pending_special_action = "soul_recall"
-	set_target_selection(false)
+	_clear_target_modes()
 	set_revive_target_selection(true)
 	update_skill_buttons()
 
