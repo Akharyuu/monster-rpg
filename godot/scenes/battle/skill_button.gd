@@ -133,12 +133,12 @@ func _ensure_icon_preview() -> void:
 	_icon_preview.set_anchors_and_offsets_preset(
 		Control.PRESET_FULL_RECT
 	)
-	# 50% larger: 80x80 -> 120x120, centered on a 108x108 button.
-	# The 124px spacing between buttons leaves a 4px artwork gap.
-	_icon_preview.offset_left = -6.0
-	_icon_preview.offset_top = -6.0
-	_icon_preview.offset_right = 6.0
-	_icon_preview.offset_bottom = 6.0
+	# Reduced by 25%: 90x90 artwork over an 81x81 button.
+	# Keep the picture centered with 4.5px overhang on every side.
+	_icon_preview.offset_left = -4.5
+	_icon_preview.offset_top = -4.5
+	_icon_preview.offset_right = 4.5
+	_icon_preview.offset_bottom = 4.5
 
 
 

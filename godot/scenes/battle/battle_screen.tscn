@@ -150,80 +150,80 @@ color = Color(0.44, 0.54, 0.65, 0.40)
 [node name="Skill 1 Button" type="Button" parent="."]
 z_index = 10
 layout_mode = 0
-offset_left = 446.0
-offset_top = 592.0
-offset_right = 554.0
+offset_left = 620.0
+offset_top = 619.0
+offset_right = 701.0
 offset_bottom = 700.0
 text = "S1"
 focus_mode = 0
 mouse_default_cursor_shape = 2
 script = ExtResource("3")
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 18
 
 [node name="Skill 2 Button" type="Button" parent="."]
 z_index = 10
 layout_mode = 0
-offset_left = 570.0
-offset_top = 592.0
-offset_right = 678.0
+offset_left = 718.0
+offset_top = 619.0
+offset_right = 799.0
 offset_bottom = 700.0
 text = "S2"
 focus_mode = 0
 mouse_default_cursor_shape = 2
 script = ExtResource("3")
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 18
 
 [node name="Skill 3 Button" type="Button" parent="."]
 z_index = 10
 layout_mode = 0
-offset_left = 694.0
-offset_top = 592.0
-offset_right = 802.0
+offset_left = 816.0
+offset_top = 619.0
+offset_right = 897.0
 offset_bottom = 700.0
 text = "S3"
 focus_mode = 0
 mouse_default_cursor_shape = 2
 script = ExtResource("3")
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 18
 
 [node name="Passive Button" type="Button" parent="."]
 z_index = 10
 layout_mode = 0
-offset_left = 818.0
-offset_top = 592.0
-offset_right = 926.0
+offset_left = 914.0
+offset_top = 619.0
+offset_right = 995.0
 offset_bottom = 700.0
 visible = false
 text = "P1"
 focus_mode = 0
 script = ExtResource("3")
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 18
 
 [node name="Passive Button 2" type="Button" parent="."]
 z_index = 10
 layout_mode = 0
-offset_left = 942.0
-offset_top = 592.0
-offset_right = 1050.0
+offset_left = 1012.0
+offset_top = 619.0
+offset_right = 1093.0
 offset_bottom = 700.0
 visible = false
 text = "P2"
 focus_mode = 0
 script = ExtResource("3")
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 18
 
 [node name="Passive Button 3" type="Button" parent="."]
 z_index = 10
 layout_mode = 0
-offset_left = 1066.0
-offset_top = 592.0
-offset_right = 1174.0
+offset_left = 1110.0
+offset_top = 619.0
+offset_right = 1191.0
 offset_bottom = 700.0
 visible = false
 text = "P3"
 focus_mode = 0
 script = ExtResource("3")
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 18
 
 [node name="Options Button" type="Button" parent="."]
 z_index = 10

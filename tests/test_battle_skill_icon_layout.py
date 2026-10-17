@@ -29,31 +29,31 @@ def _rect(scene: str, name: str):
     ]
 
 
-def test_skill_passive_buttons_scale_by_fifty_percent():
+def test_skill_passive_buttons_reduced_by_twenty_five_percent():
     scene = SCENE.read_text(encoding="utf-8")
     for name in BUTTON_NAMES:
         x1, y1, x2, y2 = _rect(scene, name)
-        assert x2 - x1 == 108
-        assert y2 - y1 == 108
+        assert x2 - x1 == 81
+        assert y2 - y1 == 81
 
 
 def test_skill_passive_artwork_scales_and_does_not_overlap():
     scene = SCENE.read_text(encoding="utf-8")
     script = BUTTON_SCRIPT.read_text(encoding="utf-8")
 
-    # A 6px overhang on either side gives 120px painted artwork.
-    assert "_icon_preview.offset_left = -6.0" in script
-    assert "_icon_preview.offset_top = -6.0" in script
-    assert "_icon_preview.offset_right = 6.0" in script
-    assert "_icon_preview.offset_bottom = 6.0" in script
+    # A 4.5px overhang on either side gives 90px painted artwork.
+    assert "_icon_preview.offset_left = -4.5" in script
+    assert "_icon_preview.offset_top = -4.5" in script
+    assert "_icon_preview.offset_right = 4.5" in script
+    assert "_icon_preview.offset_bottom = 4.5" in script
 
     left_edges = []
     right_edges = []
     for name in BUTTON_NAMES:
         x1, y1, x2, y2 = _rect(scene, name)
-        left_edges.append(x1 - 6)
-        right_edges.append(x2 + 6)
-        assert y2 + 6 <= 720
+        left_edges.append(x1 - 4.5)
+        right_edges.append(x2 + 4.5)
+        assert y2 + 4.5 <= 720
 
     assert all(a < b for a, b in zip(right_edges, left_edges[1:]))
     options_x1 = _rect(scene, "Options Button")[0]
