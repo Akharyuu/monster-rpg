@@ -61,12 +61,25 @@ var _igneous_bar_art: TextureRect
 var _igneous_frame_index: int = 0
 var _igneous_elapsed_ms: float = 0.0
 
-# Standalone static asset for the Abyssal bar size comparison.
-# Keep the same 284px display width used by the Igneous HUD artwork.
+# Abyssal artwork is the shared test frame for both teams. Its real-time
+# HP/action-gauge fills are separate art layers (one material per monster).
 const ABYSSAL_BAR_PATH := "res://assets/Abyssal HP bar.png"
 const ABYSSAL_BAR_WIDTH := 182.4
 const ABYSSAL_BAR_GAP := 8.0
 const ABYSSAL_PREVIEW_SCALE := 0.90
+const HP_FILL_TEXTURE: Texture2D = preload("res://assets/ui/hp_fill.png")
+const GAUGE_FILL_TEXTURE: Texture2D = preload("res://assets/ui/gauge_fill.png")
+const BAR_FILL_SHADER: Shader = preload("res://assets/ui/battle_bar_fill.gdshader")
+# Interior slots measured against the transparent-trimmed Abyssal frame.
+# These are normalized rectangles, so changing the frame size scales
+# everything consistently without stretching the filling over time.
+const HP_FILL_RECT := Rect2(0.226, 0.274, 0.722, 0.213)
+const GAUGE_FILL_RECT := Rect2(0.226, 0.564, 0.722, 0.188)
+const HP_DAMAGE_DURATION := 0.22
+const HP_HEAL_DURATION := 0.35
+const HP_DAMAGE_TRAIL_DELAY := 0.18
+const HP_DAMAGE_TRAIL_DURATION := 0.45
+const GAUGE_CHANGE_DURATION := 0.25
 # Nudge the bar rows toward the battle center without moving the sprites.
 const ALLY_BAR_HORIZONTAL_OFFSET := 15.0
 const ENEMY_BAR_HORIZONTAL_OFFSET := -15.0
@@ -77,6 +90,15 @@ const FORCE_ABYSSAL_BAR_PREVIEW := true
 static var _abyssal_bar_texture: Texture2D
 static var _abyssal_bar_attempted: bool = false
 var _abyssal_bar_art: TextureRect
+var _hp_fill_art: TextureRect
+var _hp_trail_art: TextureRect
+var _gauge_fill_art: TextureRect
+var _hp_fill_tween: Tween
+var _hp_trail_tween: Tween
+var _gauge_fill_tween: Tween
+var _fills_initialized := false
+var _hp_target_ratio := 1.0
+var _gauge_target_ratio := 0.0
 
 
 func _ready() -> void:
@@ -86,6 +108,10 @@ func _ready() -> void:
 
 
 func bind_monster(monster, enemy_side: bool) -> void:
+    # A HUD can be rebound during future battles; old tweens must never
+    # animate a different monster's data.
+    _stop_fill_tweens()
+    _fills_initialized = false
     bound_monster = monster
     is_enemy = enemy_side
     sprite_placeholder.call(
@@ -260,9 +286,12 @@ func _configure_attribute_bar_art() -> void:
                 "abyssal":
                     use_art = _show_abyssal_bar()
 
-    # Preserve normal HP and gauge bars if a themed file is absent.
+    # The real ProgressBars remain the authoritative data fallback.
     hp_bar.visible = not use_art
     action_gauge.visible = not use_art
+    _set_dynamic_fills_visible(
+        use_art and _abyssal_bar_art.visible
+    )
 
 
 func _show_abyssal_bar() -> bool:
@@ -280,6 +309,8 @@ func _show_abyssal_bar() -> bool:
     )
     _position_abyssal_bar()
     _abyssal_bar_art.visible = true
+    _ensure_dynamic_fills()
+    _position_dynamic_fills()
     return true
 
 
@@ -293,6 +324,171 @@ func _position_abyssal_bar() -> void:
         _bar_horizontal_offset(),
         visual_top.y - _abyssal_bar_art.size.y - ABYSSAL_BAR_GAP
     )
+
+
+# Shared artwork, independent shader instances: drawing one unit's
+# HP or action gauge never changes the fill of any other monster.
+func _make_fill_texture(name: String, texture: Texture2D) -> TextureRect:
+    var fill := TextureRect.new()
+    fill.name = name
+    fill.texture = texture
+    fill.z_index = 11
+    fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    fill.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+    fill.stretch_mode = TextureRect.STRETCH_SCALE
+    fill.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+
+    var mask := ShaderMaterial.new()
+    mask.shader = BAR_FILL_SHADER
+    mask.set_shader_parameter("fill_ratio", 1.0)
+    fill.material = mask
+    add_child(fill)
+    return fill
+
+
+func _ensure_dynamic_fills() -> void:
+    if _hp_fill_art != null:
+        return
+    # The delayed damage trail goes underneath the current green HP.
+    _hp_trail_art = _make_fill_texture(
+        "HP Damage Trail", HP_FILL_TEXTURE
+    )
+    _hp_trail_art.modulate = Color(1.0, 0.40, 0.25, 0.55)
+    _hp_fill_art = _make_fill_texture("Current HP", HP_FILL_TEXTURE)
+    _gauge_fill_art = _make_fill_texture(
+        "Action Gauge Fill", GAUGE_FILL_TEXTURE
+    )
+
+
+func _position_dynamic_fills() -> void:
+    if _hp_fill_art == null or _abyssal_bar_art == null:
+        return
+    var frame_pos: Vector2 = _abyssal_bar_art.position
+    var frame_size: Vector2 = _abyssal_bar_art.size
+    var hp_pos: Vector2 = frame_pos + frame_size * HP_FILL_RECT.position
+    var hp_size: Vector2 = frame_size * HP_FILL_RECT.size
+    for layer in [_hp_trail_art, _hp_fill_art]:
+        layer.position = hp_pos
+        layer.size = hp_size
+    _gauge_fill_art.position = (
+        frame_pos + frame_size * GAUGE_FILL_RECT.position
+    )
+    _gauge_fill_art.size = frame_size * GAUGE_FILL_RECT.size
+
+
+func _set_dynamic_fills_visible(show: bool) -> void:
+    if _hp_fill_art == null:
+        return
+    _hp_fill_art.visible = show
+    _hp_trail_art.visible = show
+    _gauge_fill_art.visible = show
+
+
+func _stop_fill_tweens() -> void:
+    for animation in [
+        _hp_fill_tween, _hp_trail_tween, _gauge_fill_tween
+    ]:
+        if animation != null and animation.is_valid():
+            animation.kill()
+    _hp_fill_tween = null
+    _hp_trail_tween = null
+    _gauge_fill_tween = null
+
+
+func _set_fill_ratio(fill: TextureRect, ratio: float) -> void:
+    if fill == null:
+        return
+    var material: ShaderMaterial = fill.material as ShaderMaterial
+    material.set_shader_parameter("fill_ratio", clampf(ratio, 0.0, 1.0))
+
+
+func _animate_fill(
+    fill: TextureRect,
+    previous_tween: Tween,
+    target: float,
+    duration: float,
+    delay: float = 0.0
+) -> Tween:
+    if previous_tween != null and previous_tween.is_valid():
+        previous_tween.kill()
+
+    var material: ShaderMaterial = fill.material as ShaderMaterial
+    var current: float = float(
+        material.get_shader_parameter("fill_ratio")
+    )
+    if is_equal_approx(current, target):
+        _set_fill_ratio(fill, target)
+        return null
+
+    var animation := create_tween()
+    if delay > 0.0:
+        animation.tween_interval(delay)
+    animation.tween_property(
+        material, "shader_parameter/fill_ratio", target, duration
+    ).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+    return animation
+
+
+func _refresh_dynamic_fills() -> void:
+    if _hp_fill_art == null or bound_monster == null:
+        return
+    if not _abyssal_bar_art.visible:
+        return
+
+    var hp_ratio: float = clampf(
+        float(bound_monster.health) /
+        maxf(1.0, float(bound_monster.max_health)),
+        0.0, 1.0
+    )
+    var gauge_ratio: float = clampf(
+        float(bound_monster.action_gauge), 0.0, 1.0
+    )
+
+    # Initialize from battle state. Do not animate from an arbitrary
+    # full/empty bar when the scene or a monster first appears.
+    if not _fills_initialized:
+        _stop_fill_tweens()
+        _set_fill_ratio(_hp_fill_art, hp_ratio)
+        _set_fill_ratio(_hp_trail_art, hp_ratio)
+        _set_fill_ratio(_gauge_fill_art, gauge_ratio)
+        _hp_target_ratio = hp_ratio
+        _gauge_target_ratio = gauge_ratio
+        _fills_initialized = true
+        return
+
+    if not is_equal_approx(hp_ratio, _hp_target_ratio):
+        var taking_damage: bool = hp_ratio < _hp_target_ratio
+        _hp_fill_tween = _animate_fill(
+            _hp_fill_art, _hp_fill_tween, hp_ratio,
+            HP_DAMAGE_DURATION if taking_damage else HP_HEAL_DURATION
+        )
+        if taking_damage:
+            # A delayed tinted remainder makes the lost HP readable.
+            _hp_trail_tween = _animate_fill(
+                _hp_trail_art, _hp_trail_tween, hp_ratio,
+                HP_DAMAGE_TRAIL_DURATION, HP_DAMAGE_TRAIL_DELAY
+            )
+        else:
+            if _hp_trail_tween != null and _hp_trail_tween.is_valid():
+                _hp_trail_tween.kill()
+            _hp_trail_tween = null
+            _set_fill_ratio(_hp_trail_art, hp_ratio)
+        _hp_target_ratio = hp_ratio
+
+    if not is_equal_approx(gauge_ratio, _gauge_target_ratio):
+        if _gauge_target_ratio > 0.95 and gauge_ratio < 0.20:
+            # Spending a turn resets gauge; don't visually drain the
+            # whole track backwards over the next character's turn.
+            if _gauge_fill_tween != null and _gauge_fill_tween.is_valid():
+                _gauge_fill_tween.kill()
+            _gauge_fill_tween = null
+            _set_fill_ratio(_gauge_fill_art, gauge_ratio)
+        else:
+            _gauge_fill_tween = _animate_fill(
+                _gauge_fill_art, _gauge_fill_tween, gauge_ratio,
+                GAUGE_CHANGE_DURATION
+            )
+        _gauge_target_ratio = gauge_ratio
 
 
 # Cache the static image. Trim transparent padding so 284px measures
@@ -471,6 +667,7 @@ func refresh(is_active: bool) -> void:
     action_gauge.tooltip_text = "Action Gauge %.0f%%" % (
         bound_monster.action_gauge * 100.0
     )
+    _refresh_dynamic_fills()
 
     turn_indicator.visible = (
         is_active
