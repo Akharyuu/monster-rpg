@@ -45,8 +45,8 @@ var action_in_progress := true
 
 func _ready() -> void:
 	_update_background_layers()
-	# Visual 4v4 comparison: allied Kaelgors use the static back-side art;
-	# enemy Kaelgors play the front-view idle animation.
+	# 4v4 visual trial: three enemy Kaelgors and one Abyssal Vharak.
+	# Only the final enemy slot changes; allied composition is preserved.
 	allies = [
 		PrototypeFactoryScript.create_level_one_monster(
             "drake_igneous"
@@ -64,16 +64,16 @@ func _ready() -> void:
 
 	enemies = [
 		PrototypeFactoryScript.create_level_one_monster(
-            "drake_igneous"
+			"drake_igneous"
 		),
 		PrototypeFactoryScript.create_level_one_monster(
-            "drake_igneous"
+			"drake_igneous"
 		),
 		PrototypeFactoryScript.create_level_one_monster(
-            "drake_igneous"
+			"drake_igneous"
 		),
 		PrototypeFactoryScript.create_level_one_monster(
-            "drake_igneous"
+			"drake_abyssal"
 		)
 	]
 

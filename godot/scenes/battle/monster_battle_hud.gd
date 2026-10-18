@@ -57,6 +57,15 @@ var _igneous_bar_art: TextureRect
 var _igneous_frame_index: int = 0
 var _igneous_elapsed_ms: float = 0.0
 
+# Standalone static asset for the Abyssal bar size comparison.
+# Keep the same 284px display width used by the Igneous HUD artwork.
+const ABYSSAL_BAR_PATH := "res://assets/Abyssal HP bar.png"
+const ABYSSAL_BAR_WIDTH := 284.0
+const ABYSSAL_BAR_GAP := 8.0
+static var _abyssal_bar_texture: Texture2D
+static var _abyssal_bar_attempted: bool = false
+var _abyssal_bar_art: TextureRect
+
 
 func _ready() -> void:
     target_button.pressed.connect(
@@ -200,22 +209,92 @@ func _configure_attribute_bar_art() -> void:
         _igneous_bar_art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
         add_child(_igneous_bar_art)
 
-    var use_art: bool = (
-        bound_monster != null and str(bound_monster.attribute) == "igneous"
-        and _load_igneous_bar_animation()
-    )
-    _igneous_bar_art.visible = use_art
+    if _abyssal_bar_art == null:
+        _abyssal_bar_art = TextureRect.new()
+        _abyssal_bar_art.name = "Abyssal HP and Action Gauge"
+        _abyssal_bar_art.z_index = 10
+        _abyssal_bar_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+        _abyssal_bar_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+        _abyssal_bar_art.stretch_mode = TextureRect.STRETCH_SCALE
+        _abyssal_bar_art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+        add_child(_abyssal_bar_art)
+
+    _igneous_bar_art.visible = false
+    _abyssal_bar_art.visible = false
+    _igneous_bar_art.texture = null
+    _abyssal_bar_art.texture = null
+
+    var use_art: bool = false
+    if bound_monster != null:
+        match str(bound_monster.attribute):
+            "igneous":
+                if _load_igneous_bar_animation():
+                    _igneous_frame_index = 0
+                    _igneous_elapsed_ms = 0.0
+                    _igneous_bar_art.texture = _igneous_bar_frames[0]
+                    _igneous_bar_art.size = _igneous_bar_preview_size
+                    _position_igneous_bar()
+                    _igneous_bar_art.visible = true
+                    use_art = true
+            "abyssal":
+                var abyssal: Texture2D = _load_abyssal_bar()
+                if abyssal != null:
+                    _abyssal_bar_art.texture = abyssal
+                    _abyssal_bar_art.size = Vector2(
+                        ABYSSAL_BAR_WIDTH,
+                        ABYSSAL_BAR_WIDTH *
+                        float(abyssal.get_height()) /
+                        float(abyssal.get_width())
+                    )
+                    _position_abyssal_bar()
+                    _abyssal_bar_art.visible = true
+                    use_art = true
+
+    # Preserve normal HP and gauge bars if a themed file is absent.
     hp_bar.visible = not use_art
     action_gauge.visible = not use_art
-    if not use_art:
-        _igneous_bar_art.texture = null
-        return
 
-    _igneous_frame_index = 0
-    _igneous_elapsed_ms = 0.0
-    _igneous_bar_art.texture = _igneous_bar_frames[0]
-    _igneous_bar_art.size = _igneous_bar_preview_size
-    _position_igneous_bar()
+
+# Same sprite-alignment behavior as the Igneous version.
+func _position_abyssal_bar() -> void:
+    if _abyssal_bar_art == null:
+        return
+    var visual_top: Vector2 = _sprite_visual_top_center()
+    _abyssal_bar_art.position = Vector2(
+        visual_top.x - _abyssal_bar_art.size.x / 2.0,
+        visual_top.y - _abyssal_bar_art.size.y - ABYSSAL_BAR_GAP
+    )
+
+
+# Cache the static image. Trim transparent padding so 284px measures
+# the painted bar rather than the original export's empty canvas.
+static func _load_abyssal_bar() -> Texture2D:
+    if _abyssal_bar_attempted:
+        return _abyssal_bar_texture
+    _abyssal_bar_attempted = true
+
+    if not ResourceLoader.exists(ABYSSAL_BAR_PATH, "Texture2D"):
+        push_warning("Abyssal HP bar PNG not found: %s" % ABYSSAL_BAR_PATH)
+        return null
+
+    var source: Texture2D = load(ABYSSAL_BAR_PATH) as Texture2D
+    if source == null:
+        push_warning("Abyssal HP bar could not load: %s" % ABYSSAL_BAR_PATH)
+        return null
+
+    var image: Image = source.get_image()
+    if image == null or image.is_empty():
+        return null
+
+    var painted: Rect2i = image.get_used_rect()
+    if painted.size.x <= 0 or painted.size.y <= 0:
+        push_warning("Abyssal HP bar has no visible pixels")
+        return null
+
+    _abyssal_bar_texture = ImageTexture.create_from_image(
+        image.get_region(painted)
+    )
+    return _abyssal_bar_texture
 
 
 func _process(delta: float) -> void:
