@@ -73,8 +73,12 @@ const BAR_FILL_SHADER: Shader = preload("res://assets/ui/battle_bar_fill.gdshade
 # Interior slots measured against the transparent-trimmed Abyssal frame.
 # These are normalized rectangles, so changing the frame size scales
 # everything consistently without stretching the filling over time.
-const HP_FILL_RECT := Rect2(0.226, 0.274, 0.722, 0.213)
-const GAUGE_FILL_RECT := Rect2(0.226, 0.564, 0.722, 0.188)
+# Extend the fills ~3.4 logical pixels toward the right interior edge of
+# the frame. Keep the left edge fixed so partial HP still drains correctly.
+const HP_FILL_RECT := Rect2(0.226, 0.274, 0.743, 0.213)
+const GAUGE_FILL_RECT := Rect2(0.226, 0.564, 0.743, 0.188)
+const HP_FILL_VERTICAL_OFFSET := -2.0
+const ENEMY_GAUGE_VERTICAL_OFFSET := -2.0
 const HP_DAMAGE_DURATION := 0.22
 const HP_HEAL_DURATION := 0.35
 const HP_DAMAGE_TRAIL_DELAY := 0.18
@@ -365,13 +369,20 @@ func _position_dynamic_fills() -> void:
         return
     var frame_pos: Vector2 = _abyssal_bar_art.position
     var frame_size: Vector2 = _abyssal_bar_art.size
-    var hp_pos: Vector2 = frame_pos + frame_size * HP_FILL_RECT.position
+    var hp_pos: Vector2 = (
+        frame_pos + frame_size * HP_FILL_RECT.position +
+        Vector2(0.0, HP_FILL_VERTICAL_OFFSET)
+    )
     var hp_size: Vector2 = frame_size * HP_FILL_RECT.size
     for layer in [_hp_trail_art, _hp_fill_art]:
         layer.position = hp_pos
         layer.size = hp_size
     _gauge_fill_art.position = (
-        frame_pos + frame_size * GAUGE_FILL_RECT.position
+        frame_pos + frame_size * GAUGE_FILL_RECT.position +
+        Vector2(
+            0.0,
+            ENEMY_GAUGE_VERTICAL_OFFSET if is_enemy else 0.0
+        )
     )
     _gauge_fill_art.size = frame_size * GAUGE_FILL_RECT.size
 

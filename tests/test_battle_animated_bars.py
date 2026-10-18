@@ -53,3 +53,28 @@ def test_legacy_progressbars_still_store_real_values():
     assert "bound_monster.action_gauge * 100.0" in source
     assert "hp_bar.visible = not use_art" in source
     assert "action_gauge.visible = not use_art" in source
+
+def test_fill_tracks_extend_right_without_moving_the_left_edge():
+    source = HUD.read_text(encoding="utf-8")
+    assert "HP_FILL_RECT := Rect2(0.226, 0.274, 0.743, 0.213)" in source
+    assert "GAUGE_FILL_RECT := Rect2(0.226, 0.564, 0.743, 0.188)" in source
+    assert "var hp_size: Vector2 = frame_size * HP_FILL_RECT.size" in source
+    assert "_gauge_fill_art.size = frame_size * GAUGE_FILL_RECT.size" in source
+
+
+def test_hp_is_two_pixels_higher_for_both_teams_gauge_only_for_enemies():
+    source = HUD.read_text(encoding="utf-8")
+    assert "const HP_FILL_VERTICAL_OFFSET := -2.0" in source
+    assert "const ENEMY_GAUGE_VERTICAL_OFFSET := -2.0" in source
+    assert "Vector2(0.0, HP_FILL_VERTICAL_OFFSET)" in source
+    assert "ENEMY_GAUGE_VERTICAL_OFFSET if is_enemy else 0.0" in source
+    assert source.count("_position_dynamic_fills()") >= 1
+
+
+def test_full_hp_never_has_one_pixel_alpha_seam():
+    source = SHADER.read_text(encoding="utf-8")
+    assert "if (fill_ratio >= 0.9999)" in source
+    assert "visible = 1.0;" in source
+    assert "} else if (fill_ratio <= 0.0) {" in source
+    assert "visible = 0.0;" in source
+    assert "COLOR.a *= visible;" in source
