@@ -56,3 +56,11 @@ def test_preview_shows_original_sized_abyssal_bar_for_every_attribute():
     assert "_abyssal_bar_art.size = _igneous_bar_preview_size" not in source
     assert "hp_bar.visible = not use_art" in source
     assert "action_gauge.visible = not use_art" in source
+
+def test_abyssal_preview_is_ten_percent_smaller_in_both_dimensions():
+    source = HUD.read_text(encoding="utf-8")
+    assert "const ABYSSAL_PREVIEW_SCALE := 0.90" in source
+    assert "ABYSSAL_BAR_WIDTH * ABYSSAL_PREVIEW_SCALE" in source
+    assert "float(abyssal.get_width()) * BAR_HEIGHT_SCALE *" in source
+    assert "ABYSSAL_PREVIEW_SCALE" in source
+    assert "use_art = _show_abyssal_bar()" in source

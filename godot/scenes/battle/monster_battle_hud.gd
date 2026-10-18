@@ -66,6 +66,7 @@ var _igneous_elapsed_ms: float = 0.0
 const ABYSSAL_BAR_PATH := "res://assets/Abyssal HP bar.png"
 const ABYSSAL_BAR_WIDTH := 182.4
 const ABYSSAL_BAR_GAP := 8.0
+const ABYSSAL_PREVIEW_SCALE := 0.90
 # Temporary 4v4 comparison: display Abyssal on every monster at its
 # own previously established size (not the larger Igneous preview size).
 # Turn off to restore element-specific artwork.
@@ -263,10 +264,11 @@ func _show_abyssal_bar() -> bool:
 
     _abyssal_bar_art.texture = abyssal
     _abyssal_bar_art.size = Vector2(
-        ABYSSAL_BAR_WIDTH,
+        ABYSSAL_BAR_WIDTH * ABYSSAL_PREVIEW_SCALE,
         BAR_ORIGINAL_WIDTH *
         float(abyssal.get_height()) /
-        float(abyssal.get_width()) * BAR_HEIGHT_SCALE
+        float(abyssal.get_width()) * BAR_HEIGHT_SCALE *
+        ABYSSAL_PREVIEW_SCALE
     )
     _position_abyssal_bar()
     _abyssal_bar_art.visible = true
