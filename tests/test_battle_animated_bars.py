@@ -9,8 +9,11 @@ ASSETS = ROOT / "godot/assets/ui"
 
 def test_bar_fill_art_is_versioned_and_used_by_abyssal_preview():
     source = HUD.read_text(encoding="utf-8")
-    assert (ASSETS / "hp_fill.png").is_file()
-    assert (ASSETS / "gauge_fill.png").is_file()
+    for asset in ["hp_fill.png", "gauge_fill.png"]:
+        raw = (ASSETS / asset).read_bytes()
+        assert raw.startswith(b"\\x89PNG\\r\\n\\x1a\\n")
+        assert int.from_bytes(raw[16:20], "big") == 412
+        assert int.from_bytes(raw[20:24], "big") == 33
     assert 'preload("res://assets/ui/hp_fill.png")' in source
     assert 'preload("res://assets/ui/gauge_fill.png")' in source
     assert "func _ensure_dynamic_fills() -> void:" in source
