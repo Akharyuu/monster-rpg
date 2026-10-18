@@ -11,7 +11,7 @@ def test_bar_fill_art_is_versioned_and_used_by_abyssal_preview():
     source = HUD.read_text(encoding="utf-8")
     for asset in ["hp_fill.png", "gauge_fill.png"]:
         raw = (ASSETS / asset).read_bytes()
-        assert raw.startswith(b"\\x89PNG\\r\\n\\x1a\\n")
+        assert raw[:8] == bytes([137, 80, 78, 71, 13, 10, 26, 10])
         assert int.from_bytes(raw[16:20], "big") == 412
         assert int.from_bytes(raw[20:24], "big") == 33
     assert 'preload("res://assets/ui/hp_fill.png")' in source
