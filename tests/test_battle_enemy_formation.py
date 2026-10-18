@@ -11,7 +11,7 @@ def test_enemy_4v4_shifts_are_cumulative_and_preserve_enemy_four():
     positions = enemy_arcs.split("\n\t4: [", 1)[1].split("\n\t]", 1)[0]
     actual = [
         tuple(map(int, coordinates))
-        for coordinates in re.findall(r"Vector2\\((\\d+), (\\d+)\\)", positions)
+        for coordinates in re.findall(r"Vector2\((\d+), (\d+)\)", positions)
     ]
     assert actual == [
         (548, 142),  # enemy 1: 578 - 15 - 15
