@@ -26,7 +26,8 @@ def test_static_abyssal_art_scales_down_in_both_dimensions():
     assert "BAR_ORIGINAL_WIDTH *" in source
     assert '"abyssal":' in source
     assert "float(abyssal.get_height())" in source
-    assert "float(abyssal.get_width())" in source
+    assert "float(abyssal.get_width()) * BAR_HEIGHT_SCALE" in source
+    assert "BAR_HEIGHT_SCALE := 0.90" in source
     assert "image.get_used_rect()" in source
     assert "ImageTexture.create_from_image(" in source
     assert "_position_abyssal_bar()" in source

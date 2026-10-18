@@ -45,9 +45,10 @@ const IGNEOUS_BAR_COLUMNS := 6
 const IGNEOUS_BAR_ROWS := 6
 const IGNEOUS_BAR_FRAME_COUNT := 36
 const IGNEOUS_BAR_WIDTH := 182.4
-# Both dimensions are 80% of the previous layout; height is derived
-# independently so the existing horizontally-compressed shape is preserved.
+# Width stays at its current 80% preview size. Compress the existing
+# art height a further 10% independently, without moving it off the sprite.
 const BAR_ORIGINAL_WIDTH := 227.2
+const BAR_HEIGHT_SCALE := 0.90
 const IGNEOUS_BAR_GAP := 8.0
 
 # All monster HUDs share one texture atlas and frame timing data.
@@ -247,7 +248,7 @@ func _configure_attribute_bar_art() -> void:
                         ABYSSAL_BAR_WIDTH,
                         BAR_ORIGINAL_WIDTH *
                         float(abyssal.get_height()) /
-                        float(abyssal.get_width())
+                        float(abyssal.get_width()) * BAR_HEIGHT_SCALE
                     )
                     _position_abyssal_bar()
                     _abyssal_bar_art.visible = true
@@ -422,7 +423,8 @@ static func _load_igneous_bar_animation() -> bool:
     _igneous_bar_durations_ms = delays
     _igneous_bar_preview_size = Vector2(
         IGNEOUS_BAR_WIDTH,
-        BAR_ORIGINAL_WIDTH * float(common_height) / float(frames[0].size.x)
+        BAR_ORIGINAL_WIDTH * float(common_height) /
+        float(frames[0].size.x) * BAR_HEIGHT_SCALE
     )
     return true
 

@@ -8,7 +8,8 @@ HUD = ROOT / "godot" / "scenes" / "battle" / "monster_battle_hud.gd"
 def test_igneous_sprite_only_replaces_igneous_attribute_bars():
     source = HUD.read_text(encoding="utf-8")
     assert '"res://assets/ui/sprite-max-px-frames-36-rows-6-cols-6.json"' in source
-    assert 'str(bound_monster.attribute) == "igneous"' in source
+    assert 'match str(bound_monster.attribute):' in source
+    assert '"igneous":' in source
     assert "_load_igneous_bar_animation()" in source
     assert "hp_bar.visible = not use_art" in source
     assert "action_gauge.visible = not use_art" in source
@@ -48,3 +49,11 @@ def test_hp_and_gauge_values_still_update_despite_cosmetic_animated_art():
     assert "bound_monster.action_gauge * 100.0" in source
     assert "hp_bar.max_value = monster.max_health" in source
     assert "action_gauge.max_value = 100.0" in source
+
+
+def test_igneous_bar_is_squashed_vertically_but_keeps_display_width():
+    source = HUD.read_text(encoding="utf-8")
+    assert "IGNEOUS_BAR_WIDTH := 182.4" in source
+    assert "BAR_HEIGHT_SCALE := 0.90" in source
+    assert "BAR_ORIGINAL_WIDTH * float(common_height) /" in source
+    assert "float(frames[0].size.x) * BAR_HEIGHT_SCALE" in source
