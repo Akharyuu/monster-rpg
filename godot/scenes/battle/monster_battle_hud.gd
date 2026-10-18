@@ -73,12 +73,13 @@ const BAR_FILL_SHADER: Shader = preload("res://assets/ui/battle_bar_fill.gdshade
 # Interior slots measured against the transparent-trimmed Abyssal frame.
 # These are normalized rectangles, so changing the frame size scales
 # everything consistently without stretching the filling over time.
-# Extend the fills ~3.4 logical pixels toward the right interior edge of
-# the frame. Keep the left edge fixed so partial HP still drains correctly.
-const HP_FILL_RECT := Rect2(0.226, 0.274, 0.743, 0.213)
-const GAUGE_FILL_RECT := Rect2(0.226, 0.564, 0.743, 0.188)
-const HP_FILL_VERTICAL_OFFSET := -2.0
-const ENEMY_GAUGE_VERTICAL_OFFSET := -2.0
+# Fills extend ~2.4 logical pixels toward the frame's right interior
+# edge. Keep the left edge fixed so partial HP still drains correctly.
+# A 0.0061 relative-width reduction is ~1px at this frame's 164px size.
+const HP_FILL_RECT := Rect2(0.226, 0.274, 0.7369, 0.213)
+const GAUGE_FILL_RECT := Rect2(0.226, 0.564, 0.7369, 0.188)
+const HP_FILL_VERTICAL_OFFSET := -1.0
+const ENEMY_GAUGE_VERTICAL_OFFSET := -1.0
 const HP_DAMAGE_DURATION := 0.22
 const HP_HEAL_DURATION := 0.35
 const HP_DAMAGE_TRAIL_DELAY := 0.18
