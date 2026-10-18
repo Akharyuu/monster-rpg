@@ -36,8 +36,8 @@ def test_bar_is_centered_above_actual_opaque_sprite_pixels():
     assert "monster_sprite.size - image_size * scale" in source
     assert "func _position_igneous_bar() -> void:" in source
     assert "visual_top.y - _igneous_bar_art.size.y - IGNEOUS_BAR_GAP" in source
-    assert "IGNEOUS_BAR_WIDTH := 228.0" in source
-    assert "BAR_ORIGINAL_WIDTH := 284.0" in source
+    assert "IGNEOUS_BAR_WIDTH := 182.4" in source
+    assert "BAR_ORIGINAL_WIDTH := 227.2" in source
     assert "BAR_ORIGINAL_WIDTH * float(common_height)" in source
     assert "_position_igneous_bar()" in source
 

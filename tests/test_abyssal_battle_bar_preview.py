@@ -18,13 +18,13 @@ def test_only_fourth_enemy_becomes_vharak():
     assert source.count("enemies = [") == 1
 
 
-def test_static_abyssal_art_is_optional_and_shorter_without_thinning():
+def test_static_abyssal_art_scales_down_in_both_dimensions():
     source = HUD.read_text(encoding="utf-8")
     assert 'ABYSSAL_BAR_PATH := "res://assets/Abyssal HP bar.png"' in source
-    assert "ABYSSAL_BAR_WIDTH := 228.0" in source
+    assert "ABYSSAL_BAR_WIDTH := 182.4" in source
+    assert "BAR_ORIGINAL_WIDTH := 227.2" in source
     assert "BAR_ORIGINAL_WIDTH *" in source
     assert '"abyssal":' in source
-    assert "ABYSSAL_BAR_WIDTH *" in source
     assert "float(abyssal.get_height())" in source
     assert "float(abyssal.get_width())" in source
     assert "image.get_used_rect()" in source

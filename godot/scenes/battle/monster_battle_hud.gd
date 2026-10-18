@@ -44,9 +44,10 @@ const IGNEOUS_BAR_FALLBACK_IMAGE := "sprite-max-px-frames-36-rows-6-cols-6.png"
 const IGNEOUS_BAR_COLUMNS := 6
 const IGNEOUS_BAR_ROWS := 6
 const IGNEOUS_BAR_FRAME_COUNT := 36
-const IGNEOUS_BAR_WIDTH := 228.0
-# Preserve the current vertical size when shortening the bars horizontally.
-const BAR_ORIGINAL_WIDTH := 284.0
+const IGNEOUS_BAR_WIDTH := 182.4
+# Both dimensions are 80% of the previous layout; height is derived
+# independently so the existing horizontally-compressed shape is preserved.
+const BAR_ORIGINAL_WIDTH := 227.2
 const IGNEOUS_BAR_GAP := 8.0
 
 # All monster HUDs share one texture atlas and frame timing data.
@@ -62,7 +63,7 @@ var _igneous_elapsed_ms: float = 0.0
 # Standalone static asset for the Abyssal bar size comparison.
 # Keep the same 284px display width used by the Igneous HUD artwork.
 const ABYSSAL_BAR_PATH := "res://assets/Abyssal HP bar.png"
-const ABYSSAL_BAR_WIDTH := 228.0
+const ABYSSAL_BAR_WIDTH := 182.4
 const ABYSSAL_BAR_GAP := 8.0
 static var _abyssal_bar_texture: Texture2D
 static var _abyssal_bar_attempted: bool = false
