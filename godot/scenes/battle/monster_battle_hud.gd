@@ -66,9 +66,9 @@ var _igneous_elapsed_ms: float = 0.0
 const ABYSSAL_BAR_PATH := "res://assets/Abyssal HP bar.png"
 const ABYSSAL_BAR_WIDTH := 182.4
 const ABYSSAL_BAR_GAP := 8.0
-# Temporary 4v4 visual comparison: all monsters display the static Abyssal
-# artwork at the same on-screen width AND height as the Igneous bar.
-# Turn off to restore the element-specific previews.
+# Temporary 4v4 comparison: display Abyssal on every monster at its
+# own previously established size (not the larger Igneous preview size).
+# Turn off to restore element-specific artwork.
 const FORCE_ABYSSAL_BAR_PREVIEW := true
 static var _abyssal_bar_texture: Texture2D
 static var _abyssal_bar_attempted: bool = false
@@ -235,8 +235,8 @@ func _configure_attribute_bar_art() -> void:
     var use_art: bool = false
     if bound_monster != null:
         if FORCE_ABYSSAL_BAR_PREVIEW:
-            # Shared comparison size for every monster, regardless of element.
-            use_art = _show_abyssal_bar(true)
+            # Same original Abyssal layout for every element.
+            use_art = _show_abyssal_bar()
         else:
             match str(bound_monster.attribute):
                 "igneous":
@@ -249,14 +249,14 @@ func _configure_attribute_bar_art() -> void:
                         _igneous_bar_art.visible = true
                         use_art = true
                 "abyssal":
-                    use_art = _show_abyssal_bar(false)
+                    use_art = _show_abyssal_bar()
 
     # Preserve normal HP and gauge bars if a themed file is absent.
     hp_bar.visible = not use_art
     action_gauge.visible = not use_art
 
 
-func _show_abyssal_bar(match_igneous_size: bool) -> bool:
+func _show_abyssal_bar() -> bool:
     var abyssal: Texture2D = _load_abyssal_bar()
     if abyssal == null:
         return false
@@ -268,11 +268,6 @@ func _show_abyssal_bar(match_igneous_size: bool) -> bool:
         float(abyssal.get_height()) /
         float(abyssal.get_width()) * BAR_HEIGHT_SCALE
     )
-    # Use the actual cropped Igneous frame dimensions, not the Abyssal
-    # PNG aspect ratio. This compares both designs within the same rectangle.
-    if match_igneous_size and _load_igneous_bar_animation():
-        _abyssal_bar_art.size = _igneous_bar_preview_size
-
     _position_abyssal_bar()
     _abyssal_bar_art.visible = true
     return true
