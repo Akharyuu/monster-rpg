@@ -191,10 +191,13 @@ const ENEMY_ARCS := {
 		Vector2(805, 124),
 		Vector2(994, 184)
 	],
+	# Two cumulative 15px left shifts for enemies 1-2;
+	# one 15px shift for enemy 3. Enemy 4 stays in place.
+	# Moving the parent HUD takes sprite, bar and targeting together.
 	4: [
-		Vector2(578, 142),
-		Vector2(754, 124),
-		Vector2(911, 124),
+		Vector2(548, 142),
+		Vector2(724, 124),
+		Vector2(896, 124),
 		Vector2(1063, 174)
 	]
 }
