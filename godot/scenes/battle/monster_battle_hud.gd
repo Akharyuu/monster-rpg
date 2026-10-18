@@ -67,6 +67,11 @@ const ABYSSAL_BAR_PATH := "res://assets/Abyssal HP bar.png"
 const ABYSSAL_BAR_WIDTH := 182.4
 const ABYSSAL_BAR_GAP := 8.0
 const ABYSSAL_PREVIEW_SCALE := 0.90
+const DAMAGE_FEEDBACK_SECONDS := 0.55
+const STATUS_FEEDBACK_SECONDS := 0.50
+const LEVEL_ORB_CENTER := Vector2(0.111, 0.50)
+const LEVEL_ORB_WIDTH_RATIO := 0.185
+const LEVEL_ORB_HEIGHT_RATIO := 0.80
 const HP_FILL_TEXTURE: Texture2D = preload("res://assets/ui/hp_fill.png")
 const GAUGE_FILL_TEXTURE: Texture2D = preload("res://assets/ui/gauge_fill.png")
 const BAR_FILL_SHADER: Shader = preload("res://assets/ui/battle_bar_fill.gdshader")
@@ -126,7 +131,7 @@ func bind_monster(monster, enemy_side: bool) -> void:
 
 
     name_label.text = monster.monster_name
-    level_label.text = "Lv. %d" % monster.level
+    level_label.text = str(monster.level)
 
     _update_attribute(
         monster.attribute
@@ -297,6 +302,7 @@ func _configure_attribute_bar_art() -> void:
     _set_dynamic_fills_visible(
         use_art and _abyssal_bar_art.visible
     )
+    _position_level_in_orb()
 
 
 func _show_abyssal_bar() -> bool:
@@ -329,6 +335,50 @@ func _position_abyssal_bar() -> void:
         _bar_horizontal_offset(),
         visual_top.y - _abyssal_bar_art.size.y - ABYSSAL_BAR_GAP
     )
+
+
+# The centered numeral follows the rendered frame rather than the HUD origin,
+# so allied and enemy bar offsets never desynchronize their level orbs.
+func _position_level_in_orb() -> void:
+    var bar: TextureRect = null
+    if _abyssal_bar_art != null and _abyssal_bar_art.visible:
+        bar = _abyssal_bar_art
+    elif _igneous_bar_art != null and _igneous_bar_art.visible:
+        bar = _igneous_bar_art
+
+    level_label.visible = bar != null
+    if bar == null or bound_monster == null:
+        return
+
+    var digits: String = str(bound_monster.level)
+    level_label.text = digits
+    level_label.tooltip_text = "Level %s" % digits
+    level_label.z_index = 12
+    level_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    level_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+    level_label.add_theme_font_size_override(
+        "font_size", 15 if digits.length() == 1 else (
+            12 if digits.length() == 2 else 10
+        )
+    )
+    level_label.add_theme_color_override(
+        "font_color", Color(1.0, 0.92, 0.74)
+    )
+    level_label.add_theme_color_override(
+        "font_outline_color", Color(0.055, 0.085, 0.12, 0.98)
+    )
+    level_label.add_theme_constant_override("outline_size", 2)
+
+    var orb_center: Vector2 = bar.position + bar.size * LEVEL_ORB_CENTER
+    var inner_diameter: float = minf(
+        bar.size.x * LEVEL_ORB_WIDTH_RATIO,
+        bar.size.y * LEVEL_ORB_HEIGHT_RATIO
+    )
+    level_label.size = Vector2(
+        inner_diameter * 0.86, inner_diameter * 0.82
+    )
+    level_label.position = (orb_center - level_label.size / 2.0).round()
 
 
 # Shared artwork, independent shader instances: drawing one unit's
@@ -667,7 +717,7 @@ func refresh(is_active: bool) -> void:
         return
 
     name_label.text = bound_monster.monster_name
-    level_label.text = "Lv. %d" % bound_monster.level
+    level_label.text = str(bound_monster.level)
 
     hp_bar.value = bound_monster.health
     hp_bar.tooltip_text = "%d / %d HP" % [
@@ -1203,14 +1253,14 @@ func play_damage_feedback(
         damage_label,
         "position",
         label_end,
-        0.55
+        DAMAGE_FEEDBACK_SECONDS
     )
 
     number_tween.tween_property(
         damage_label,
         "modulate:a",
         0.0,
-        0.55
+        DAMAGE_FEEDBACK_SECONDS
     )
 
     await number_tween.finished
@@ -1274,14 +1324,14 @@ func play_status_feedback(
         status_label,
         "position",
         end_position,
-        0.50
+        STATUS_FEEDBACK_SECONDS
     )
 
     tween.tween_property(
         status_label,
         "modulate:a",
         0.0,
-        0.50
+        STATUS_FEEDBACK_SECONDS
     )
 
     await tween.finished

@@ -558,7 +558,9 @@ func execute_player_skill(
 	)
 
 	update_battle_ui()
-	await play_result_feedback(result)
+	await play_result_feedback(
+		result, str(skill.target_type) == "all_enemies"
+	)
 	await play_caster_feedback(result)
 
 	turn_label.text = "%s: %d total damage" % [
@@ -616,7 +618,9 @@ func enemy_turn() -> void:
 	)
 
 	update_battle_ui()
-	await play_result_feedback(result)
+	await play_result_feedback(
+		result, str(skill.target_type) == "all_enemies"
+	)
 	await play_caster_feedback(result)
 
 	turn_label.text = "%s hits %s for %d" % [
@@ -708,80 +712,108 @@ func get_hud_for_monster(monster):
 	return null
 
 
-func play_result_feedback(result: Dictionary) -> void:
-	var target_results: Array = result.get(
-		"target_results",
-		[]
-	)
+# Area attacks deliver one impact; random multi-hit skills remain sequential.
+func play_result_feedback(
+    result: Dictionary,
+    simultaneous_aoe: bool = false
+) -> void:
+    var target_results: Array = result.get("target_results", [])
+    if target_results.is_empty():
+        return
 
-	if target_results.is_empty():
-		return
+    if simultaneous_aoe:
+        await _play_aoe_target_feedback(target_results)
+    else:
+        for target_result in target_results:
+            var hud = get_hud_for_monster(target_result["target"])
+            if hud == null:
+                continue
+            await hud.play_damage_feedback(
+                int(target_result["damage"]),
+                int(target_result["critical_hits"]) > 0,
+                false
+            )
+            for notification in _target_status_notifications(target_result):
+                await hud.play_status_feedback(
+                    str(notification["text"]),
+                    str(notification["style"])
+                )
 
-	for target_result in target_results:
-		var target = target_result["target"]
-		var hud = get_hud_for_monster(target)
+    for survivor in result.get("deathless_survivors", []):
+        var survivor_hud = get_hud_for_monster(survivor)
+        if survivor_hud != null:
+            await survivor_hud.play_status_feedback(
+                "DEATHLESS RIDER - 1 HP!", "buff"
+            )
 
-		if hud == null:
-			continue
 
-		await hud.play_damage_feedback(
-			int(target_result["damage"]),
-			int(target_result["critical_hits"]) > 0,
-			false
-		)
+# Build a per-target status queue, retaining unique effect announcements.
+func _target_status_notifications(target_result: Dictionary) -> Array[Dictionary]:
+    var notifications: Array[Dictionary] = []
+    var shown_effects: Array[String] = []
+    for effect in target_result.get("effects_applied", []):
+        var effect_id: String = str(effect.effect_id)
+        if effect_id in shown_effects:
+            continue
+        shown_effects.append(effect_id)
+        notifications.append({
+            "text": get_status_feedback_text(effect_id),
+            "style": "burn" if effect_id == "burn" else "debuff"
+        })
 
-		var shown_effects: Array[String] = []
+    var buffs_removed: int = int(target_result.get("buffs_removed", 0))
+    if buffs_removed > 0:
+        notifications.append({
+            "text": "STRIP x%d!" % buffs_removed,
+            "style": "debuff"
+        })
+    if not target_result.get("resisted_effects", []).is_empty():
+        notifications.append({"text": "RESIST!", "style": "resist"})
+    return notifications
 
-		for effect in target_result.get(
-			"effects_applied",
-			[]
-		):
-			var effect_id: String = str(
-				effect.effect_id
-			)
 
-			if effect_id in shown_effects:
-				continue
+func _play_aoe_target_feedback(target_results: Array) -> void:
+    var queues: Array[Dictionary] = []
+    var max_notifications: int = 0
+    var has_damage: bool = false
 
-			shown_effects.append(effect_id)
+    # Start every damage-number coroutine together, with no per-target wait.
+    for target_result in target_results:
+        var hud = get_hud_for_monster(target_result["target"])
+        if hud == null:
+            continue
+        var damage: int = int(target_result["damage"])
+        if damage > 0:
+            hud.play_damage_feedback(
+                damage, int(target_result["critical_hits"]) > 0, false
+            )
+            has_damage = true
 
-			await hud.play_status_feedback(
-				get_status_feedback_text(effect_id),
-				"burn" if effect_id == "burn" else "debuff"
-			)
+        var notifications: Array[Dictionary] = (
+            _target_status_notifications(target_result)
+        )
+        queues.append({"hud": hud, "notifications": notifications})
+        max_notifications = maxi(max_notifications, notifications.size())
 
-		var buffs_removed: int = int(
-			target_result.get("buffs_removed", 0)
-		)
+    if has_damage:
+        await get_tree().create_timer(
+            MonsterBattleHUD.DAMAGE_FEEDBACK_SECONDS
+        ).timeout
 
-		if buffs_removed > 0:
-			await hud.play_status_feedback(
-				"STRIP x%d!" % buffs_removed,
-                "debuff"
-			)
-
-		if not target_result.get(
-			"resisted_effects",
-			[]
-		).is_empty():
-			await hud.play_status_feedback(
-				"RESIST!",
-                "resist"
-			)
-
-	for survivor in result.get(
-		"deathless_survivors",
-		[]
-	):
-		var survivor_hud = get_hud_for_monster(
-			survivor
-		)
-
-		if survivor_hud != null:
-			await survivor_hud.play_status_feedback(
-				"DEATHLESS RIDER - 1 HP!",
-                "buff"
-			)
+    # Keep statuses from different monsters synchronized without stacking
+    # multiple notifications on the same monster in a single frame.
+    for wave_index in range(max_notifications):
+        for entry in queues:
+            var pending: Array = entry["notifications"]
+            if wave_index >= pending.size():
+                continue
+            var notification: Dictionary = pending[wave_index]
+            entry["hud"].play_status_feedback(
+                str(notification["text"]), str(notification["style"])
+            )
+        await get_tree().create_timer(
+            MonsterBattleHUD.STATUS_FEEDBACK_SECONDS
+        ).timeout
 
 
 func play_caster_feedback(result: Dictionary) -> void:
