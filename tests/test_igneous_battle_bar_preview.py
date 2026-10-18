@@ -24,7 +24,8 @@ def test_preview_uses_only_first_frame_and_respects_resized_sheets():
     assert "sheet.get_region(cell)" in source
     assert "frame.get_used_rect()" in source
     assert "ImageTexture.create_from_image(painted_frame)" in source
-    assert "IGNEOUS_BAR_DISPLAY_SIZE := Vector2(142.0, 36.0)" in source
+    assert "IGNEOUS_BAR_DISPLAY_SIZE := Vector2(284.0, 72.0)" in source
+    assert "IGNEOUS_BAR_DISPLAY_POSITION := Vector2(-73.0, -59.0)" in source
 
 
 def test_existing_combat_data_progress_is_preserved():

@@ -43,8 +43,8 @@ const IGNEOUS_BAR_DATA := "res://assets/ui/sprite-max-px-frames-36-rows-6-cols-6
 const IGNEOUS_BAR_FALLBACK_IMAGE := "sprite-max-px-frames-36-rows-6-cols-6.png"
 const IGNEOUS_BAR_COLUMNS := 6
 const IGNEOUS_BAR_ROWS := 6
-const IGNEOUS_BAR_DISPLAY_SIZE := Vector2(142.0, 36.0)
-const IGNEOUS_BAR_DISPLAY_POSITION := Vector2(-2.0, -41.0)
+const IGNEOUS_BAR_DISPLAY_SIZE := Vector2(284.0, 72.0)
+const IGNEOUS_BAR_DISPLAY_POSITION := Vector2(-73.0, -59.0)
 
 static var _igneous_bar_attempted: bool = false
 static var _igneous_bar_texture: Texture2D
