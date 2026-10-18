@@ -67,6 +67,9 @@ const ABYSSAL_BAR_PATH := "res://assets/Abyssal HP bar.png"
 const ABYSSAL_BAR_WIDTH := 182.4
 const ABYSSAL_BAR_GAP := 8.0
 const ABYSSAL_PREVIEW_SCALE := 0.90
+# Nudge the bar rows toward the battle center without moving the sprites.
+const ALLY_BAR_HORIZONTAL_OFFSET := 15.0
+const ENEMY_BAR_HORIZONTAL_OFFSET := -15.0
 # Temporary 4v4 comparison: display Abyssal on every monster at its
 # own previously established size (not the larger Igneous preview size).
 # Turn off to restore element-specific artwork.
@@ -195,12 +198,17 @@ func _sprite_visual_top_center() -> Vector2:
     )
 
 
+func _bar_horizontal_offset() -> float:
+    return ENEMY_BAR_HORIZONTAL_OFFSET if is_enemy else ALLY_BAR_HORIZONTAL_OFFSET
+
+
 func _position_igneous_bar() -> void:
     if _igneous_bar_art == null:
         return
     var visual_top: Vector2 = _sprite_visual_top_center()
     _igneous_bar_art.position = Vector2(
-        visual_top.x - _igneous_bar_art.size.x / 2.0,
+        visual_top.x - _igneous_bar_art.size.x / 2.0 +
+        _bar_horizontal_offset(),
         visual_top.y - _igneous_bar_art.size.y - IGNEOUS_BAR_GAP
     )
 
@@ -281,7 +289,8 @@ func _position_abyssal_bar() -> void:
         return
     var visual_top: Vector2 = _sprite_visual_top_center()
     _abyssal_bar_art.position = Vector2(
-        visual_top.x - _abyssal_bar_art.size.x / 2.0,
+        visual_top.x - _abyssal_bar_art.size.x / 2.0 +
+        _bar_horizontal_offset(),
         visual_top.y - _abyssal_bar_art.size.y - ABYSSAL_BAR_GAP
     )
 

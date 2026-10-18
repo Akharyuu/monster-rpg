@@ -64,3 +64,14 @@ def test_abyssal_preview_is_ten_percent_smaller_in_both_dimensions():
     assert "float(abyssal.get_width()) * BAR_HEIGHT_SCALE *" in source
     assert "ABYSSAL_PREVIEW_SCALE" in source
     assert "use_art = _show_abyssal_bar()" in source
+
+def test_allied_bars_shift_right_and_enemy_bars_shift_left():
+    source = HUD.read_text(encoding="utf-8")
+    assert "const ALLY_BAR_HORIZONTAL_OFFSET := 15.0" in source
+    assert "const ENEMY_BAR_HORIZONTAL_OFFSET := -15.0" in source
+    assert "return ENEMY_BAR_HORIZONTAL_OFFSET if is_enemy else ALLY_BAR_HORIZONTAL_OFFSET" in source
+    assert "visual_top.x - _igneous_bar_art.size.x / 2.0 +" in source
+    assert "visual_top.x - _abyssal_bar_art.size.x / 2.0 +" in source
+    assert source.count("_bar_horizontal_offset(),") == 2
+    assert "visual_top.y - _igneous_bar_art.size.y - IGNEOUS_BAR_GAP" in source
+    assert "visual_top.y - _abyssal_bar_art.size.y - ABYSSAL_BAR_GAP" in source
