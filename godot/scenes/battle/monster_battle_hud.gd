@@ -43,12 +43,19 @@ const IGNEOUS_BAR_DATA := "res://assets/ui/sprite-max-px-frames-36-rows-6-cols-6
 const IGNEOUS_BAR_FALLBACK_IMAGE := "sprite-max-px-frames-36-rows-6-cols-6.png"
 const IGNEOUS_BAR_COLUMNS := 6
 const IGNEOUS_BAR_ROWS := 6
-const IGNEOUS_BAR_DISPLAY_SIZE := Vector2(284.0, 72.0)
-const IGNEOUS_BAR_DISPLAY_POSITION := Vector2(-73.0, -59.0)
+const IGNEOUS_BAR_FRAME_COUNT := 36
+const IGNEOUS_BAR_WIDTH := 284.0
+const IGNEOUS_BAR_GAP := 8.0
 
+# All monster HUDs share one texture atlas and frame timing data.
 static var _igneous_bar_attempted: bool = false
-static var _igneous_bar_texture: Texture2D
+static var _igneous_bar_frames: Array[Texture2D] = []
+static var _igneous_bar_durations_ms: Array[float] = []
+static var _igneous_bar_preview_size: Vector2 = Vector2.ZERO
+static var _sprite_alpha_bounds: Dictionary = {}
 var _igneous_bar_art: TextureRect
+var _igneous_frame_index: int = 0
+var _igneous_elapsed_ms: float = 0.0
 
 
 func _ready() -> void:
@@ -129,9 +136,59 @@ func _configure_monster_sprite() -> void:
     sprite_placeholder.visible = false
 
 
-# Igneous monsters temporarily use a static preview of the themed HUD.
-# All live HP/Action Gauge values continue updating in the hidden ProgressBars.
-# Later we can animate their fills without touching the combat/controller API.
+# Use visible pixels, not the padded PNG edges, to align the bar.
+# Monster Sprite is drawn using STRETCH_KEEP_ASPECT_CENTERED.
+func _sprite_visual_top_center() -> Vector2:
+    var fallback := Vector2(
+        monster_sprite.position.x + monster_sprite.size.x / 2.0,
+        monster_sprite.position.y
+    )
+    if not monster_sprite.visible or monster_sprite.texture == null:
+        return fallback
+
+    var texture: Texture2D = monster_sprite.texture
+    var image_size: Vector2 = texture.get_size()
+    if image_size.x <= 0.0 or image_size.y <= 0.0:
+        return fallback
+
+    var texture_id: String = texture.resource_path
+    var used: Rect2i
+    if _sprite_alpha_bounds.has(texture_id):
+        used = _sprite_alpha_bounds[texture_id]
+    else:
+        var pixels: Image = texture.get_image()
+        if pixels == null or pixels.is_empty():
+            return fallback
+        used = pixels.get_used_rect()
+        _sprite_alpha_bounds[texture_id] = used
+    if used.size.x <= 0 or used.size.y <= 0:
+        return fallback
+
+    var scale: float = minf(
+        monster_sprite.size.x / image_size.x,
+        monster_sprite.size.y / image_size.y
+    )
+    var inset: Vector2 = (monster_sprite.size - image_size * scale) / 2.0
+    return Vector2(
+        monster_sprite.position.x + inset.x +
+        (float(used.position.x) + float(used.size.x) / 2.0) * scale,
+        monster_sprite.position.y + inset.y +
+        float(used.position.y) * scale
+    )
+
+
+func _position_igneous_bar() -> void:
+    if _igneous_bar_art == null:
+        return
+    var visual_top: Vector2 = _sprite_visual_top_center()
+    _igneous_bar_art.position = Vector2(
+        visual_top.x - _igneous_bar_art.size.x / 2.0,
+        visual_top.y - _igneous_bar_art.size.y - IGNEOUS_BAR_GAP
+    )
+
+
+# Cosmetic art only: the hidden original ProgressBars still hold the
+# real health and action gauge. Dynamic fill will be added separately.
 func _configure_attribute_bar_art() -> void:
     if _igneous_bar_art == null:
         _igneous_bar_art = TextureRect.new()
@@ -139,112 +196,153 @@ func _configure_attribute_bar_art() -> void:
         _igneous_bar_art.z_index = 10
         _igneous_bar_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
         _igneous_bar_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-        _igneous_bar_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+        _igneous_bar_art.stretch_mode = TextureRect.STRETCH_SCALE
         _igneous_bar_art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
         add_child(_igneous_bar_art)
-        _igneous_bar_art.position = IGNEOUS_BAR_DISPLAY_POSITION
-        _igneous_bar_art.size = IGNEOUS_BAR_DISPLAY_SIZE
 
-    var use_art: bool = false
-    if bound_monster != null and str(bound_monster.attribute) == "igneous":
-        var artwork: Texture2D = _get_igneous_bar_texture()
-        if artwork != null:
-            _igneous_bar_art.texture = artwork
-            use_art = true
-
+    var use_art: bool = (
+        bound_monster != null and str(bound_monster.attribute) == "igneous"
+        and _load_igneous_bar_animation()
+    )
     _igneous_bar_art.visible = use_art
     hp_bar.visible = not use_art
     action_gauge.visible = not use_art
+    if not use_art:
+        _igneous_bar_art.texture = null
+        return
+
+    _igneous_frame_index = 0
+    _igneous_elapsed_ms = 0.0
+    _igneous_bar_art.texture = _igneous_bar_frames[0]
+    _igneous_bar_art.size = _igneous_bar_preview_size
+    _position_igneous_bar()
 
 
-# The source JSON provides frame coordinates for the original 6552x3264
-# texture. Some image exports are resized, so also support a uniformly
-# scaled 6x6 sheet by calculating its actual first-cell dimensions.
-static func _get_igneous_bar_texture() -> Texture2D:
+func _process(delta: float) -> void:
+    if (
+        not is_instance_valid(_igneous_bar_art)
+        or not _igneous_bar_art.visible
+        or _igneous_bar_frames.is_empty()
+    ):
+        return
+
+    _igneous_elapsed_ms += delta * 1000.0
+    var advances: int = 0
+    while advances < IGNEOUS_BAR_FRAME_COUNT:
+        var delay_ms: float = _igneous_bar_durations_ms[_igneous_frame_index]
+        if _igneous_elapsed_ms < delay_ms:
+            break
+        _igneous_elapsed_ms -= delay_ms
+        _igneous_frame_index = (
+            _igneous_frame_index + 1
+        ) % _igneous_bar_frames.size()
+        advances += 1
+    if advances > 0:
+        _igneous_bar_art.texture = _igneous_bar_frames[_igneous_frame_index]
+
+
+# Load 36 frames with the individual durations from Ludo's JSON.
+# Normalized source coordinates support both original and resized PNGs.
+static func _load_igneous_bar_animation() -> bool:
     if _igneous_bar_attempted:
-        return _igneous_bar_texture
+        return not _igneous_bar_frames.is_empty()
     _igneous_bar_attempted = true
 
     if not FileAccess.file_exists(IGNEOUS_BAR_DATA):
-        push_warning("Igneous UI sprite metadata not found: %s" % IGNEOUS_BAR_DATA)
-        return null
-
-    var metadata: Variant = JSON.parse_string(
+        push_warning("Missing Igneous UI JSON: %s" % IGNEOUS_BAR_DATA)
+        return false
+    var parsed: Variant = JSON.parse_string(
         FileAccess.get_file_as_string(IGNEOUS_BAR_DATA)
     )
-    if not (metadata is Dictionary):
-        push_warning("Igneous UI sprite JSON could not be parsed")
-        return null
+    if not (parsed is Dictionary):
+        push_warning("Invalid Igneous UI JSON")
+        return false
 
-    var meta: Dictionary = metadata.get("meta", {})
-    var image_name: String = str(meta.get("image", IGNEOUS_BAR_FALLBACK_IMAGE)).get_file()
-    if not image_name.ends_with(".png"):
-        push_warning("Igneous UI metadata does not name a PNG")
-        return null
-
-    var image_path: String = IGNEOUS_BAR_DIRECTORY.path_join(image_name)
-    if not FileAccess.file_exists(image_path):
-        # Accept the common '(1)' filename from duplicated downloads.
-        var alternate: String = IGNEOUS_BAR_DIRECTORY.path_join(
+    var meta: Dictionary = parsed.get("meta", {})
+    var records: Dictionary = parsed.get("frames", {})
+    var image_name: String = str(
+        meta.get("image", IGNEOUS_BAR_FALLBACK_IMAGE)
+    ).get_file()
+    var path: String = IGNEOUS_BAR_DIRECTORY.path_join(image_name)
+    if not ResourceLoader.exists(path, "Texture2D"):
+        var alt: String = IGNEOUS_BAR_DIRECTORY.path_join(
             image_name.get_basename() + "(1).png"
         )
-        if FileAccess.file_exists(alternate):
-            image_path = alternate
+        if ResourceLoader.exists(alt, "Texture2D"):
+            path = alt
         else:
-            push_warning("Igneous UI sprite PNG not found: %s" % image_path)
-            return null
+            push_warning("Missing Igneous UI PNG: %s" % path)
+            return false
+    var sheet: Texture2D = load(path) as Texture2D
+    if sheet == null:
+        return false
 
-    var sheet: Image = Image.load_from_file(image_path)
-    if sheet == null or sheet.is_empty():
-        push_warning("Could not open Igneous UI spritesheet: %s" % image_path)
-        return null
+    var image: Image = sheet.get_image()
+    if image == null or image.is_empty():
+        return false
+    var sheet_size: Vector2 = sheet.get_size()
+    var original: Dictionary = meta.get("size", {})
+    var original_w: float = float(original.get("w", 0))
+    var original_h: float = float(original.get("h", 0))
+    if original_w <= 0.0 or original_h <= 0.0:
+        return false
+    var ratio_x: float = sheet_size.x / original_w
+    var ratio_y: float = sheet_size.y / original_h
 
-    var width: int = sheet.get_width()
-    var height: int = sheet.get_height()
-    if width < IGNEOUS_BAR_COLUMNS or height < IGNEOUS_BAR_ROWS:
-        push_warning("Igneous UI spritesheet is too small")
-        return null
+    var frames: Array[Rect2i] = []
+    var delays: Array[float] = []
+    var crop_top: int = int(sheet_size.y)
+    var crop_bottom: int = 0
 
-    var cell := Rect2i(
-        0, 0,
-        width / IGNEOUS_BAR_COLUMNS,
-        height / IGNEOUS_BAR_ROWS
-    )
-    var original_size: Dictionary = meta.get("size", {})
-    var records: Dictionary = metadata.get("frames", {})
-    var first_frame: Dictionary = records.get("frame_000", {})
-    var source_rect: Dictionary = first_frame.get("frame", {})
+    # Calculate one shared crop for every frame, otherwise the
+    # animated flames would shift the body of the bar up and down.
+    for i in range(IGNEOUS_BAR_FRAME_COUNT):
+        var item: Dictionary = records.get("frame_%03d" % i, {})
+        var raw: Dictionary = item.get("frame", {})
+        if raw.is_empty():
+            push_warning("Missing frame %d in Igneous UI JSON" % i)
+            return false
 
-    if (
-        int(original_size.get("w", -1)) == width
-        and int(original_size.get("h", -1)) == height
-        and not source_rect.is_empty()
-    ):
-        cell = Rect2i(
-            int(source_rect.get("x", 0)),
-            int(source_rect.get("y", 0)),
-            int(source_rect.get("w", 0)),
-            int(source_rect.get("h", 0))
+        var x1: int = roundi(float(raw.get("x", 0)) * ratio_x)
+        var y1: int = roundi(float(raw.get("y", 0)) * ratio_y)
+        var x2: int = roundi(
+            (float(raw.get("x", 0)) + float(raw.get("w", 0))) * ratio_x
         )
+        var y2: int = roundi(
+            (float(raw.get("y", 0)) + float(raw.get("h", 0))) * ratio_y
+        )
+        var cell := Rect2i(x1, y1, x2 - x1, y2 - y1)
+        if (
+            cell.size.x <= 0 or cell.size.y <= 0
+            or cell.position.x < 0 or cell.position.y < 0
+            or cell.end.x > int(sheet_size.x) or cell.end.y > int(sheet_size.y)
+        ):
+            push_warning("Invalid Igneous UI frame %d" % i)
+            return false
+        var bbox: Rect2i = image.get_region(cell).get_used_rect()
+        if bbox.size.y > 0:
+            crop_top = mini(crop_top, bbox.position.y)
+            crop_bottom = maxi(crop_bottom, bbox.end.y)
+        frames.append(cell)
+        delays.append(maxf(16.0, float(item.get("duration", 104))))
 
-    if (
-        cell.size.x <= 0 or cell.size.y <= 0
-        or cell.position.x < 0 or cell.position.y < 0
-        or cell.end.x > width or cell.end.y > height
-    ):
-        push_warning("Invalid Igneous UI frame boundaries")
-        return null
-
-    var frame: Image = sheet.get_region(cell)
-    var visible_area: Rect2i = frame.get_used_rect()
-    if visible_area.size.x <= 0 or visible_area.size.y <= 0:
-        push_warning("Igneous UI frame is empty")
-        return null
-
-    # Trim the large transparent space above/below the actual metal frame.
-    var painted_frame: Image = frame.get_region(visible_area)
-    _igneous_bar_texture = ImageTexture.create_from_image(painted_frame)
-    return _igneous_bar_texture
+    if crop_bottom <= crop_top:
+        return false
+    var common_height: int = crop_bottom - crop_top
+    for cell in frames:
+        var atlas := AtlasTexture.new()
+        atlas.atlas = sheet
+        atlas.region = Rect2(
+            float(cell.position.x), float(cell.position.y + crop_top),
+            float(cell.size.x), float(common_height)
+        )
+        _igneous_bar_frames.append(atlas)
+    _igneous_bar_durations_ms = delays
+    _igneous_bar_preview_size = Vector2(
+        IGNEOUS_BAR_WIDTH,
+        IGNEOUS_BAR_WIDTH * float(common_height) / float(frames[0].size.x)
+    )
+    return true
 
 
 func refresh(is_active: bool) -> void:
