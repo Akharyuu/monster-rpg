@@ -43,3 +43,16 @@ def test_igneous_still_animates_and_fallback_values_are_preserved():
     assert "action_gauge.visible = not use_art" in source
     assert "hp_bar.value = bound_monster.health" in source
     assert "bound_monster.action_gauge * 100.0" in source
+
+
+def test_preview_shows_abyssal_for_every_attribute_at_igneous_dimensions():
+    source = HUD.read_text(encoding="utf-8")
+    assert "const FORCE_ABYSSAL_BAR_PREVIEW := true" in source
+    assert "if FORCE_ABYSSAL_BAR_PREVIEW:" in source
+    assert "use_art = _show_abyssal_bar(true)" in source
+    assert "func _show_abyssal_bar(match_igneous_size: bool) -> bool:" in source
+    assert "if match_igneous_size and _load_igneous_bar_animation():" in source
+    assert "_abyssal_bar_art.size = _igneous_bar_preview_size" in source
+    assert "use_art = _show_abyssal_bar(false)" in source
+    assert "hp_bar.visible = not use_art" in source
+    assert "action_gauge.visible = not use_art" in source
